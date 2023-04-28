@@ -98,7 +98,7 @@ export class Configuration {
             blockComments: [...blockComments.values()]
         }
 
-        log(`[${languageCode}] Validate Comments: ` + commentConfiguration.lineComments.join('、') + '、' + commentConfiguration.blockComments.map(block => block.join(' ')).join('、'));
+        log(`[${languageCode}] Comment Marks: ` + [commentConfiguration.lineComments.join('、'), commentConfiguration.blockComments.map(block => block.join(' ')).join('、')].join('、'));
 
         return commentConfiguration;
     }

@@ -37,6 +37,8 @@
     "browser": "./out/web/extension.js",
     "main": "./out/extension",
     "scripts": {
+        "package": "vsce package",
+        "publish": "vsce publish",
         "vscode:prepublish": "npm run compile && npm run package-web",
         "compile": "tsc -p ./",
         "watch": "tsc -watch -p ./",

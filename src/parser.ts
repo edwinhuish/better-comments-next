@@ -123,44 +123,40 @@ export class Parser {
         }
 
         // Combine custom delimiters and the rest of the comment block matcher
-        let commentMatchString = "(^)+([ \\t]*[ \\t]*)(";
-        commentMatchString += characters.join("|");
-        commentMatchString += ")([ ]*|[:])+([^*/][^\\r\\n]*)";
+        let commentMatchString = `(^|[ \\t]+)(${characters.join('|')})([ ]*|[:])+([^*\/][^\\r\\n]*)`;
 
         // Use start and end delimiters to find block comments
-        let regexString = "(^|[ \\t])";
-        for (let blockComment of this.blockComments) {
-            regexString += "(";
-            regexString += blockComment[0];
-            regexString += "[\\s])+([\\s\\S]*?)(";
-            regexString += blockComment[1];
-            regexString += ")";
-        }
+        let regexStrings = this.blockComments.map(block => `(^|[ \\t])(${block[0]}[\\s])+([\\s\\S]*?)(${block[1]})`);
 
-        let regEx = new RegExp(regexString, "gm");
-        let commentRegEx = new RegExp(commentMatchString, "igm");
+        regexStrings.forEach(regexString => {
 
-        // Find the multiline comment block
-        let match: any;
-        while (match = regEx.exec(text)) {
-            let commentBlock = match[0];
+            let regEx = new RegExp(regexString, "gm");
+            let commentRegEx = new RegExp(commentMatchString, "igm");
 
-            // Find the line
-            let line;
-            while (line = commentRegEx.exec(commentBlock)) {
-                let startPos = activeEditor.document.positionAt(match.index + line.index + line[2].length);
-                let endPos = activeEditor.document.positionAt(match.index + line.index + line[0].length);
-                let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
 
-                // Find which custom delimiter was used in order to add it to the collection
-                let matchString = line[3] as string;
-                let matchTag = this.tags.find(item => item.tag.toLowerCase() === matchString.toLowerCase());
+            // Find the multiline comment block
+            let match: any;
+            while (match = regEx.exec(text)) {
+                let commentBlock = match[3];
 
-                if (matchTag) {
-                    matchTag.ranges.push(range);
+                // Find the line
+                let line;
+                while (line = commentRegEx.exec(commentBlock)) {
+                    let startPos = activeEditor.document.positionAt(match.index + match[2].length);
+                    let endPos = activeEditor.document.positionAt(match.index + match[2].length + match[3].length);
+                    let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
+
+                    // Find which custom delimiter was used in order to add it to the collection
+                    let matchString = line[2] as string;
+                    let matchTag = this.tags.find(item => item.tag.toLowerCase() === matchString.toLowerCase());
+
+                    if (matchTag) {
+                        matchTag.ranges.push(range);
+                    }
                 }
             }
-        }
+        })
+
     }
 
     /**
@@ -328,8 +324,7 @@ export class Parser {
 
         // If no single line comment delimiter is passed, single line comments are not supported
         if (singleLine.length > 0) {
-            // * if multiple delimiters are passed, the language has more than one single line comment format
-            var delimiters = singleLine
+            let delimiters = singleLine
                 .map(s => this.escapeRegExp(s))
                 .join("|");
             this.delimiter = delimiters;
