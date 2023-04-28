@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 
 import * as json5 from 'json5'
 import { TextDecoder } from 'util';
+import { log } from './logger';
 
 export interface LanguageConfig {
     configPath: string,
@@ -14,7 +15,7 @@ export interface CommentConfiguration {
     blockComments: [string, string][];
 }
 export class Configuration {
-    private readonly commentConfig = new Map<string, CommentConfig | undefined>();
+    private readonly commentConfigs = new Map<string, CommentConfig | undefined>();
     private readonly languageConfigs = new Map<string, LanguageConfig>();
 
     /**
@@ -29,7 +30,7 @@ export class Configuration {
      * External extensions can override default configurations os VSCode
      */
     public UpdateLanguagesDefinitions() {
-        this.commentConfig.clear();
+        this.commentConfigs.clear();
 
         for (let extension of vscode.extensions.all) {
             let packageJSON = extension.packageJSON;
@@ -77,16 +78,16 @@ export class Configuration {
         let addLineComment = (line?: string) => line && lineComments.add(line);
         let addBlockComment = (block?: [string, string]) => block && blockComments.set(`${block[0]}${block[1]}`, block);
 
-        let languageConfig = this.commentConfig.get(languageCode);
+        let commentConfig = this.commentConfigs.get(languageCode);
 
-        addLineComment(languageConfig?.lineComment);
-        addBlockComment(languageConfig?.blockComment);
+        addLineComment(commentConfig?.lineComment);
+        addBlockComment(commentConfig?.blockComment);
 
         let embeddedLanguages = this.languageConfigs.get(languageCode)?.embeddedLanguages;
 
         if (embeddedLanguages) {
             for (let embeddedLanguageCode of embeddedLanguages) {
-                let embeddedLanguageConfig = this.commentConfig.get(embeddedLanguageCode);
+                let embeddedLanguageConfig = this.commentConfigs.get(embeddedLanguageCode);
                 addLineComment(embeddedLanguageConfig?.lineComment);
                 addBlockComment(embeddedLanguageConfig?.blockComment);
             }
@@ -97,34 +98,38 @@ export class Configuration {
             blockComments: [...blockComments.values()]
         }
 
+        log(`[${languageCode}] Validate Comments: ` + commentConfiguration.lineComments.join('、') + '、' + commentConfiguration.blockComments.map(block => block.join(' ')).join('、'));
+
         return commentConfiguration;
     }
 
 
     private async loadLanguageConfigs(languageCode: string) {
 
-        if (this.commentConfig.has(languageCode)) {
+        if (this.commentConfigs.has(languageCode)) {
             return;
         }
 
         let language = this.languageConfigs.get(languageCode);
 
-        if (!language) {
-            let cnf = this.getBaseCommentConfigs(languageCode);
-            this.commentConfig.set(languageCode, cnf);
-            return;
+        let commentConfig;
+
+        commentConfig = await this.loadLanguageConfigFromFile(language?.configPath);
+        if (!commentConfig) {
+            commentConfig = this.getBaseCommentConfigs(languageCode)
         }
 
-        let cnf = await this.loadLanguageConfigFromFile(language.configPath);
+        this.commentConfigs.set(languageCode, commentConfig);
 
-        this.commentConfig.set(languageCode, cnf);
-
-        for (let embeddedLanguageCode of language?.embeddedLanguages) {
+        for (let embeddedLanguageCode of (language?.embeddedLanguages || [])) {
             await this.loadLanguageConfigs(embeddedLanguageCode);
         }
     }
 
-    private async loadLanguageConfigFromFile(filepath: string): Promise<CommentConfig | undefined> {
+    private async loadLanguageConfigFromFile(filepath?: string): Promise<CommentConfig | undefined> {
+        if (!filepath) {
+            return;
+        }
         try {
             // Get the filepath from the map
             let rawContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filepath));
@@ -136,6 +141,7 @@ export class Configuration {
 
             return config.comments;
         } catch (error) {
+            log('[ERROR] ', error);
             return undefined;
         }
     }
