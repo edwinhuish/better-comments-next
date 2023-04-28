@@ -4,9 +4,18 @@ import * as vscode from 'vscode';
 import * as json5 from 'json5'
 import { TextDecoder } from 'util';
 
+export interface LanguageConfig {
+    configPath: string,
+    embeddedLanguages: string[],
+}
+
+export interface CommentConfiguration {
+    lineComments: string[];
+    blockComments: [string, string][];
+}
 export class Configuration {
     private readonly commentConfig = new Map<string, CommentConfig | undefined>();
-    private readonly languageConfigFiles = new Map<string, string>();
+    private readonly languageConfigs = new Map<string, LanguageConfig>();
 
     /**
      * Creates a new instance of the Parser class
@@ -28,12 +37,29 @@ export class Configuration {
             if (packageJSON.contributes && packageJSON.contributes.languages) {
                 for (let language of packageJSON.contributes.languages) {
                     if (language.configuration) {
+
                         let configPath = path.join(extension.extensionPath, language.configuration);
-                        this.languageConfigFiles.set(language.id, configPath);
+
+                        let embeddedLanguages = new Set<string>();
+                        if (packageJSON.contributes.grammars) {
+                            for (let grammar of packageJSON.contributes.grammars) {
+                                if (grammar.language === language.id && grammar.embeddedLanguages) {
+                                    for (let embeddedLanguageCode of Object.values(grammar.embeddedLanguages)) {
+                                        embeddedLanguages.add(embeddedLanguageCode as string);
+                                    }
+                                }
+                            }
+                        }
+
+                        this.languageConfigs.set(language.id, {
+                            configPath,
+                            embeddedLanguages: [...embeddedLanguages]
+                        });
                     }
                 }
             }
         }
+
     }
 
     /**
@@ -41,33 +67,185 @@ export class Configuration {
      * @param languageCode 
      * @returns 
      */
-    public async GetCommentConfiguration(languageCode: string): Promise<CommentConfig | undefined> {
+    public async GetCommentConfiguration(languageCode: string): Promise<CommentConfiguration> {
 
-        // * check if the language config has already been loaded
+        await this.loadLanguageConfigs(languageCode);
+
+        let lineComments = new Set<string>();
+        let blockComments = new Map<string, [string, string]>();
+
+        let addLineComment = (line?: string) => line && lineComments.add(line);
+        let addBlockComment = (block?: [string, string]) => block && blockComments.set(`${block[0]}${block[1]}`, block);
+
+        let languageConfig = this.commentConfig.get(languageCode);
+
+        addLineComment(languageConfig?.lineComment);
+        addBlockComment(languageConfig?.blockComment);
+
+        let embeddedLanguages = this.languageConfigs.get(languageCode)?.embeddedLanguages;
+
+        if (embeddedLanguages) {
+            for (let embeddedLanguageCode of embeddedLanguages) {
+                let embeddedLanguageConfig = this.commentConfig.get(embeddedLanguageCode);
+                addLineComment(embeddedLanguageConfig?.lineComment);
+                addBlockComment(embeddedLanguageConfig?.blockComment);
+            }
+        }
+
+        let commentConfiguration: CommentConfiguration = {
+            lineComments: [...lineComments],
+            blockComments: [...blockComments.values()]
+        }
+
+        return commentConfiguration;
+    }
+
+
+    private async loadLanguageConfigs(languageCode: string) {
+
         if (this.commentConfig.has(languageCode)) {
-            return this.commentConfig.get(languageCode);
+            return;
         }
 
-        // * if no config exists for this language, back out and leave the language unsupported
-        if (!this.languageConfigFiles.has(languageCode)) {
-            return undefined;
+        let language = this.languageConfigs.get(languageCode);
+
+        if (!language) {
+            let cnf = this.getBaseCommentConfigs(languageCode);
+            this.commentConfig.set(languageCode, cnf);
+            return;
         }
 
+        let cnf = await this.loadLanguageConfigFromFile(language.configPath);
+
+        this.commentConfig.set(languageCode, cnf);
+
+        for (let embeddedLanguageCode of language?.embeddedLanguages) {
+            await this.loadLanguageConfigs(embeddedLanguageCode);
+        }
+    }
+
+    private async loadLanguageConfigFromFile(filepath: string): Promise<CommentConfig | undefined> {
         try {
             // Get the filepath from the map
-            const filePath = this.languageConfigFiles.get(languageCode) as string;
-            const rawContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filePath));
+            let rawContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filepath));
+
             const content = new TextDecoder().decode(rawContent);
 
             // use json5, because the config can contains comments
-            const config = json5.parse(content);
-
-            this.commentConfig.set(languageCode, config.comments);
+            let config = json5.parse(content);
 
             return config.comments;
         } catch (error) {
-            this.commentConfig.set(languageCode, undefined);
             return undefined;
         }
+    }
+
+    private getBaseCommentConfigs(languageCode: string): CommentConfig | undefined {
+
+        switch (languageCode) {
+            case "asciidoc":
+                return ({ lineComment: '//', blockComment: ['////', '////'] });
+            case "apex":
+            case "javascript":
+            case "javascriptreact":
+            case "typescript":
+            case "typescriptreact":
+            case "al":
+            case "c":
+            case "cpp":
+            case "csharp":
+            case "dart":
+            case "flax":
+            case "fsharp":
+            case "go":
+            case "groovy":
+            case "haxe":
+            case "java":
+            case "jsonc":
+            case "kotlin":
+            case "less":
+            case "pascal":
+            case "objectpascal":
+            case "php":
+            case "rust":
+            case "scala":
+            case "scss":
+            case "stylus":
+            case "swift":
+            case "verilog":
+                return ({ lineComment: '//', blockComment: ["/*", "*/"] });
+            case "vue":
+                return ({ blockComment: ["<!--", "-->"] });
+            case "css":
+                return ({ blockComment: ["/*", "*/"] });
+            case "coffeescript":
+            case "dockerfile":
+            case "gdscript":
+            case "graphql":
+            case "julia":
+            case "makefile":
+            case "perl":
+            case "perl6":
+            case "puppet":
+            case "r":
+            case "ruby":
+            case "shellscript":
+            case "tcl":
+            case "yaml":
+            case "tcl":
+                return ({ lineComment: '#' });
+            case "elixir":
+            case "python":
+                return ({ lineComment: '#', blockComment: ['"""', '"""'] });
+            case "nim":
+                return ({ lineComment: '#', blockComment: ["#[", "]#"] });
+            case "powershell":
+                return ({ lineComment: '#', blockComment: ["<#", "#>"] });
+            case "ada":
+            case "hive-sql":
+            case "pig":
+            case "plsql":
+            case "sql":
+                return ({ lineComment: '--' });
+            case "lua":
+                return ({ lineComment: '--', blockComment: ["--[[", "]]"] });
+            case "elm":
+            case "haskell":
+                return ({ lineComment: '--', blockComment: ["{-", "-}"] });
+            case "vb":
+            case "diagram": // ? PlantUML is recognized as Diagram (diagram)
+                return ({ lineComment: "'" });
+            case "bibtex":
+            case "erlang":
+            case "latex":
+            case "matlab":
+                return ({ lineComment: "%" });
+            case "clojure":
+            case "elps":
+            case "racket":
+            case "lisp":
+                return ({ lineComment: ";" });
+            case "terraform":
+                return ({ lineComment: '#', blockComment: ["/*", "*/"] });
+            case "COBOL":
+                return ({ lineComment: "*>" });
+            case "fortran-modern":
+                return ({ lineComment: "c" });
+            case "SAS":
+            case "stata":
+                return ({ lineComment: "*", blockComment: ["/*", "*/"] });
+            case "html":
+            case "markdown":
+                return ({ blockComment: ["<!--", "-->"] });
+            case "twig":
+                return ({ blockComment: ["{#", "#}"] });
+            case "genstat":
+                return ({ lineComment: "\\", blockComment: ['"', '"'] });
+            case "cfml":
+                return ({ blockComment: ["<!---", "--->"] });
+            default:
+                return undefined;
+        }
+
     }
 }

@@ -1,23 +1,23 @@
 {
-    "name": "better-comments",
-    "displayName": "Better Comments",
+    "name": "better-comments-next",
+    "displayName": "Better Comments (with embedded languages support)",
     "icon": "icon.png",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
     "version": "3.0.2",
-    "publisher": "aaron-bond",
+    "publisher": "edwinhuish",
     "author": {
-        "name": "Aaron Bond"
+        "name": "Edwin Xu"
     },
-    "homepage": "https://github.com/aaron-bond/better-comments/blob/master/README.md",
+    "homepage": "https://github.com/edwinhuish/better-comments-next/blob/master/README.md",
     "license": "SEE LICENSE IN LICENSE.md",
     "repository": {
         "type": "git",
-        "url": "https://github.com/aaron-bond/better-comments"
+        "url": "https://github.com/edwinhuish/better-comments-next"
     },
     "sponsor": {
-        "url": "https://github.com/sponsors/aaron-bond"
+        "url": "https://github.com/sponsors/edwinhuish"
     },
-    "bugs": "https://github.com/aaron-bond/better-comments/issues",
+    "bugs": "https://github.com/edwinhuish/better-comments-next/issues",
     "categories": [
         "Formatters"
     ],
