@@ -3,7 +3,7 @@
     "displayName": "Better Comments (with embedded languages support)",
     "icon": "icon.png",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
-    "version": "3.0.2",
+    "version": "3.0.3",
     "publisher": "edwinhuish",
     "author": {
         "name": "Edwin Xu"
