@@ -123,7 +123,7 @@ export class Parser {
         }
 
         // Combine custom delimiters and the rest of the comment block matcher
-        let commentMatchString = `(^|[ \\t]+)(${characters.join('|')})([ ]*|[:])+([^*\/][^\\r\\n]*)`;
+        let commentMatchString = `^([ \\t]*)(${characters.join('|')})([ ]*|[:])+([^*\/][^\\r\\n]*)`;
 
         // Use start and end delimiters to find block comments
         let regexStrings = this.blockComments.map(block => `(^|[ \\t])(${block[0]}[\\s])+([\\s\\S]*?)(${block[1]})`);
@@ -142,8 +142,8 @@ export class Parser {
                 // Find the line
                 let line;
                 while (line = commentRegEx.exec(commentBlock)) {
-                    let startPos = activeEditor.document.positionAt(match.index + match[2].length);
-                    let endPos = activeEditor.document.positionAt(match.index + match[2].length + match[3].length);
+                    let startPos = activeEditor.document.positionAt(match.index + match[2].length + line.index + line[1].length);
+                    let endPos = activeEditor.document.positionAt(match.index + match[2].length + line.index + line[0].length);
                     let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
 
                     // Find which custom delimiter was used in order to add it to the collection
