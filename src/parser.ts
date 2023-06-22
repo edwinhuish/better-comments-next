@@ -135,15 +135,16 @@ export class Parser {
 
 
             // Find the multiline comment block
-            let match: any;
+            let match: RegExpExecArray | null;
             while (match = regEx.exec(text)) {
                 let commentBlock = match[3];
 
                 // Find the line
                 let line;
                 while (line = commentRegEx.exec(commentBlock)) {
-                    let startPos = activeEditor.document.positionAt(match.index + match[2].length + line.index + line[1].length);
-                    let endPos = activeEditor.document.positionAt(match.index + match[2].length + line.index + line[0].length);
+                    let startIdx = match.index + match[0].indexOf(line[0]) + line[1].length;
+                    let startPos = activeEditor.document.positionAt(startIdx);
+                    let endPos = activeEditor.document.positionAt(startIdx - line[1].length + line[0].length );
                     let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
 
                     // Find which custom delimiter was used in order to add it to the collection
@@ -186,7 +187,7 @@ export class Parser {
         let commentRegEx = new RegExp(commentMatchString, "igm");
 
         // Find the multiline comment block
-        let match: any;
+        let match: RegExpExecArray | null;
         while (match = regEx.exec(text)) {
             let commentBlock = match[0];
 
