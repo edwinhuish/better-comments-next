@@ -1,13 +1,13 @@
 import * as path from 'path';
 import * as vscode from 'vscode';
 
-import * as json5 from 'json5'
+import * as json5 from 'json5';
 import { TextDecoder } from 'util';
 import { log } from './logger';
 
 export interface LanguageConfig {
-    configPath: string,
-    embeddedLanguages: string[],
+    configPath: string;
+    embeddedLanguages: string[];
 }
 
 export interface CommentConfiguration {
@@ -96,7 +96,7 @@ export class Configuration {
         let commentConfiguration: CommentConfiguration = {
             lineComments: [...lineComments],
             blockComments: [...blockComments.values()]
-        }
+        };
 
         log(`[${languageCode}] Comment Marks: ` + [commentConfiguration.lineComments.join('、'), commentConfiguration.blockComments.map(block => block.join(' ')).join('、')].join('、'));
 
@@ -116,7 +116,7 @@ export class Configuration {
 
         commentConfig = await this.loadLanguageConfigFromFile(language?.configPath);
         if (!commentConfig) {
-            commentConfig = this.getBaseCommentConfigs(languageCode)
+            commentConfig = this.getBaseCommentConfigs(languageCode);
         }
 
         this.commentConfigs.set(languageCode, commentConfig);

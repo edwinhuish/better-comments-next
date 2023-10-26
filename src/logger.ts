@@ -29,4 +29,4 @@ export const log = (...args: any[]) => {
   }
 
   logger.log(...args);
-}
+};
