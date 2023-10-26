@@ -1,7 +1,5 @@
 name: Package and Release
 
-# refer to https://github.com/actions/starter-workflows/blob/main/ci/docker-publish.yml
-
 on:
   push:
     branches:
@@ -14,7 +12,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: docker
+    permissions:
+      contents: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
@@ -22,18 +21,18 @@ jobs:
       - name: Read package.json INFO
         id: info
         uses: jaywcjlove/github-action-package@main
+      
+      - run: echo "version - ${{ steps.info.outputs.version }}"
 
       - name: Check if tag exist
         id: checkTag
         uses: mukunku/tag-exists-action@v1.4.0
-        if: "${{steps.info.outputs.version}}"
+        if: steps.info.outputs.version != ''
         with:
           tag: "v${{steps.info.outputs.version}}"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Node.js
-        if: "${{ steps.checkTag.outputs.exists }}" == "false"
+        if: steps.checkTag.outputs.exists == 'false'
         uses: actions/setup-node@v3
         with:
           node-version: 19
@@ -63,21 +62,19 @@ jobs:
       - name: Generate extension package
         run: pnpm vsce package
 
-      # - name: Publish extension to vscode
-      #   run: pnpm vsce publish
-      #   env:
-      #     VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      - name: Publish extension to vscode
+        run: pnpm vsce publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
-      # - name: Publish extension to Open VSX
-      #   run: pnpm ovsx publish
-      #   env:
-      #     OVSX_PAT: ${{ secrets.OVSX_PAT }}
+      - name: Publish extension to Open VSX
+        run: pnpm ovsx publish
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
 
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
           tag_name: "v${{steps.info.outputs.version}}"
           files: "*.vsix"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
