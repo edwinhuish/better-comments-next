@@ -5,7 +5,7 @@ export class Parser {
   private tags: CommentTag[] = [];
   private singleLinePicker: RegExp | undefined = undefined;
   private blockPickers: RegExp[] = [];
-  private blockLinePicker: RegExp = undefined;
+  private blockLinePicker: RegExp | undefined = undefined;
   private docPicker: RegExp | undefined = undefined;
   private docLinePicker: RegExp | undefined = undefined;
 
