@@ -10,10 +10,11 @@ on:
 
 
 jobs:
-  build:
+  check:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
+    outputs:
+      version: ${{ steps.info.outputs.version }}
+      exists: ${{ steps.checkTag.outputs.exists }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,8 +32,16 @@ jobs:
         with:
           tag: "v${{steps.info.outputs.version}}"
 
+      - run: echo "exists - ${{ steps.checkTag.outputs.exists }}"
+
+  work:
+    runs-on: ubuntu-latest
+    needs: check
+    if: needs.check.outputs.exists == 'false'
+    permissions:
+      contents: write
+    steps:
       - name: Install Node.js
-        if: steps.checkTag.outputs.exists == 'false'
         uses: actions/setup-node@v3
         with:
           node-version: 19
@@ -75,6 +84,6 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: "v${{steps.info.outputs.version}}"
+          tag_name: "v${{needs.check.outputs.version}}"
           files: "*.vsix"
 
