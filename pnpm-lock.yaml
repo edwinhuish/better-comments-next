@@ -37,6 +37,9 @@ devDependencies:
   eslint-plugin-jsdoc:
     specifier: ^46.8.2
     version: 46.8.2(eslint@8.40.0)
+  ovsx:
+    specifier: ^0.8.3
+    version: 0.8.3
   path-browserify:
     specifier: ^1.0.1
     version: 1.0.1
@@ -1031,6 +1034,10 @@ packages:
     engines: {node: '>=6.0'}
     dev: true
 
+  /ci-info@2.0.0:
+    resolution: {integrity: sha512-5tK7EtrZ0N+OLFMthtqOj4fI2Jeb88C4CAZPu25LDVUgXJ0A3Js4PMGqrn0JU1W0Mh1/Z8wZzYPxqUrXeBboCQ==}
+    dev: true
+
   /ci-info@3.9.0:
     resolution: {integrity: sha512-NIxF55hv4nSqQswkAeiOi1r83xy8JldOFDTWiug55KBu9Jnblncd2U6ViHmYgHf01TPZS77NJBhBMKdWj9HQMQ==}
     engines: {node: '>=8'}
@@ -1916,6 +1923,16 @@ packages:
     resolution: {integrity: sha512-36yxDn5H7OFZQla0/jFJmbIKTdZAQHngCedGxiMmpNfEZM0sdEeT+WczLQrjK6D7o2aiyLYDnkw0R3JK0Qv1RQ==}
     dev: true
 
+  /follow-redirects@1.15.3:
+    resolution: {integrity: sha512-1VzOtuEM8pC9SFU1E+8KfTjZyMztRsgEfwQl44z8A25uy13jSzTj6dyK2Df52iV0vgHCfBwLhDWevLn95w5v6Q==}
+    engines: {node: '>=4.0'}
+    peerDependencies:
+      debug: '*'
+    peerDependenciesMeta:
+      debug:
+        optional: true
+    dev: true
+
   /for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
     dependencies:
@@ -2230,6 +2247,13 @@ packages:
   /is-callable@1.2.7:
     resolution: {integrity: sha512-1BC0BVFhS/p0qtw6enp8e+8OD0UrK0oFLztSjNzhcKA3WDuJxxAPXzPuPtKkjEY9UUoEWlX/8fgKeu2S8i9JTA==}
     engines: {node: '>= 0.4'}
+    dev: true
+
+  /is-ci@2.0.0:
+    resolution: {integrity: sha512-YfJT7rkpQB0updsdHLGWrvhBJfcfzNNawYDNIyQXJz0IViGf75O8EBPKSdvw2rF+LGCsX4FZ8tcr3b19LcZq4w==}
+    hasBin: true
+    dependencies:
+      ci-info: 2.0.0
     dev: true
 
   /is-core-module@2.13.1:
@@ -2744,6 +2768,22 @@ packages:
       levn: 0.4.1
       prelude-ls: 1.2.1
       type-check: 0.4.0
+    dev: true
+
+  /ovsx@0.8.3:
+    resolution: {integrity: sha512-LG7wTzy4eYV/KolFeO4AwWPzQSARvCONzd5oHQlNvYOlji2r/zjbdK8pyObZN84uZlk6rQBWrJrAdJfh/SX0Hg==}
+    engines: {node: '>= 14'}
+    hasBin: true
+    dependencies:
+      '@vscode/vsce': 2.21.1
+      commander: 6.2.1
+      follow-redirects: 1.15.3
+      is-ci: 2.0.0
+      leven: 3.1.0
+      semver: 7.5.4
+      tmp: 0.2.1
+    transitivePeerDependencies:
+      - debug
     dev: true
 
   /p-limit@2.3.0:
