@@ -1,5 +1,11 @@
 # Change Log
 
+## [3.0.8] (2023-10-26)
+
+### Bug Fixes
+
+* Change match rule, matches only if preceded by one space.
+
 ## [3.0.7] (2023-06-23)
 
 ### Bug Fixes
