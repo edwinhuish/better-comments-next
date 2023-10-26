@@ -61,7 +61,7 @@ export class Parser {
             this.expression = "(^)+([ \\t]*[ \\t]*)";
         } else {
             // start by finding the delimiter (//, --, #, ') with optional spaces or tabs
-            this.expression = "(" + this.delimiter + ")+( |\t)*";
+            this.expression = "(" + this.delimiter + ")+( |\t)";
         }
 
         // Apply all configurable comment start tags
@@ -144,7 +144,7 @@ export class Parser {
                 while (line = commentRegEx.exec(commentBlock)) {
                     let startIdx = match.index + match[0].indexOf(line[0]) + line[1].length;
                     let startPos = activeEditor.document.positionAt(startIdx);
-                    let endPos = activeEditor.document.positionAt(startIdx - line[1].length + line[0].length );
+                    let endPos = activeEditor.document.positionAt(startIdx - line[1].length + line[0].length);
                     let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
 
                     // Find which custom delimiter was used in order to add it to the collection
