@@ -17,4 +17,4 @@ script:
   - npm test --silent
 
 after_failure:
-- "cat /home/travis/build/aaron-bond/better-comments/npm-debug.log"
+- "cat /home/travis/build/edwinhuish/better-comments/npm-debug.log"

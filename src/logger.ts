@@ -1,4 +1,3 @@
-
 import * as vscode from 'vscode';
 
 export class Logger {
@@ -8,12 +7,10 @@ export class Logger {
    * Creates a new instance of the Parser class
    */
   public constructor() {
-
     this.output = vscode.window.createOutputChannel('Better Comments');
   }
 
   public log(...args: any[]) {
-
     const line = args.map(obj => typeof obj === 'object' ? JSON.stringify(obj) : obj).join(' ');
 
     this.output.appendLine(`Better Comments: ${line}`);
@@ -22,11 +19,10 @@ export class Logger {
 
 let logger: Logger;
 
-
-export const log = (...args: any[]) => {
+export function log(...args: any[]) {
   if (!logger) {
     logger = new Logger();
   }
 
   logger.log(...args);
-};
+}

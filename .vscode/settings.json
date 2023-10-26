@@ -2,10 +2,16 @@
 {
     "files.exclude": {
         "out": false, // set this to true to hide the "out" folder with the compiled JS files
-		"npm-debug.log": true
+        "npm-debug.log": true
     },
     "search.exclude": {
         "out": true // set this to false to include "out" folder in search results
-	},
-	"vsicons.presets.angular": false
+    },
+    "vsicons.presets.angular": false,
+    "[javascript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[typescript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    }
 }
