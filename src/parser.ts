@@ -3,7 +3,11 @@ import { Configuration } from './configuration';
 
 export class Parser {
     private tags: CommentTag[] = [];
-    private expression: string = "";
+    private singleLinePicker: RegExp = undefined;
+    private blockPickers: RegExp[] = [];
+    private blockLinePicker: RegExp = undefined;
+    private docPicker: RegExp = undefined;
+    private docLinePicker: RegExp = undefined;
 
     private delimiter: string = "";
     private blockComments: [string, string][] = [];
@@ -43,7 +47,7 @@ export class Parser {
      * @param languageCode The short code of the current language
      * https://code.visualstudio.com/docs/languages/identifiers
      */
-    public async SetRegex(languageCode: string) {
+    public async InitPickers(languageCode: string) {
         await this.setDelimiter(languageCode);
 
         // if the language isn't supported, we don't need to go any further
@@ -56,18 +60,22 @@ export class Parser {
             characters.push(commentTag.escapedTag);
         }
 
+        // Single expression
         if (this.isPlainText && this.contributions.highlightPlainText) {
             // start by tying the regex to the first character in a line
-            this.expression = "(^)+([ \\t]*[ \\t]*)";
+            this.singleLinePicker = new RegExp(`(^)+([ \\t]*[ \\t]*)(${characters.join("|")})+(.*)`, "igm");
         } else {
             // start by finding the delimiter (//, --, #, ') with optional spaces or tabs
-            this.expression = "(" + this.delimiter + ")+( |\t)";
+            this.singleLinePicker = new RegExp(`(${this.delimiter})+( |\t)(${characters.join("|")})+(.*)`, "gm");
         }
 
-        // Apply all configurable comment start tags
-        this.expression += "(";
-        this.expression += characters.join("|");
-        this.expression += ")+(.*)";
+        // Block expression
+        this.blockPickers = this.blockComments.map(mark => new RegExp(`(^|[ \\t])(${mark[0]}[\\s])+([\\s\\S]*?)(${mark[1]})`, "gm"));
+        this.blockLinePicker = new RegExp(`^([ \\t]*)(${characters.join('|')})([ ]*|[:])+([^*\/][^\\r\\n]*)`, "igm");
+
+        // Doc expression
+        this.docPicker = new RegExp("(^|[ \\t])(\\/\\*\\*)+([\\s\\S]*?)(\\*\\/)", "gm");
+        this.docLinePicker = new RegExp(`(^)+([ \\t]*\\*[ \\t]*)(${characters.join("|")})([ ]*|[:])+([^*/][^\\r\\n]*)`, "igm");
     }
 
     /**
@@ -81,12 +89,8 @@ export class Parser {
 
         let text = activeEditor.document.getText();
 
-        // if it's plain text, we have to do mutliline regex to catch the start of the line with ^
-        let regexFlags = (this.isPlainText) ? "igm" : "ig";
-        let regEx = new RegExp(this.expression, regexFlags);
-
-        let match: any;
-        while (match = regEx.exec(text)) {
+        let match: RegExpExecArray | null;
+        while (match = this.singleLinePicker.exec(text)) {
             let startPos = activeEditor.document.positionAt(match.index);
             let endPos = activeEditor.document.positionAt(match.index + match[0].length);
             let range = { range: new vscode.Range(startPos, endPos) };
@@ -116,33 +120,17 @@ export class Parser {
 
         let text = activeEditor.document.getText();
 
-        // Build up regex matcher for custom delimiter tags
-        let characters: Array<string> = [];
-        for (let commentTag of this.tags) {
-            characters.push(commentTag.escapedTag);
-        }
-
-        // Combine custom delimiters and the rest of the comment block matcher
-        let commentMatchString = `^([ \\t]*)(${characters.join('|')})([ ]*|[:])+([^*\/][^\\r\\n]*)`;
-
-        // Use start and end delimiters to find block comments
-        let regexStrings = this.blockComments.map(block => `(^|[ \\t])(${block[0]}[\\s])+([\\s\\S]*?)(${block[1]})`);
-
-        regexStrings.forEach(regexString => {
-
-            let regEx = new RegExp(regexString, "gm");
-            let commentRegEx = new RegExp(commentMatchString, "igm");
-
+        this.blockPickers.forEach(blockPicker => {
 
             // Find the multiline comment block
-            let match: RegExpExecArray | null;
-            while (match = regEx.exec(text)) {
-                let commentBlock = match[3];
+            let blocks: RegExpExecArray | null;
+            while (blocks = blockPicker.exec(text)) {
+                let comment = blocks[3];
 
                 // Find the line
                 let line;
-                while (line = commentRegEx.exec(commentBlock)) {
-                    let startIdx = match.index + match[0].indexOf(line[0]) + line[1].length;
+                while (line = this.blockLinePicker.exec(comment)) {
+                    let startIdx = blocks.index + blocks[0].indexOf(line[0]) + line[1].length;
                     let startPos = activeEditor.document.positionAt(startIdx);
                     let endPos = activeEditor.document.positionAt(startIdx - line[1].length + line[0].length);
                     let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
@@ -171,31 +159,16 @@ export class Parser {
 
         let text = activeEditor.document.getText();
 
-        // Build up regex matcher for custom delimiter tags
-        let characters: Array<string> = [];
-        for (let commentTag of this.tags) {
-            characters.push(commentTag.escapedTag);
-        }
-
-        // Combine custom delimiters and the rest of the comment block matcher
-        let commentMatchString = "(^)+([ \\t]*\\*[ \\t]*)("; // Highlight after leading *
-        let regEx = /(^|[ \t])(\/\*\*)+([\s\S]*?)(\*\/)/gm; // Find rows of comments matching pattern /** */
-
-        commentMatchString += characters.join("|");
-        commentMatchString += ")([ ]*|[:])+([^*/][^\\r\\n]*)";
-
-        let commentRegEx = new RegExp(commentMatchString, "igm");
-
         // Find the multiline comment block
-        let match: RegExpExecArray | null;
-        while (match = regEx.exec(text)) {
-            let commentBlock = match[0];
+        let blocks: RegExpExecArray | null;
+        while (blocks = this.docPicker.exec(text)) {
+            let commentBlock = blocks[0];
 
             // Find the line
             let line;
-            while (line = commentRegEx.exec(commentBlock)) {
-                let startPos = activeEditor.document.positionAt(match.index + line.index + line[2].length);
-                let endPos = activeEditor.document.positionAt(match.index + line.index + line[0].length);
+            while (line = this.docLinePicker.exec(commentBlock)) {
+                let startPos = activeEditor.document.positionAt(blocks.index + line.index + line[2].length);
+                let endPos = activeEditor.document.positionAt(blocks.index + line.index + line[0].length);
                 let range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
 
                 // Find which custom delimiter was used in order to add it to the collection
