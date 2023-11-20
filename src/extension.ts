@@ -74,7 +74,8 @@ export async function activate(context: vscode.ExtensionContext) {
   // * IMPORTANT:
   // * To avoid calling update too often,
   // * set a timer for 100ms to wait before updating decorations
-  let timeout: NodeJS.Timer;
+  // eslint-disable-next-line vars-on-top, no-var
+  var timeout: NodeJS.Timer;
   function triggerUpdateDecorations() {
     if (timeout) {
       clearTimeout(timeout);
