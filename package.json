@@ -39,10 +39,11 @@
     "scripts": {
         "package": "vsce package",
         "publish": "vsce publish",
-        "vscode:prepublish": "pnpm run compile && pnpm run package-web",
+        "vscode:prepublish": "npm run compile && npm run package-web",
         "compile": "tsc -p .",
         "watch": "tsc -watch -p .",
-        "lint": "eslint --cache --max-warnings 0 \"{src,build}/**/*.{ts,js}\"",
+        "type-check": "tsc --noEmit",
+        "lint": "npm run type-check && eslint --cache --max-warnings 0 \"{src,build}/**/*.{ts,js}\"",
         "compile-web": "webpack --config ./build/web-extension.webpack.config.js",
         "watch-web": "webpack --watch --config ./build/web-extension.webpack.config.js",
         "package-web": "webpack --mode production --devtool hidden-source-map --config ./build/web-extension.webpack.config.js"
