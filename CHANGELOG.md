@@ -1,6 +1,14 @@
 # Change Log
 
-## [3.0.8] (2023-11-20)
+## [3.0.10] (2023-11-29)
+
+### Bug Fixes
+
+* Fix match regex expression.
+
+# Change Log
+
+## [3.0.9] (2023-11-20)
 
 ### Bug Fixes
 

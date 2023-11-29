@@ -62,18 +62,18 @@ export class Parser {
     // Single expression
     if (this.isPlainText && this.contributions.highlightPlainText) {
       // start by tying the regex to the first character in a line
-      this.singleLinePicker = new RegExp(`(^)+([ \\t]*[ \\t]*)(${characters.join('|')})+(.*)`, 'igm');
+      this.singleLinePicker = new RegExp(`(^)([ \\t]*)(${characters.join('|')})+(.*)`, 'igm');
     } else {
       // start by finding the delimiter (//, --, #, ') with optional spaces or tabs
-      this.singleLinePicker = new RegExp(`(${this.delimiter})+([ |\t]?)(${characters.join('|')})+(.*)`, 'gm');
+      this.singleLinePicker = new RegExp(`(^|[ \t]+)(${this.delimiter})+[ |\t]?(${characters.join('|')})+(.*)`, 'gm');
     }
 
     // Block expression
-    this.blockPickers = this.blockComments.map(mark => new RegExp(`(^|[ \\t]*)(${mark[0]}[\\s])+([\\s\\S]*?)(${mark[1]})`, 'gm'));
+    this.blockPickers = this.blockComments.map(mark => new RegExp(`(^|[ \\t]+)(${mark[0]}[\\s])+([\\s\\S]*?)(${mark[1]})`, 'gm'));
     this.blockLinePicker = new RegExp(`([ \\t]*)(${characters.join('|')})([ ]*|[:])+([^*\/][^\\r\\n]*)`, 'igm');
 
     // Doc expression
-    this.docPicker = /(^|[ \t]*)(\/\*\*)+([\s\S]*?)(\*\/)/gm;
+    this.docPicker = /(^|[ \t]+)(\/\*\*)+([\s\S]*?)(\*\/)/gm;
     this.docLinePicker = new RegExp(`(^)+([ \\t]*\\*[ \\t]?)(${characters.join('|')})([ ]*|[:])+([^*/][^\\r\\n]*)`, 'igm');
   }
 
