@@ -1,6 +1,6 @@
 {
     "name": "better-comments-next",
-    "displayName": "Better Comments (with embedded languages support)",
+    "displayName": "Better Comments Next",
     "icon": "icon.png",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
     "version": "3.0.11",
@@ -37,8 +37,6 @@
     "browser": "./out/web/extension.js",
     "main": "./out/extension",
     "scripts": {
-        "package": "vsce package",
-        "publish": "vsce publish",
         "vscode:prepublish": "npm run compile && npm run package-web",
         "compile": "tsc -p .",
         "watch": "tsc -watch -p .",
@@ -129,6 +127,8 @@
         "eslint": "^8.40.0",
         "eslint-gitignore": "^0.1.0",
         "eslint-plugin-jsdoc": "^46.8.2",
+        "husky": "^8.0.3",
+        "lint-staged": "^15.1.0",
         "ovsx": "^0.8.3",
         "path-browserify": "^1.0.1",
         "process": "^0.11.10",

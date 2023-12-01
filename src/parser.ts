@@ -149,6 +149,7 @@ export class Parser {
 
         // Find the line
         let line: RegExpExecArray | null;
+        //
         while (line = linePicker.exec(comment)) {
           // Find which custom delimiter was used in order to add it to the collection
           const matchString = line[3];
