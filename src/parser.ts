@@ -65,7 +65,7 @@ export class Parser {
       this.singleLinePicker = new RegExp(`(^)([ \\t]*)(${characters.join('|')})+(.*)`, 'igm');
     } else {
       // start by finding the delimiter (//, --, #, ') with optional spaces or tabs
-      this.singleLinePicker = new RegExp(`(^|[ \t]+)(${this.delimiter})+[ |\t]?(${characters.join('|')})+(.*)`, 'gm');
+      this.singleLinePicker = new RegExp(`(^|[ \t]+)(${this.delimiter})+[ |\t](${characters.join('|')})+(.*)`, 'gm');
     }
 
     // Block expression
