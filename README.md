@@ -1,4 +1,4 @@
-# Better Comments (with embedded languages support)
+# Better Comments Next
 
 The Better Comments extension will help you create more human-friendly comments in your code.  
 With this extension, you will be able to categorise your annotations into:
@@ -77,6 +77,12 @@ The default 5 can be modified to change the colors, and more can be added.
   }
 ]
 ```
+
+`better-comments.tagsLight`  
+Overwrite tags options for light themes. 
+
+`better-comments.tagsDark`  
+Overwrite tags options for dark themes. 
 
 ## Supported Languages
 

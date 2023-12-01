@@ -3,7 +3,7 @@
     "displayName": "Better Comments Next",
     "icon": "icon.png",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
-    "version": "3.0.11",
+    "version": "3.0.12",
     "publisher": "edwinhuish",
     "author": {
         "name": "Edwin Xu"
@@ -48,7 +48,7 @@
     },
     "contributes": {
         "configuration": {
-            "title": "Better Comments configuration",
+            "title": "Better Comments Next",
             "properties": {
                 "better-comments.multilineComments": {
                     "type": "boolean",
@@ -63,6 +63,36 @@
                 "better-comments.tags": {
                     "type": "array",
                     "description": "Tags which are used to color the comments. Changes require a restart of VS Code to take effect",
+                    "items": {
+                        "type": "object",
+                        "title": "tag item",
+                        "properties": {
+                            "tag": {
+                                "type": "string",
+                                "description": "Name of tag"
+                            },
+                            "color": {
+                                "type": "string",
+                                "description": "Font color, eg: #FF2D00"
+                            },
+                            "strikethrough": {
+                                "type": "boolean"
+                            },
+                            "underline": {
+                                "type": "boolean"
+                            },
+                            "backgroundColor": {
+                                "type": "string",
+                                "description": "Background color"
+                            },
+                            "bold": {
+                                "type": "boolean"
+                            },
+                            "italic": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
                     "default": [
                         {
                             "tag": "!",
@@ -110,6 +140,76 @@
                             "italic": false
                         }
                     ]
+                },
+                "better-comments.tagsLight": {
+                    "type": "array",
+                    "description": "Overwrite tags options for light themes",
+                    "items": {
+                        "type": "object",
+                        "title": "tag item",
+                        "properties": {
+                            "tag": {
+                                "type": "string",
+                                "description": "Name of tag"
+                            },
+                            "color": {
+                                "type": "string",
+                                "description": "Font color, eg: #FF2D00"
+                            },
+                            "strikethrough": {
+                                "type": "boolean"
+                            },
+                            "underline": {
+                                "type": "boolean"
+                            },
+                            "backgroundColor": {
+                                "type": "string",
+                                "description": "Background color"
+                            },
+                            "bold": {
+                                "type": "boolean"
+                            },
+                            "italic": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "default": []
+                },
+                "better-comments.tagsDark": {
+                    "type": "array",
+                    "description": "Overwrite tags options for dark themes",
+                    "items": {
+                        "type": "object",
+                        "title": "tag item",
+                        "properties": {
+                            "tag": {
+                                "type": "string",
+                                "description": "Name of tag"
+                            },
+                            "color": {
+                                "type": "string",
+                                "description": "Font color, eg: #FF2D00"
+                            },
+                            "strikethrough": {
+                                "type": "boolean"
+                            },
+                            "underline": {
+                                "type": "boolean"
+                            },
+                            "backgroundColor": {
+                                "type": "string",
+                                "description": "Background color"
+                            },
+                            "bold": {
+                                "type": "boolean"
+                            },
+                            "italic": {
+                                "type": "boolean"
+                            }
+                        }
+                    },
+                    "default": []
                 }
             }
         }

@@ -68,6 +68,11 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }, null, context.subscriptions);
 
+  vscode.window.onDidChangeActiveColorTheme(() => {
+    // Trigger update to set decorations for newly active file
+    triggerUpdateDecorations();
+  }, null, context.subscriptions);
+
   // * IMPORTANT:
   // * To avoid calling update too often,
   // * set a timer for 100ms to wait before updating decorations

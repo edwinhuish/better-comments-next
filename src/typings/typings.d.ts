@@ -5,19 +5,23 @@ interface CommentTag {
     ranges: Array<any>;
 }
 
+interface ContributionsTag {
+    tag: string;
+    color: string;
+    strikethrough: boolean;
+    underline: boolean;
+    bold: boolean;
+    italic: boolean;
+    backgroundColor: string;
+}
+
 interface Contributions {
     multilineComments: boolean;
     useJSDocStyle: boolean;
     highlightPlainText: boolean;
-    tags: [{
-        tag: string;
-        color: string;
-        strikethrough: boolean;
-        underline: boolean;
-        bold: boolean;
-        italic: boolean;
-        backgroundColor: string;
-    }];
+    tags: ContributionsTag[];
+    tagsLight: ContributionsTag[];
+    tagsDark: ContributionsTag[];
 }
 
 interface CommentConfig {

@@ -74,7 +74,7 @@ export class Parser {
       this.lineComments = {
         marks: configs.lineComments,
         // start by finding the delimiter (//, --, #, ') with optional spaces or tabs
-        picker: new RegExp(`(^|[ \t]+)(${escapedMarks})[ |\t](${escapedTags.join('|')})(.*)`, 'gm'),
+        picker: new RegExp(`(^|[ \\t]+)(${escapedMarks})[ \\t](${escapedTags.join('|')})(.*)`, 'igm'),
       };
     }
 
@@ -189,7 +189,8 @@ export class Parser {
    */
   private initTagsConfig(): void {
     const items = this.contributions.tags;
-    for (const item of items) {
+
+    const parseOption = (item: ContributionsTag) => {
       const options: vscode.DecorationRenderOptions = { color: item.color, backgroundColor: item.backgroundColor };
 
       // ? the textDecoration is initialised to empty so we can concat a preceeding space on it
@@ -209,6 +210,22 @@ export class Parser {
 
       if (item.italic) {
         options.fontStyle = 'italic';
+      }
+
+      return options;
+    };
+
+    for (const item of items) {
+      const options = parseOption(item);
+
+      const tagLight = this.contributions.tagsLight.find(t => t.tag === item.tag);
+      if (tagLight) {
+        options.light = parseOption(tagLight);
+      }
+
+      const tagDark = this.contributions.tagsDark.find(t => t.tag === item.tag);
+      if (tagDark) {
+        options.dark = parseOption(tagDark);
       }
 
       this.tags.push({
