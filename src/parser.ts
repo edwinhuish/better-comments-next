@@ -1,20 +1,26 @@
 import * as vscode from 'vscode';
 import type { Configuration } from './configuration';
 
+interface BlockComment {
+  blockPicker: RegExp;
+  linePicker: RegExp;
+  docLinePicker: RegExp;
+  linePrefix: string;
+  marks: [string, string];
+}
+
+interface LineComments {
+  picker: RegExp | undefined;
+  marks: string[];
+}
+
 export class Parser {
   private tags: CommentTag[] = [];
-  private singleLinePicker: RegExp | undefined = undefined;
-  private blockPickers: RegExp[] = [];
-  private blockLinePicker: RegExp | undefined = undefined;
-  private docPicker: RegExp | undefined = undefined;
-  private docLinePicker: RegExp | undefined = undefined;
-
-  private delimiter = '';
-  private blockComments: [string, string][] = [];
+  private lineComments: LineComments = { picker: undefined, marks: [] };
+  private blockComments: BlockComment[] = [];
 
   private highlightSingleLineComments = true;
   private highlightMultilineComments = false;
-  private highlightJSDoc = false;
 
   // * this will allow plaintext files to show comment highlighting if switched on
   private isPlainText = false;
@@ -38,7 +44,7 @@ export class Parser {
   public constructor(config: Configuration) {
     this.configuration = config;
 
-    this.setTags();
+    this.initTagsConfig();
   }
 
   /**
@@ -47,34 +53,45 @@ export class Parser {
    * https://code.visualstudio.com/docs/languages/identifiers
    */
   public async InitPickers(languageCode: string) {
-    await this.setDelimiter(languageCode);
+    const configs = await this.initConfig(languageCode);
 
     // if the language isn't supported, we don't need to go any further
     if (!this.supportedLanguage) {
       return;
     }
 
-    const characters: Array<string> = [];
-    for (const commentTag of this.tags) {
-      characters.push(commentTag.escapedTag);
-    }
+    const escapedTags = this.tags.map(tag => tag.escapedTag);
 
     // Single expression
     if (this.isPlainText && this.contributions.highlightPlainText) {
-      // start by tying the regex to the first character in a line
-      this.singleLinePicker = new RegExp(`(^)([ \\t]*)(${characters.join('|')})+(.*)`, 'igm');
+      this.lineComments = {
+        marks: [],
+        // start by tying the regex to the first character in a line
+        picker: new RegExp(`(^)([ \\t]*)(${escapedTags.join('|')})+(.*)`, 'igm'),
+      };
     } else {
-      // start by finding the delimiter (//, --, #, ') with optional spaces or tabs
-      this.singleLinePicker = new RegExp(`(^|[ \t]+)(${this.delimiter})+[ |\t](${characters.join('|')})+(.*)`, 'gm');
+      const escapedMarks = configs.lineComments.map(s => `${this.escapeRegExp(s)}+`).join('|');
+      this.lineComments = {
+        marks: configs.lineComments,
+        // start by finding the delimiter (//, --, #, ') with optional spaces or tabs
+        picker: new RegExp(`(^|[ \t]+)(${escapedMarks})[ |\t](${escapedTags.join('|')})(.*)`, 'gm'),
+      };
     }
 
     // Block expression
-    this.blockPickers = this.blockComments.map(mark => new RegExp(`(^|[ \\t]+)(${mark[0]}[\\s])+([\\s\\S]*?)(${mark[1]})`, 'gm'));
-    this.blockLinePicker = new RegExp(`([ \\t]*)(${characters.join('|')})([ ]*|[:])+([^*\/][^\\r\\n]*)`, 'igm');
-
-    // Doc expression
-    this.docPicker = /(^|[ \t]+)(\/\*\*)+([\s\S]*?)(\*\/)/gm;
-    this.docLinePicker = new RegExp(`(^)+([ \\t]*\\*[ \\t]?)(${characters.join('|')})([ ]*|[:])+([^*/][^\\r\\n]*)`, 'igm');
+    this.blockComments = configs.blockComments.map((marks) => {
+      const begin = this.escapeRegExp(marks[0]);
+      const end = this.escapeRegExp(marks[1]);
+      const linePrefix = marks[0].slice(-1);
+      const prefix = this.escapeRegExp(linePrefix);
+      return {
+        blockPicker: new RegExp(`(^|[ \\t]+)(${begin}+)([^]*?)(${end})`, 'gm'),
+        linePicker: new RegExp(`([ \\t]*)((${escapedTags.join('|')})([ \\t]*|[:])+[^^\\r^\\n]*)`, 'igm'),
+        docLinePicker: new RegExp(`([ \\t]*${prefix}[ \\t])((${escapedTags.join('|')})([ \\t]*|[:])+[^^\\r^\\n]*)`, 'igm'),
+        linePrefix,
+        marks,
+      } as BlockComment;
+    });
   }
 
   /**
@@ -90,8 +107,7 @@ export class Parser {
     const text = activeEditor.document.getText();
 
     let match: RegExpExecArray | null | undefined;
-    // while (match = this.singleLinePicker.exec(text)) {
-    while (match = this.singleLinePicker?.exec(text)) {
+    while (match = this.lineComments.picker?.exec(text)) {
       const startPos = activeEditor.document.positionAt(match.index);
       const endPos = activeEditor.document.positionAt(match.index + match[0].length);
       const range = { range: new vscode.Range(startPos, endPos) };
@@ -122,22 +138,26 @@ export class Parser {
 
     const text = activeEditor.document.getText();
 
-    this.blockPickers.forEach((blockPicker) => {
+    this.blockComments.forEach((c) => {
       // Find the multiline comment block
-      let blocks: RegExpExecArray | null;
-      while (blocks = blockPicker.exec(text)) {
-        const comment = blocks[3];
+      let block: RegExpExecArray | null;
+      while (block = c.blockPicker.exec(text)) {
+        const comment = block[3];
+        const isJsDoc = block[2] === '/**';
+
+        const linePicker = isJsDoc ? c.docLinePicker : c.linePicker;
 
         // Find the line
-        let line;
-        while (line = this.blockLinePicker?.exec(comment)) {
-          const startIdx = blocks.index + blocks[0].indexOf(line[0]) + line[1].length;
+        let line: RegExpExecArray | null;
+        while (line = linePicker.exec(comment)) {
+          // Find which custom delimiter was used in order to add it to the collection
+          const matchString = line[3];
+
+          const startIdx = block.index + block[1].length + block[2].length + line.index + line[1].length;
           const startPos = activeEditor.document.positionAt(startIdx);
-          const endPos = activeEditor.document.positionAt(startIdx - line[1].length + line[0].length);
+          const endPos = activeEditor.document.positionAt(startIdx + line[2].length);
           const range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
 
-          // Find which custom delimiter was used in order to add it to the collection
-          const matchString = line[2];
           const matchTag = this.tags.find(item => item.tag.toLowerCase() === matchString.toLowerCase());
 
           if (matchTag) {
@@ -146,41 +166,6 @@ export class Parser {
         }
       }
     });
-  }
-
-  /**
-   * Finds all multiline comments starting with "*"
-   * @param activeEditor The active text editor containing the code document
-   */
-  public FindJSDocComments(activeEditor: vscode.TextEditor): void {
-    // If highlight multiline is off in package.json or doesn't apply to his language, return
-    if (!this.highlightMultilineComments && !this.highlightJSDoc) {
-      return;
-    }
-
-    const text = activeEditor.document.getText();
-
-    // Find the multiline comment block
-    let blocks: RegExpExecArray | null | undefined;
-    while (blocks = this.docPicker?.exec(text)) {
-      const commentBlock = blocks[0];
-
-      // Find the line
-      let line: RegExpExecArray | null | undefined;
-      while (line = this.docLinePicker?.exec(commentBlock)) {
-        const startPos = activeEditor.document.positionAt(blocks.index + line.index + line[2].length);
-        const endPos = activeEditor.document.positionAt(blocks.index + line.index + line[0].length);
-        const range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
-
-        // Find which custom delimiter was used in order to add it to the collection
-        const matchString = line[3];
-        const matchTag = this.tags.find(item => item.tag.toLowerCase() === matchString.toLowerCase());
-
-        if (matchTag) {
-          matchTag.ranges.push(range);
-        }
-      }
-    }
   }
 
   /**
@@ -199,49 +184,9 @@ export class Parser {
   // #region  Private Methods
 
   /**
-   * Sets the comment delimiter [//, #, --, '] of a given language
-   * @param languageCode The short code of the current language
-   * https://code.visualstudio.com/docs/languages/identifiers
-   */
-  private async setDelimiter(languageCode: string): Promise<void> {
-    this.supportedLanguage = false;
-    this.ignoreFirstLine = false;
-    this.isPlainText = false;
-
-    const configs = await this.configuration.GetCommentConfiguration(languageCode);
-    if (configs.lineComments.length > 0 || configs.blockComments.length > 0) {
-      this.setCommentFormat(configs.lineComments, configs.blockComments);
-      this.supportedLanguage = true;
-    }
-
-    switch (languageCode) {
-      case 'apex':
-      case 'javascript':
-      case 'javascriptreact':
-      case 'typescript':
-      case 'typescriptreact':
-        this.highlightJSDoc = true;
-        break;
-
-      case 'elixir':
-      case 'python':
-      case 'tcl':
-        this.ignoreFirstLine = true;
-        break;
-
-      case 'plaintext':
-        this.isPlainText = true;
-
-        // If highlight plaintext is enabled, this is a supported language
-        this.supportedLanguage = this.contributions.highlightPlainText;
-        break;
-    }
-  }
-
-  /**
    * Sets the highlighting tags up for use by the parser
    */
-  private setTags(): void {
+  private initTagsConfig(): void {
     const items = this.contributions.tags;
     for (const item of items) {
       const options: vscode.DecorationRenderOptions = { color: item.color, backgroundColor: item.backgroundColor };
@@ -265,10 +210,9 @@ export class Parser {
         options.fontStyle = 'italic';
       }
 
-      const escapedSequence = item.tag.replace(/([()[{*+.$^\\|?])/g, '\\$1');
       this.tags.push({
         tag: item.tag,
-        escapedTag: escapedSequence.replace(/\//gi, '\\/'), // ! hardcoded to escape slashes
+        escapedTag: this.escapeRegExp(item.tag),
         ranges: [],
         decoration: vscode.window.createTextEditorDecorationType(options),
       });
@@ -281,35 +225,44 @@ export class Parser {
    * @returns {string} The escaped string
    */
   private escapeRegExp(input: string): string {
-    return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+    return input.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'); // $& means the whole matched string
   }
 
   /**
-   * Set up the comment format for single and multiline highlighting
-   * @param singleLine The single line comment delimiter. If NULL, single line is not supported
-   * @param start The start delimiter for block comments
-   * @param end The end delimiter for block comments
+   * Init configs
+   * @param languageCode The short code of the current language
+   * https://code.visualstudio.com/docs/languages/identifiers
    */
-  private setCommentFormat(
-    singleLine: string[],
-    blocks: [string, string][]): void {
-    this.delimiter = '';
-    this.blockComments = [];
+  private async initConfig(languageCode: string) {
+    this.supportedLanguage = false;
+    this.ignoreFirstLine = false;
+    this.isPlainText = false;
 
-    // If no single line comment delimiter is passed, single line comments are not supported
-    if (singleLine.length > 0) {
-      const delimiters = singleLine
-        .map(s => this.escapeRegExp(s))
-        .join('|');
-      this.delimiter = delimiters;
-    } else {
-      this.highlightSingleLineComments = false;
+    const configs = await this.configuration.GetCommentConfiguration(languageCode);
+
+    if (configs.lineComments.length > 0 || configs.blockComments.length > 0) {
+      this.supportedLanguage = true;
     }
 
-    if (blocks.length > 0) {
-      this.blockComments = blocks.map(block => [this.escapeRegExp(block[0]), this.escapeRegExp(block[1])]);
-      this.highlightMultilineComments = this.contributions.multilineComments;
+    this.highlightSingleLineComments = configs.lineComments.length > 0;
+    this.highlightMultilineComments = configs.blockComments.length > 0 && this.contributions.multilineComments;
+
+    switch (languageCode) {
+      case 'elixir':
+      case 'python':
+      case 'tcl':
+        this.ignoreFirstLine = true;
+        break;
+
+      case 'plaintext':
+        this.isPlainText = true;
+
+        // If highlight plaintext is enabled, this is a supported language
+        this.supportedLanguage = this.contributions.highlightPlainText;
+        break;
     }
+
+    return configs;
   }
 
   // #endregion

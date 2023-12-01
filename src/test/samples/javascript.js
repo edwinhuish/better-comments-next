@@ -15,13 +15,13 @@
  * ?  Questions
  * * Highlights
  */
-var myFunction = function(myParam) {
+const myFunction = function(myParam) {
     return myParam;
-}
+};
 
 // ! Need more content here
 
-//// removed code
+// // removed code
 
 // * End of the file
 
@@ -37,13 +37,13 @@ var myFunction = function(myParam) {
  * ?  Questions
  * * Highlights
  */
-var myFunction = function(myParam) {
+const myFunction = function(myParam) {
     return myParam;
-}
+};
 
 // ! Need more content here
 
-//// removed code
+// // removed code
 
 // * End of the file
 
@@ -59,13 +59,13 @@ var myFunction = function(myParam) {
  * ?  Questions
  * * Highlights
  */
-var myFunction = function(myParam) {
+const myFunction = function(myParam) {
     return myParam;
-}
+};
 
 // ! Need more content here
 
-//// removed code
+// // removed code
 
 // * End of the file
 
@@ -81,13 +81,13 @@ var myFunction = function(myParam) {
  * ?  Questions
  * * Highlights
  */
-var myFunction = function(myParam) {
+const myFunction = function(myParam) {
     return myParam;
-}
+};
 
 // ! Need more content here
 
-//// removed code
+// // removed code
 
 // * End of the file
 
@@ -103,13 +103,13 @@ var myFunction = function(myParam) {
  * ?  Questions
  * * Highlights
  */
-var myFunction = function(myParam) {
+const myFunction = function(myParam) {
     return myParam;
-}
+};
 
 // ! Need more content here
 
-//// removed code
+// // removed code
 
 // * End of the file
 
@@ -125,12 +125,12 @@ var myFunction = function(myParam) {
  * ?  Questions
  * * Highlights
  */
-var myFunction = function(myParam) {
+const myFunction = function(myParam) {
     return myParam;
-}
+};
 
 // ! Need more content here
 
-//// removed code
+// // removed code
 
 // * End of the file
