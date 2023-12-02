@@ -86,8 +86,8 @@ export class Parser {
       const prefix = this.escapeRegExp(linePrefix);
       return {
         blockPicker: new RegExp(`(^|[ \\t]+)(${begin}+)([^]*?)(${end})`, 'gm'),
-        linePicker: new RegExp(`([ \\t]*)((${escapedTags.join('|')})([ \\t]*|[:])+[^^\\r^\\n]*)`, 'igm'),
-        docLinePicker: new RegExp(`([ \\t]*${prefix}[ \\t])((${escapedTags.join('|')})([ \\t]*|[:])+[^^\\r^\\n]*)`, 'igm'),
+        linePicker: new RegExp(`(^[ \\t]*)((${escapedTags.join('|')})([ \\t]*|[:])+[^^\\r^\\n]*)`, 'igm'),
+        docLinePicker: new RegExp(`(^[ \\t]*${prefix}[ \\t])((${escapedTags.join('|')})([ \\t]*|[:])+[^^\\r^\\n]*)`, 'igm'),
         linePrefix,
         marks,
       } as BlockComment;
