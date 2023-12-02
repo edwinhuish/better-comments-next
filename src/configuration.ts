@@ -1,8 +1,7 @@
-import * as path from 'path';
+import { join as joinPath } from 'path';
 import { TextDecoder } from 'util';
 import * as vscode from 'vscode';
-
-import * as json5 from 'json5';
+import { parse as parseJson5 } from 'json5';
 import { log } from './logger';
 
 export interface LanguageConfig {
@@ -10,12 +9,12 @@ export interface LanguageConfig {
   embeddedLanguages: string[];
 }
 
-export interface CommentConfiguration {
+export interface AvailableCommentRules {
   lineComments: string[];
   blockComments: [string, string][];
 }
 export class Configuration {
-  private readonly commentConfigs = new Map<string, CommentConfig | undefined>();
+  private readonly commentRules = new Map<string, vscode.CommentRule>();
   private readonly languageConfigs = new Map<string, LanguageConfig>();
 
   /**
@@ -31,7 +30,7 @@ export class Configuration {
    */
   public UpdateLanguagesDefinitions() {
     this.languageConfigs.clear();
-    this.commentConfigs.clear();
+    this.commentRules.clear();
 
     for (const extension of vscode.extensions.all) {
       const packageJSON = extension.packageJSON;
@@ -51,7 +50,7 @@ export class Configuration {
           }
         }
 
-        const configPath = path.join(extension.extensionPath, language.configuration);
+        const configPath = joinPath(extension.extensionPath, language.configuration);
 
         this.languageConfigs.set(language.id, {
           configPath,
@@ -66,8 +65,8 @@ export class Configuration {
    * @param languageCode
    * @returns
    */
-  public async GetCommentConfiguration(languageCode: string): Promise<CommentConfiguration> {
-    await this.loadLanguageConfigs(languageCode);
+  public async GetAvailableCommentRules(languageCode: string): Promise<AvailableCommentRules> {
+    await this.loadCommentRules(languageCode);
 
     const lineComments = new Set<string>();
     const blockComments = new Map<string, [string, string]>();
@@ -75,55 +74,55 @@ export class Configuration {
     const addLineComment = (line?: string) => line && lineComments.add(line);
     const addBlockComment = (block?: [string, string]) => block && blockComments.set(`${block[0]}${block[1]}`, block);
 
-    const commentConfig = this.commentConfigs.get(languageCode);
+    const commentRule = this.commentRules.get(languageCode);
 
-    addLineComment(commentConfig?.lineComment);
-    addBlockComment(commentConfig?.blockComment);
+    addLineComment(commentRule?.lineComment);
+    addBlockComment(commentRule?.blockComment);
 
     const embeddedLanguages = this.languageConfigs.get(languageCode)?.embeddedLanguages;
 
-    if (embeddedLanguages) {
-      for (const embeddedLanguageCode of embeddedLanguages) {
-        const embeddedLanguageConfig = this.commentConfigs.get(embeddedLanguageCode);
-        addLineComment(embeddedLanguageConfig?.lineComment);
-        addBlockComment(embeddedLanguageConfig?.blockComment);
-      }
+    for (const embeddedLanguageCode of (embeddedLanguages || [])) {
+      const embeddedCommentRule = this.commentRules.get(embeddedLanguageCode);
+      addLineComment(embeddedCommentRule?.lineComment);
+      addBlockComment(embeddedCommentRule?.blockComment);
     }
 
-    const commentConfiguration: CommentConfiguration = {
+    const commentRules: AvailableCommentRules = {
       lineComments: [...lineComments],
       blockComments: [...blockComments.values()],
     };
 
-    log(`[${languageCode}] Comment Marks: ${[commentConfiguration.lineComments.join('、'), commentConfiguration.blockComments.map(block => block.join(' ')).join('、')].join('、')}`);
+    log(`[${languageCode}] Comment Marks: ${[commentRules.lineComments.join('、'), commentRules.blockComments.map(block => block.join(' ')).join('、')].join('、')}`);
 
-    return commentConfiguration;
+    return commentRules;
   }
 
-  private async loadLanguageConfigs(languageCode: string) {
-    if (this.commentConfigs.has(languageCode)) {
+  private async loadCommentRules(languageCode: string) {
+    if (this.commentRules.has(languageCode)) {
       return;
     }
 
     const language = this.languageConfigs.get(languageCode);
 
-    let commentConfig;
+    let commentRule;
 
-    commentConfig = await this.loadLanguageConfigFromFile(language?.configPath);
-    if (!commentConfig) {
-      commentConfig = this.getBaseCommentConfigs(languageCode);
+    commentRule = await this.loadCommentRuleFromFile(language?.configPath);
+    if (!commentRule) {
+      commentRule = this.getBaseCommentRule(languageCode);
     }
 
-    this.commentConfigs.set(languageCode, commentConfig);
+    if (commentRule) {
+      this.commentRules.set(languageCode, commentRule);
+    }
 
     for (const embeddedLanguageCode of (language?.embeddedLanguages || [])) {
-      await this.loadLanguageConfigs(embeddedLanguageCode);
+      await this.loadCommentRules(embeddedLanguageCode);
     }
   }
 
-  private async loadLanguageConfigFromFile(filepath?: string): Promise<CommentConfig | undefined> {
+  private async loadCommentRuleFromFile(filepath?: string): Promise<vscode.CommentRule | undefined> {
     if (!filepath) {
-      return;
+      return undefined;
     }
     try {
       // Get the filepath from the map
@@ -132,7 +131,7 @@ export class Configuration {
       const content = new TextDecoder().decode(rawContent);
 
       // use json5, because the config can contains comments
-      const config = json5.parse(content);
+      const config = parseJson5(content);
 
       return config.comments;
     } catch (error) {
@@ -141,7 +140,7 @@ export class Configuration {
     }
   }
 
-  private getBaseCommentConfigs(languageCode: string): CommentConfig | undefined {
+  private getBaseCommentRule(languageCode: string): vscode.CommentRule | undefined {
     switch (languageCode) {
       case 'asciidoc':
         return ({ lineComment: '//', blockComment: ['////', '////'] });

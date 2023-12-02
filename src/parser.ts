@@ -1,7 +1,33 @@
 import * as vscode from 'vscode';
 import type { Configuration } from './configuration';
 
-interface BlockComment {
+export interface TagOption {
+  tag: string;
+  color: string;
+  strikethrough: boolean;
+  underline: boolean;
+  bold: boolean;
+  italic: boolean;
+  backgroundColor: string;
+}
+
+export interface Contributions {
+  multilineComments: boolean;
+  useJSDocStyle: boolean;
+  highlightPlainText: boolean;
+  tags: TagOption[];
+  tagsLight: TagOption[];
+  tagsDark: TagOption[];
+}
+
+export interface CommentTag {
+  tag: string;
+  escapedTag: string;
+  decoration: vscode.TextEditorDecorationType;
+  decorationOptions: vscode.DecorationOptions[];
+}
+
+export interface BlockComment {
   blockPicker: RegExp;
   linePicker: RegExp;
   docLinePicker: RegExp;
@@ -9,7 +35,7 @@ interface BlockComment {
   marks: [string, string];
 }
 
-interface LineComments {
+export interface LineComments {
   picker: RegExp | undefined;
   marks: string[];
 }
@@ -53,7 +79,7 @@ export class Parser {
    * https://code.visualstudio.com/docs/languages/identifiers
    */
   public async InitPickers(languageCode: string) {
-    const configs = await this.initConfig(languageCode);
+    const collect = await this.getAvailableCommentRules(languageCode);
 
     // if the language isn't supported, we don't need to go any further
     if (!this.supportedLanguage) {
@@ -70,16 +96,16 @@ export class Parser {
         picker: new RegExp(`(^)([ \\t]*)(${escapedTags.join('|')})+(.*)`, 'igm'),
       };
     } else {
-      const escapedMarks = configs.lineComments.map(s => `${this.escapeRegExp(s)}+`).join('|');
+      const escapedMarks = collect.lineComments.map(s => `${this.escapeRegExp(s)}+`).join('|');
       this.lineComments = {
-        marks: configs.lineComments,
+        marks: collect.lineComments,
         // start by finding the delimiter (//, --, #, ') with optional spaces or tabs
         picker: new RegExp(`(^|[ \\t]+)(${escapedMarks})[ \\t](${escapedTags.join('|')})(.*)`, 'igm'),
       };
     }
 
     // Block expression
-    this.blockComments = configs.blockComments.map((marks) => {
+    this.blockComments = collect.blockComments.map((marks) => {
       const begin = this.escapeRegExp(marks[0]);
       const end = this.escapeRegExp(marks[1]);
       const linePrefix = marks[0].slice(-1);
@@ -110,7 +136,7 @@ export class Parser {
     while (match = this.lineComments.picker?.exec(text)) {
       const startPos = activeEditor.document.positionAt(match.index);
       const endPos = activeEditor.document.positionAt(match.index + match[0].length);
-      const range = { range: new vscode.Range(startPos, endPos) };
+      const range = new vscode.Range(startPos, endPos);
 
       // Required to ignore the first line of .py files (#61)
       if (this.ignoreFirstLine && startPos.line === 0 && startPos.character === 0) {
@@ -121,7 +147,7 @@ export class Parser {
       const matchTag = this.tags.find(item => item.tag.toLowerCase() === match![3]?.toLowerCase());
 
       if (matchTag) {
-        matchTag.ranges.push(range);
+        matchTag.decorationOptions.push({ range });
       }
     }
   }
@@ -157,12 +183,12 @@ export class Parser {
           const startIdx = block.index + block[1].length + block[2].length + line.index + line[1].length;
           const startPos = activeEditor.document.positionAt(startIdx);
           const endPos = activeEditor.document.positionAt(startIdx + line[2].length);
-          const range: vscode.DecorationOptions = { range: new vscode.Range(startPos, endPos) };
+          const range = new vscode.Range(startPos, endPos);
 
           const matchTag = this.tags.find(item => item.tag.toLowerCase() === matchString.toLowerCase());
 
           if (matchTag) {
-            matchTag.ranges.push(range);
+            matchTag.decorationOptions.push({ range });
           }
         }
       }
@@ -175,10 +201,10 @@ export class Parser {
    */
   public ApplyDecorations(activeEditor: vscode.TextEditor): void {
     for (const tag of this.tags) {
-      activeEditor.setDecorations(tag.decoration, tag.ranges);
+      activeEditor.setDecorations(tag.decoration, tag.decorationOptions);
 
       // clear the ranges for the next pass
-      tag.ranges.length = 0;
+      tag.decorationOptions = [];
     }
   }
 
@@ -190,7 +216,7 @@ export class Parser {
   private initTagsConfig(): void {
     const items = this.contributions.tags;
 
-    const parseOption = (item: ContributionsTag) => {
+    const parseOption = (item: TagOption) => {
       const options: vscode.DecorationRenderOptions = { color: item.color, backgroundColor: item.backgroundColor };
 
       // ? the textDecoration is initialised to empty so we can concat a preceeding space on it
@@ -231,8 +257,8 @@ export class Parser {
       this.tags.push({
         tag: item.tag,
         escapedTag: this.escapeRegExp(item.tag),
-        ranges: [],
         decoration: vscode.window.createTextEditorDecorationType(options),
+        decorationOptions: [],
       });
     }
   }
@@ -247,23 +273,23 @@ export class Parser {
   }
 
   /**
-   * Init configs
+   * Get comment rule collection
    * @param languageCode The short code of the current language
    * https://code.visualstudio.com/docs/languages/identifiers
    */
-  private async initConfig(languageCode: string) {
+  private async getAvailableCommentRules(languageCode: string) {
     this.supportedLanguage = false;
     this.ignoreFirstLine = false;
     this.isPlainText = false;
 
-    const configs = await this.configuration.GetCommentConfiguration(languageCode);
+    const collect = await this.configuration.GetAvailableCommentRules(languageCode);
 
-    if (configs.lineComments.length > 0 || configs.blockComments.length > 0) {
+    if (collect.lineComments.length > 0 || collect.blockComments.length > 0) {
       this.supportedLanguage = true;
     }
 
-    this.highlightSingleLineComments = configs.lineComments.length > 0;
-    this.highlightMultilineComments = configs.blockComments.length > 0 && this.contributions.multilineComments;
+    this.highlightSingleLineComments = collect.lineComments.length > 0;
+    this.highlightMultilineComments = collect.blockComments.length > 0 && this.contributions.multilineComments;
 
     switch (languageCode) {
       case 'elixir':
@@ -280,7 +306,7 @@ export class Parser {
         break;
     }
 
-    return configs;
+    return collect;
   }
 
   // #endregion
