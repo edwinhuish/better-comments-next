@@ -24,6 +24,12 @@ This extension can be configured in User Settings or Workspace settings.
 This setting will control whether comments in a plain text file are styled using the annotation tags.
 When true, the tags (defaults: `! * ? //`) will be detected if they're the first character on a line.
 
+`better-comments.tagsLight`  
+Overwrite tags options for light themes. 
+
+`better-comments.tagsDark`  
+Overwrite tags options for dark themes. 
+
 `better-comments.tags`  
 The tags are the characters or sequences used to mark a comment for decoration.
 The default 5 can be modified to change the colors, and more can be added.
@@ -77,12 +83,6 @@ The default 5 can be modified to change the colors, and more can be added.
   }
 ]
 ```
-
-`better-comments.tagsLight`  
-Overwrite tags options for light themes. 
-
-`better-comments.tagsDark`  
-Overwrite tags options for dark themes. 
 
 ## Supported Languages
 
@@ -166,3 +166,4 @@ Overwrite tags options for dark themes.
 * Vue.js
 * XML
 * YAML
+* Any other languages supported by your editor
