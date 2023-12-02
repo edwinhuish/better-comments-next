@@ -30,33 +30,33 @@ export class Configuration {
    * External extensions can override default configurations os VSCode
    */
   public UpdateLanguagesDefinitions() {
+    this.languageConfigs.clear();
     this.commentConfigs.clear();
 
     for (const extension of vscode.extensions.all) {
       const packageJSON = extension.packageJSON;
 
-      if (packageJSON.contributes && packageJSON.contributes.languages) {
-        for (const language of packageJSON.contributes.languages) {
-          if (language.configuration) {
-            const configPath = path.join(extension.extensionPath, language.configuration);
+      for (const language of (packageJSON?.contributes?.languages || [])) {
+        if (!language.configuration) {
+          continue;
+        }
 
-            const embeddedLanguages = new Set<string>();
-            if (packageJSON.contributes.grammars) {
-              for (const grammar of packageJSON.contributes.grammars) {
-                if (grammar.language === language.id && grammar.embeddedLanguages) {
-                  for (const embeddedLanguageCode of Object.values(grammar.embeddedLanguages)) {
-                    embeddedLanguages.add(embeddedLanguageCode as string);
-                  }
-                }
-              }
-            }
-
-            this.languageConfigs.set(language.id, {
-              configPath,
-              embeddedLanguages: [...embeddedLanguages],
-            });
+        const embeddedLanguages = new Set<string>();
+        for (const grammar of (packageJSON.contributes?.grammars || [])) {
+          if (grammar.language !== language.id || !grammar.embeddedLanguages) {
+            continue;
+          }
+          for (const embeddedLanguageCode of Object.values(grammar.embeddedLanguages)) {
+            embeddedLanguages.add(embeddedLanguageCode as string);
           }
         }
+
+        const configPath = path.join(extension.extensionPath, language.configuration);
+
+        this.languageConfigs.set(language.id, {
+          configPath,
+          embeddedLanguages: [...embeddedLanguages],
+        });
       }
     }
   }

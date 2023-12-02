@@ -6,30 +6,10 @@ import { Parser } from './parser';
 export async function activate(context: vscode.ExtensionContext) {
   let activeEditor: vscode.TextEditor;
 
+  let triggerUpdateTimeout: NodeJS.Timer | undefined;
+
   const configuration: Configuration = new Configuration();
   const parser: Parser = new Parser(configuration);
-
-  // Called to handle events below
-  const updateDecorations = function () {
-    // if no active window is open, return
-    if (!activeEditor) {
-      return;
-    }
-
-    // if lanugage isn't supported, return
-    if (!parser.supportedLanguage) {
-      return;
-    }
-
-    // Finds the single line comments using the language comment delimiter
-    parser.FindSingleLineComments(activeEditor);
-
-    // Finds the multi line comments using the language comment delimiter
-    parser.FindBlockComments(activeEditor);
-
-    // Apply the styles set in the package.json
-    parser.ApplyDecorations(activeEditor);
-  };
 
   // Get the active editor for the first time and initialise the regex
   if (vscode.window.activeTextEditor) {
@@ -68,16 +48,36 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }, null, context.subscriptions);
 
+  // Called to handle events below
+  function updateDecorations() {
+    // if no active window is open, return
+    if (!activeEditor) {
+      return;
+    }
+
+    // if lanugage isn't supported, return
+    if (!parser.supportedLanguage) {
+      return;
+    }
+
+    // Finds the single line comments using the language comment delimiter
+    parser.FindSingleLineComments(activeEditor);
+
+    // Finds the multi line comments using the language comment delimiter
+    parser.FindBlockComments(activeEditor);
+
+    // Apply the styles set in the package.json
+    parser.ApplyDecorations(activeEditor);
+  }
+
   // * IMPORTANT:
   // * To avoid calling update too often,
   // * set a timer for 100ms to wait before updating decorations
-  // eslint-disable-next-line vars-on-top, no-var
-  var timeout: NodeJS.Timer;
   function triggerUpdateDecorations() {
-    if (timeout) {
-      clearTimeout(timeout);
+    if (triggerUpdateTimeout) {
+      clearTimeout(triggerUpdateTimeout);
     }
-    timeout = setTimeout(updateDecorations, 100);
+    triggerUpdateTimeout = setTimeout(updateDecorations, 100);
   }
 }
 
