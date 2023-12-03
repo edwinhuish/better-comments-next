@@ -7,6 +7,7 @@
  * non js-doc comments
  ! non js-doc comments
  */
+const myVar = 123;
 
 /**
  * My Function
@@ -15,119 +16,9 @@
  * ?  Questions
  * * Highlights
  */
-const myFunction = function(myParam) {
-    return myParam;
-};
-
-// ! Need more content here
-
-// // removed code
-
-// * End of the file
-
-/**
- * My Class
- * TODO: Create some copyright notes
- */
-
-/**
- * My Function
- * ! Some Alert
- * TODO Some stuff
- * ?  Questions
- * * Highlights
- */
-const myFunction = function(myParam) {
-    return myParam;
-};
-
-// ! Need more content here
-
-// // removed code
-
-// * End of the file
-
-/**
- * My Class
- * TODO: Create some copyright notes
- */
-
-/**
- * My Function
- * ! Some Alert
- * TODO Some stuff
- * ?  Questions
- * * Highlights
- */
-const myFunction = function(myParam) {
-    return myParam;
-};
-
-// ! Need more content here
-
-// // removed code
-
-// * End of the file
-
-/**
- * My Class
- * TODO: Create some copyright notes
- */
-
-/**
- * My Function
- * ! Some Alert
- * TODO Some stuff
- * ?  Questions
- * * Highlights
- */
-const myFunction = function(myParam) {
-    return myParam;
-};
-
-// ! Need more content here
-
-// // removed code
-
-// * End of the file
-
-/**
- * My Class
- * TODO: Create some copyright notes
- */
-
-/**
- * My Function
- * ! Some Alert
- * TODO Some stuff
- * ?  Questions
- * * Highlights
- */
-const myFunction = function(myParam) {
-    return myParam;
-};
-
-// ! Need more content here
-
-// // removed code
-
-// * End of the file
-
-/**
- * My Class
- * TODO: Create some copyright notes
- */
-
-/**
- * My Function
- * ! Some Alert
- * TODO Some stuff
- * ?  Questions
- * * Highlights
- */
-const myFunction = function(myParam) {
-    return myParam;
-};
+function myFunction(myParam) {
+  return myParam;
+}
 
 // ! Need more content here
 
