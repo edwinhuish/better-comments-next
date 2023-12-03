@@ -133,7 +133,7 @@ function findLineComments(activeEditor: TextEditor): void {
 
   let match: RegExpExecArray | null | undefined;
   while (match = _linePicker.picker?.exec(text)) {
-    const startPos = activeEditor.document.positionAt(match.index);
+    const startPos = activeEditor.document.positionAt(match.index + match[1].length);
     const endPos = activeEditor.document.positionAt(match.index + match[0].length);
     const range = new vscode.Range(startPos, endPos);
 
