@@ -142,8 +142,6 @@ export async function getAvailableCommentRules(languageCode: string): Promise<Av
     blockComments: [...blockComments.values()],
   };
 
-  log(`[${languageCode}] Comment Marks: ${[availables.lineComments.join('、'), availables.blockComments.map(block => block.join(' ')).join('、')].join('、')}`);
-
   return availables;
 }
 
