@@ -241,13 +241,12 @@ function getBaseCommentRule(languageCode: string): CommentRule | undefined {
     case 'php':
     case 'rust':
     case 'scala':
+    case 'sass':
     case 'scss':
     case 'stylus':
     case 'swift':
     case 'verilog':
       return ({ lineComment: '//', blockComment: ['/*', '*/'] });
-    case 'vue':
-      return ({ blockComment: ['<!--', '-->'] });
     case 'css':
       return ({ blockComment: ['/*', '*/'] });
     case 'coffeescript':
@@ -284,6 +283,7 @@ function getBaseCommentRule(languageCode: string): CommentRule | undefined {
     case 'haskell':
       return ({ lineComment: '--', blockComment: ['{-', '-}'] });
     case 'vb':
+    case 'asp':
     case 'diagram': // ? PlantUML is recognized as Diagram (diagram)
       return ({ lineComment: '\'' });
     case 'bibtex':
@@ -306,7 +306,9 @@ function getBaseCommentRule(languageCode: string): CommentRule | undefined {
     case 'stata':
       return ({ lineComment: '*', blockComment: ['/*', '*/'] });
     case 'html':
+    case 'xml':
     case 'markdown':
+    case 'vue':
       return ({ blockComment: ['<!--', '-->'] });
     case 'twig':
       return ({ blockComment: ['{#', '#}'] });
@@ -314,6 +316,10 @@ function getBaseCommentRule(languageCode: string): CommentRule | undefined {
       return ({ lineComment: '\\', blockComment: ['"', '"'] });
     case 'cfml':
       return ({ blockComment: ['<!---', '--->'] });
+    case 'shaderlab':
+      return ({ lineComment: '//' });
+    case 'razor':
+      return ({ blockComment: ['@*', '*@'] });
     default:
       return undefined;
   }
