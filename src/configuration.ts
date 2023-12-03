@@ -2,7 +2,7 @@ import { join as joinPath } from 'path';
 import { TextDecoder } from 'util';
 import * as vscode from 'vscode';
 import { parse as parseJson5 } from 'json5';
-import { log } from './logger';
+import * as console from './console';
 import type { CommentRule, WorkspaceConfiguration } from 'vscode';
 
 export interface Tag {
@@ -206,7 +206,7 @@ async function loadCommentRuleFromFile(filepath?: string): Promise<CommentRule |
 
     return config.comments;
   } catch (error) {
-    log('[ERROR] ', error);
+    console.error(error);
     return undefined;
   }
 }
