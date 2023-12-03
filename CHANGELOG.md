@@ -1,56 +1,17 @@
 # Change Log
 
-## [3.0.10] (2023-11-29)
-
-### Bug Fixes
-
-* Fix match regex expression.
-
-# Change Log
-
-## [3.0.9] (2023-11-20)
-
-### Bug Fixes
-
-* Fix match regex expression.
-
-# Change Log
-
-## [3.0.8] (2023-10-26)
-
-### Bug Fixes
-
-* Change match rule, matches only if preceded by one space.
-
-## [3.0.7] (2023-06-23)
-
-### Bug Fixes
-
-* Fix block comments mismatch after new line
-
-## [3.0.6] (2023-05-04)
-
-### Bug Fixes
-
-* Fix block comments match after tag
-
-## [3.0.5] (2023-04-28)
-
-### Bug Fixes
-
-* Fix block comments mismatch
-
-## [3.0.4] (2023-04-28)
+## [3.1.0] (2023-12-03)
 
 ### Features
 
-* Support remote workspace
+* Add embedded languages support, read comment rules from languages configuration. See [#388](https://github.com/aaron-bond/better-comments/issues/388#issuecomment-1527426462) Now support all languages that your editor correctly recognizes.
+* Support remote workspace. See [#507](https://github.com/aaron-bond/better-comments/issues/507)
+* Force match tags with one space (eg. only match with "`// *comment`" or "`// * comment`", no longer match "`//* comment`". See [#2](https://github.com/edwinhuish/better-comments-next/issues/2#issuecomment-1835294075))
+* Overwrite tags options for light / dark theme. See [#506](https://github.com/aaron-bond/better-comments/issues/506)
+* Allow multiple tags per item. See [#33](https://github.com/aaron-bond/better-comments/issues/33)
 
-## [3.0.3] (2023-04-28)
-
-### Features
-
-* Add embedded languages support
+### House Keeping
+* Change class to function
 
 ## [3.0.2] (2022-07-30)
 

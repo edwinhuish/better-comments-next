@@ -3,7 +3,7 @@
     "displayName": "Better Comments Next",
     "icon": "icon.png",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
-    "version": "3.0.14",
+    "version": "3.1.0",
     "publisher": "edwinhuish",
     "author": {
         "name": "Edwin Xu"
@@ -68,8 +68,14 @@
                         "title": "tag item",
                         "properties": {
                             "tag": {
-                                "type": "string",
-                                "description": "Name of tag"
+                                "type": [
+                                    "string",
+                                    "array"
+                                ],
+                                "description": "Name of tag, could be string or string[]",
+                                "items": {
+                                    "type": "string"
+                                }
                             },
                             "color": {
                                 "type": "string",
@@ -149,8 +155,14 @@
                         "title": "tag item",
                         "properties": {
                             "tag": {
-                                "type": "string",
-                                "description": "Name of tag"
+                                "type": [
+                                    "string",
+                                    "array"
+                                ],
+                                "description": "Name of tag, could be string or string[]",
+                                "items": {
+                                    "type": "string"
+                                }
                             },
                             "color": {
                                 "type": "string",
@@ -184,8 +196,14 @@
                         "title": "tag item",
                         "properties": {
                             "tag": {
-                                "type": "string",
-                                "description": "Name of tag"
+                                "type": [
+                                    "string",
+                                    "array"
+                                ],
+                                "description": "Name of tag, could be string or string[]",
+                                "items": {
+                                    "type": "string"
+                                }
                             },
                             "color": {
                                 "type": "string",

@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
-import { Configuration } from './configuration';
-import { Parser } from './parser';
+import { setup as setupParser } from './parser';
 
 // this method is called when vs code is activated
 export async function activate(context: vscode.ExtensionContext) {
@@ -8,15 +7,14 @@ export async function activate(context: vscode.ExtensionContext) {
 
   let triggerUpdateTimeout: NodeJS.Timer | undefined;
 
-  const configuration: Configuration = new Configuration();
-  const parser: Parser = new Parser(configuration);
+  const parser = setupParser();
 
   // Get the active editor for the first time and initialise the regex
   if (vscode.window.activeTextEditor) {
     activeEditor = vscode.window.activeTextEditor;
 
     // Set the regex patterns for the specified language's comments
-    await parser.InitPickers(activeEditor.document.languageId);
+    await parser.setupPickers(activeEditor.document.languageId);
 
     // Trigger first update of decorators
     triggerUpdateDecorations();
@@ -24,7 +22,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   // * Handle extensions being added or removed
   vscode.extensions.onDidChange(() => {
-    configuration.UpdateLanguagesDefinitions();
+    parser.updateLanguagesDefinitions();
   }, null, context.subscriptions);
 
   // * Handle active file changed
@@ -33,7 +31,7 @@ export async function activate(context: vscode.ExtensionContext) {
       activeEditor = editor;
 
       // Set regex for updated language
-      await parser.InitPickers(editor.document.languageId);
+      await parser.setupPickers(editor.document.languageId);
 
       // Trigger update to set decorations for newly active file
       triggerUpdateDecorations();
@@ -56,18 +54,18 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     // if lanugage isn't supported, return
-    if (!parser.supportedLanguage) {
+    if (!parser.isSupportedLanguage()) {
       return;
     }
 
     // Finds the single line comments using the language comment delimiter
-    parser.FindSingleLineComments(activeEditor);
+    parser.findLineComments(activeEditor);
 
     // Finds the multi line comments using the language comment delimiter
-    parser.FindBlockComments(activeEditor);
+    parser.findBlockComments(activeEditor);
 
     // Apply the styles set in the package.json
-    parser.ApplyDecorations(activeEditor);
+    parser.applyDecorations(activeEditor);
   }
 
   // * IMPORTANT:
