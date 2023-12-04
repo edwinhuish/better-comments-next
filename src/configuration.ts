@@ -45,9 +45,9 @@ export interface AvailableCommentRules {
 }
 
 // Comment rules of languages
-const _commentRules = new Map<string, CommentRule>();
+const commentRules = new Map<string, CommentRule>();
 // Language config path and embedded languages
-const _languageConfigs = new Map<string, LanguageConfig>();
+const languageConfigs = new Map<string, LanguageConfig>();
 
 /**
  * Get better comments configuration
@@ -79,8 +79,8 @@ export function getConfigurationFlatten() {
  * External extensions can override default configurations os VSCode
  */
 export function updateLanguagesDefinitions() {
-  _languageConfigs.clear();
-  _commentRules.clear();
+  languageConfigs.clear();
+  commentRules.clear();
 
   for (const extension of vscode.extensions.all) {
     const packageJSON = extension.packageJSON;
@@ -102,7 +102,7 @@ export function updateLanguagesDefinitions() {
 
       const configPath = joinPath(extension.extensionPath, language.configuration);
 
-      _languageConfigs.set(language.id, {
+      languageConfigs.set(language.id, {
         configPath,
         embeddedLanguages: [...embeddedLanguages],
       });
@@ -124,15 +124,15 @@ export async function getAvailableCommentRules(languageCode: string): Promise<Av
   const addLineComment = (line?: string) => line && lineComments.add(line);
   const addBlockComment = (block?: [string, string]) => block && blockComments.set(`${block[0]}${block[1]}`, block);
 
-  const commentRule = _commentRules.get(languageCode);
+  const commentRule = commentRules.get(languageCode);
 
   addLineComment(commentRule?.lineComment);
   addBlockComment(commentRule?.blockComment);
 
-  const embeddedLanguages = _languageConfigs.get(languageCode)?.embeddedLanguages;
+  const embeddedLanguages = languageConfigs.get(languageCode)?.embeddedLanguages;
 
   for (const embeddedLanguageCode of (embeddedLanguages || [])) {
-    const embeddedCommentRule = _commentRules.get(embeddedLanguageCode);
+    const embeddedCommentRule = commentRules.get(embeddedLanguageCode);
     addLineComment(embeddedCommentRule?.lineComment);
     addBlockComment(embeddedCommentRule?.blockComment);
   }
@@ -169,11 +169,11 @@ function flattenTags(tags: Tag[]) {
 }
 
 async function loadCommentRules(languageCode: string) {
-  if (_commentRules.has(languageCode)) {
+  if (commentRules.has(languageCode)) {
     return;
   }
 
-  const language = _languageConfigs.get(languageCode);
+  const language = languageConfigs.get(languageCode);
 
   let commentRule;
 
@@ -183,7 +183,7 @@ async function loadCommentRules(languageCode: string) {
   }
 
   if (commentRule) {
-    _commentRules.set(languageCode, commentRule);
+    commentRules.set(languageCode, commentRule);
   }
 
   for (const embeddedLanguageCode of (language?.embeddedLanguages || [])) {

@@ -59,10 +59,10 @@ export async function activate(context: vscode.ExtensionContext) {
     }
 
     // Finds the single line comments using the language comment delimiter
-    parser.findLineComments(activeEditor);
+    parser.pickLineComments(activeEditor);
 
     // Finds the multi line comments using the language comment delimiter
-    parser.findBlockComments(activeEditor);
+    parser.pickBlockComments(activeEditor);
 
     // Apply the styles set in the package.json
     parser.applyDecorations(activeEditor);
