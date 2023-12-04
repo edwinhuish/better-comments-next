@@ -1,7 +1,7 @@
 export default {
   '*.{js,jsx,ts,tsx,vue}': () => {
     return [
-      'tsc -p tsconfig.json --noEmit',
+      'tsc -p . --noEmit',
       'eslint --cache --max-warnings 0 ',
     ];
   },

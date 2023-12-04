@@ -5,6 +5,7 @@ export class TestClass {
    * ! Deprecated method, do not use
    * ? Should this method be exposed through API?
    * TODO: refactor this method to conform to API
+   * TO-DO: This should be highlighted
    * @param param === condition
    *     ? true          This line should not be highlighted
    *     : false
@@ -25,5 +26,3 @@ export class TestClass {
     // TODO: write some test cases
   }
 }
-
-

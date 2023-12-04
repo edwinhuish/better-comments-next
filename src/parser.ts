@@ -111,8 +111,8 @@ async function setupPickers(languageCode: string) {
     const prefix = escapeRegExp(linePrefix);
     return {
       blockPicker: new RegExp(`(^|[ \\t]+)(${begin}+)([^]*?)(${end})`, 'gm'),
-      linePicker: new RegExp(`(^[ \\t]*)((${escapedTags.join('|')})([ \\t]*|[:])+[^^\\r^\\n]*)`, 'igm'),
-      docLinePicker: new RegExp(`(^[ \\t]*${prefix}[ \\t])((${escapedTags.join('|')})([ \\t]*|[:])+[^^\\r^\\n]*)`, 'igm'),
+      linePicker: new RegExp(`(^[ \\t]*)((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
+      docLinePicker: new RegExp(`(^[ \\t]*${prefix}[ \\t])((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
       linePrefix,
       marks,
     } as BlockPicker;

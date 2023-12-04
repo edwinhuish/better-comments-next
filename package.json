@@ -40,11 +40,35 @@
         "vscode:prepublish": "npm run compile && npm run package-web",
         "compile": "tsc -p .",
         "watch": "tsc -watch -p .",
-        "type-check": "tsc --noEmit",
+        "type-check": "tsc -p . --noEmit",
         "lint": "npm run type-check && eslint --cache --max-warnings 0 \"{src,build}/**/*.{ts,js}\"",
         "compile-web": "webpack --config ./build/web-extension.webpack.config.js",
         "watch-web": "webpack --watch --config ./build/web-extension.webpack.config.js",
         "package-web": "webpack --mode production --devtool hidden-source-map --config ./build/web-extension.webpack.config.js"
+    },
+    "dependencies": {
+        "json5": "^2.2.1"
+    },
+    "devDependencies": {
+        "@antfu/eslint-config": "^0.38.6",
+        "@types/node": "^17.0.23",
+        "@types/vscode": "^1.65.0",
+        "@typescript-eslint/eslint-plugin": "^5.61.0",
+        "@typescript-eslint/parser": "^5.61.0",
+        "@vscode/vsce": "^2.21.1",
+        "eslint": "^8.40.0",
+        "eslint-gitignore": "^0.1.0",
+        "eslint-plugin-jsdoc": "^46.8.2",
+        "husky": "^8.0.3",
+        "lint-staged": "^15.1.0",
+        "ovsx": "^0.8.3",
+        "path-browserify": "^1.0.1",
+        "process": "^0.11.10",
+        "ts-loader": "^9.5.0",
+        "typescript": "^4.6.3",
+        "util": "^0.12.4",
+        "webpack": "^5.74.0",
+        "webpack-cli": "^4.10.0"
     },
     "contributes": {
         "configuration": {
@@ -72,7 +96,7 @@
                                     "string",
                                     "array"
                                 ],
-                                "description": "Name of tag, could be string or string[]",
+                                "description": "Name of tag, case insensitive, could be string or string[]",
                                 "items": {
                                     "type": "string"
                                 }
@@ -82,24 +106,37 @@
                                 "description": "Font color, eg: #FF2D00"
                             },
                             "strikethrough": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Enable text strikethrough."
                             },
                             "underline": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Enable text underline."
                             },
                             "backgroundColor": {
                                 "type": "string",
-                                "description": "Background color"
+                                "description": "Background color, eg: transparent"
                             },
                             "bold": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Set text font style to bold."
                             },
                             "italic": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Set text font style to italic."
                             }
                         }
                     },
                     "default": [
+                        {
+                            "tag": "#",
+                            "color": "#18b566",
+                            "strikethrough": false,
+                            "underline": false,
+                            "backgroundColor": "transparent",
+                            "bold": true,
+                            "italic": false
+                        },
                         {
                             "tag": "!",
                             "color": "#FF2D00",
@@ -128,7 +165,10 @@
                             "italic": false
                         },
                         {
-                            "tag": "todo",
+                            "tag": [
+                                "todo",
+                                "to-do"
+                            ],
                             "color": "#FF8C00",
                             "strikethrough": false,
                             "underline": false,
@@ -159,7 +199,7 @@
                                     "string",
                                     "array"
                                 ],
-                                "description": "Name of tag, could be string or string[]",
+                                "description": "Name of tag, case insensitive, could be string or string[]",
                                 "items": {
                                     "type": "string"
                                 }
@@ -169,20 +209,24 @@
                                 "description": "Font color, eg: #FF2D00"
                             },
                             "strikethrough": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Enable text strikethrough."
                             },
                             "underline": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Enable text underline."
                             },
                             "backgroundColor": {
                                 "type": "string",
-                                "description": "Background color"
+                                "description": "Background color, eg: transparent"
                             },
                             "bold": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Set text font style to bold."
                             },
                             "italic": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Set text font style to italic."
                             }
                         }
                     },
@@ -200,7 +244,7 @@
                                     "string",
                                     "array"
                                 ],
-                                "description": "Name of tag, could be string or string[]",
+                                "description": "Name of tag, case insensitive, could be string or string[]",
                                 "items": {
                                     "type": "string"
                                 }
@@ -210,20 +254,24 @@
                                 "description": "Font color, eg: #FF2D00"
                             },
                             "strikethrough": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Enable text strikethrough."
                             },
                             "underline": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Enable text underline."
                             },
                             "backgroundColor": {
                                 "type": "string",
-                                "description": "Background color"
+                                "description": "Background color, eg: transparent"
                             },
                             "bold": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Set text font style to bold."
                             },
                             "italic": {
-                                "type": "boolean"
+                                "type": "boolean",
+                                "description": "Set text font style to italic."
                             }
                         }
                     },
@@ -231,29 +279,5 @@
                 }
             }
         }
-    },
-    "dependencies": {
-        "json5": "^2.2.1"
-    },
-    "devDependencies": {
-        "@antfu/eslint-config": "^0.38.6",
-        "@types/node": "^17.0.23",
-        "@types/vscode": "^1.65.0",
-        "@typescript-eslint/eslint-plugin": "^5.61.0",
-        "@typescript-eslint/parser": "^5.61.0",
-        "@vscode/vsce": "^2.21.1",
-        "eslint": "^8.40.0",
-        "eslint-gitignore": "^0.1.0",
-        "eslint-plugin-jsdoc": "^46.8.2",
-        "husky": "^8.0.3",
-        "lint-staged": "^15.1.0",
-        "ovsx": "^0.8.3",
-        "path-browserify": "^1.0.1",
-        "process": "^0.11.10",
-        "ts-loader": "^9.5.0",
-        "typescript": "^4.6.3",
-        "util": "^0.12.4",
-        "webpack": "^5.74.0",
-        "webpack-cli": "^4.10.0"
     }
 }
