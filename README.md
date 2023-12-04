@@ -37,7 +37,16 @@ The default 5 can be modified to change the colors, and more can be added.
 ```json
 "better-comments.tags": [
   {
-    "tag": "!", // Could be string or string[]
+    "tag": "#",
+    "color": "#18b566",
+    "strikethrough": false,
+    "underline": false,
+    "backgroundColor": "transparent",
+    "bold": true,
+    "italic": false
+  },
+  {
+    "tag": "!",
     "color": "#FF2D00",
     "strikethrough": false,
     "underline": false,
@@ -46,7 +55,7 @@ The default 5 can be modified to change the colors, and more can be added.
     "italic": false
   },
   {
-    "tag": "?", // Could be string or string[]
+    "tag": "?",
     "color": "#3498DB",
     "strikethrough": false,
     "underline": false,
@@ -55,7 +64,7 @@ The default 5 can be modified to change the colors, and more can be added.
     "italic": false
   },
   {
-    "tag": "//", // Could be string or string[]
+    "tag": "//",
     "color": "#474747",
     "strikethrough": true,
     "underline": false,
@@ -64,7 +73,7 @@ The default 5 can be modified to change the colors, and more can be added.
     "italic": false
   },
   {
-    "tag": "todo", // Could be string or string[]
+    "tag": ["todo", "to-do"],
     "color": "#FF8C00",
     "strikethrough": false,
     "underline": false,
@@ -73,7 +82,7 @@ The default 5 can be modified to change the colors, and more can be added.
     "italic": false
   },
   {
-    "tag": "*", // Could be string or string[]
+    "tag": "*",
     "color": "#98C379",
     "strikethrough": false,
     "underline": false,
