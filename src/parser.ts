@@ -23,12 +23,6 @@ export interface BlockPicker {
   marks: [string, string];
 }
 
-const ignoreFirstLineLanguageCodes: string[] = [
-  'elixir',
-  'python',
-  'tcl',
-];
-
 export function useParser() {
   // Update languages definitions
   languages.updateDefinitions();
@@ -48,9 +42,6 @@ export function useParser() {
   let highlightLineComments = true;
   let highlightBlockComments = false;
 
-  // * this is used to prevent the first line of the file (specifically python) from coloring like other comments
-  let ignoreFirstLine = false;
-
   /**
    * Sets the regex to be used by the matcher based on the config specified
    * @param languageCode The short code of the current language
@@ -58,8 +49,6 @@ export function useParser() {
    */
   async function setupPickers(languageCode: string) {
     const comments = await languages.getAvailableCommentRules(languageCode);
-
-    ignoreFirstLine = ignoreFirstLineLanguageCodes.includes(languageCode);
 
     setupLinePicker(languageCode, comments.lineComments);
 
@@ -145,11 +134,6 @@ export function useParser() {
       const startPos = activeEditor.document.positionAt(match.index + match[1].length);
       const endPos = activeEditor.document.positionAt(match.index + match[0].length);
       const range = new vscode.Range(startPos, endPos);
-
-      // Required to ignore the first line of .py files (#61)
-      if (ignoreFirstLine && startPos.line === 0 && startPos.character === 0) {
-        continue;
-      }
 
       // Find which custom delimiter was used in order to add it to the collection
       const found = tagDecorations.find(td => td.tag.toLowerCase() === match![3]?.toLowerCase());
