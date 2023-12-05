@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { setup as setupParser } from './parser';
+import { useParser } from './parser';
 
 // this method is called when vs code is activated
 export async function activate(context: vscode.ExtensionContext) {
@@ -7,7 +7,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
   let triggerUpdateTimeout: NodeJS.Timer | undefined;
 
-  const parser = setupParser();
+  const parser = useParser();
 
   // Get the active editor for the first time and initialise the regex
   if (vscode.window.activeTextEditor) {
