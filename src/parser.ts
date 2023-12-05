@@ -7,7 +7,6 @@ export interface TagDecoration {
   tag: string;
   escapedTag: string;
   decoration: vscode.TextEditorDecorationType;
-  decorationOptions: vscode.DecorationOptions[];
 }
 
 export interface LinePicker {
@@ -146,7 +145,9 @@ function pickLineComments(activeEditor: TextEditor): void {
     const found = tagDecorations.find(td => td.tag.toLowerCase() === match![3]?.toLowerCase());
 
     if (found) {
-      found.decorationOptions.push({ range });
+      setTimeout(() => {
+        activeEditor.setDecorations(found.decoration, [{ range }]);
+      }, 0);
     }
   }
 }
@@ -186,22 +187,12 @@ function pickBlockComments(activeEditor: TextEditor): void {
         const found = tagDecorations.find(td => td.tag.toLowerCase() === matchString?.toLowerCase());
 
         if (found) {
-          found.decorationOptions.push({ range });
+          setTimeout(() => {
+            activeEditor.setDecorations(found.decoration, [{ range }]);
+          }, 0);
         }
       }
     }
-  }
-}
-/**
- * Apply decorations after finding all relevant comments
- * @param activeEditor The active text editor containing the code document
- */
-function applyDecorations(activeEditor: vscode.TextEditor): void {
-  for (const td of tagDecorations) {
-    activeEditor.setDecorations(td.decoration, td.decorationOptions);
-
-    // clear the decoration options for the next pass
-    td.decorationOptions = [];
   }
 }
 
@@ -240,7 +231,6 @@ function generateTagDecorations() {
       tag: tag.tag,
       escapedTag: escapeRegExp(tag.tag),
       decoration: vscode.window.createTextEditorDecorationType(opt),
-      decorationOptions: [],
     });
   }
 
@@ -282,7 +272,6 @@ export function setup() {
     setupPickers,
     pickLineComments,
     pickBlockComments,
-    applyDecorations,
     updateLanguagesDefinitions,
     isSupportedLanguage,
   };
