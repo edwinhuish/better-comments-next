@@ -53,11 +53,6 @@ export async function activate(context: vscode.ExtensionContext) {
       return;
     }
 
-    // if lanugage isn't supported, return
-    if (!parser.isSupportedLanguage()) {
-      return;
-    }
-
     // Finds the single line comments using the language comment delimiter
     parser.pickLineComments(activeEditor);
 

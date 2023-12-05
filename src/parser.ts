@@ -12,7 +12,7 @@ export interface TagDecoration {
 }
 
 export interface LinePicker {
-  picker: RegExp | undefined;
+  pick: RegExp | undefined;
   marks: string[];
 }
 export interface BlockPicker {
@@ -22,6 +22,12 @@ export interface BlockPicker {
   linePrefix: string;
   marks: [string, string];
 }
+
+const ignoreFirstLineLanguageCodes: string[] = [
+  'elixir',
+  'python',
+  'tcl',
+];
 
 export function useParser() {
   // Update languages definitions
@@ -34,22 +40,16 @@ export function useParser() {
   const tagDecorations: TagDecoration[] = generateTagDecorations();
 
   // Line picker
-  let linePicker: LinePicker = { picker: undefined, marks: [] };
+  let linePicker: LinePicker = { pick: undefined, marks: [] };
 
   // Block pickers
   let blockPickers: BlockPicker[] = [];
 
-  let highlightSingleLineComments = true;
-  let highlightMultilineComments = false;
-
-  // * this will allow plaintext files to show comment highlighting if switched on
-  let isPlainText = false;
+  let highlightLineComments = true;
+  let highlightBlockComments = false;
 
   // * this is used to prevent the first line of the file (specifically python) from coloring like other comments
   let ignoreFirstLine = false;
-
-  // * this is used to trigger the events when a supported language code is found
-  let isSupportedLang = true;
 
   /**
    * Sets the regex to be used by the matcher based on the config specified
@@ -57,59 +57,63 @@ export function useParser() {
    * https://code.visualstudio.com/docs/languages/identifiers
    */
   async function setupPickers(languageCode: string) {
-    isSupportedLang = false;
-    ignoreFirstLine = false;
-    isPlainText = false;
-
     const comments = await languages.getAvailableCommentRules(languageCode);
 
-    if (comments.lineComments.length > 0 || comments.blockComments.length > 0) {
-      isSupportedLang = true;
-    }
+    ignoreFirstLine = ignoreFirstLineLanguageCodes.includes(languageCode);
 
-    highlightSingleLineComments = comments.lineComments.length > 0;
-    highlightMultilineComments = comments.blockComments.length > 0 && configs.multilineComments;
+    setupLinePicker(languageCode, comments.lineComments);
 
-    switch (languageCode) {
-      case 'elixir':
-      case 'python':
-      case 'tcl':
-        ignoreFirstLine = true;
-        break;
+    setupBlockPickers(languageCode, comments.blockComments);
+  }
 
-      case 'plaintext':
-        isPlainText = true;
+  /**
+   * Set up line picker
+   */
+  function setupLinePicker(languageCode: string, lineComments: languages.AvailableCommentRules['lineComments']) {
+    highlightLineComments = languageCode === 'plaintext'
+      ? configs.highlightPlainText // If highlight plaintext is enabled, this is a supported language
+      : lineComments.length > 0;
 
-        // If highlight plaintext is enabled, this is a supported language
-        isSupportedLang = configs.highlightPlainText;
-        break;
-    }
+    if (!highlightLineComments) {
+      linePicker = { pick: undefined, marks: [] };
 
-    // if the language isn't supported, we don't need to go any further
-    if (!isSupportedLang) {
       return;
     }
 
     const escapedTags = tagDecorations.map(tag => tag.escapedTag);
 
-    // Single expression
-    if (isPlainText && configs.highlightPlainText) {
+    if (languageCode === 'plaintext') {
       linePicker = {
         marks: [],
         // start by tying the regex to the first character in a line
-        picker: new RegExp(`(^)([ \\t]*)(${escapedTags.join('|')})+(.*)`, 'igm'),
+        pick: new RegExp(`(^)([ \\t]*)(${escapedTags.join('|')})+(.*)`, 'igm'),
       };
-    } else {
-      const escapedMarks = comments.lineComments.map(s => `${escapeRegExp(s)}+`).join('|');
-      linePicker = {
-        marks: comments.lineComments,
-        // start by finding the delimiter (//, --, #, ') with optional spaces or tabs
-        picker: new RegExp(`(^|[ \\t]+)(${escapedMarks})[ \\t](${escapedTags.join('|')})(.*)`, 'igm'),
-      };
+      return;
     }
 
-    // Block expression
-    blockPickers = comments.blockComments.map((marks) => {
+    const escapedMarks = lineComments.map(s => `${escapeRegExp(s)}+`).join('|');
+
+    linePicker = {
+      marks: lineComments,
+      // start by finding the delimiter (//, --, #, ') with optional spaces or tabs
+      pick: new RegExp(`(^|[ \\t]+)(${escapedMarks})[ \\t](${escapedTags.join('|')})(.*)`, 'igm'),
+    };
+  }
+
+  /**
+   * Set up block pickers
+   */
+  function setupBlockPickers(languageCode: string, blockComments: languages.AvailableCommentRules['blockComments']) {
+    highlightBlockComments = blockComments.length > 0 && configs.multilineComments;
+
+    if (!highlightBlockComments) {
+      blockPickers = [];
+      return;
+    }
+
+    const escapedTags = tagDecorations.map(tag => tag.escapedTag);
+
+    blockPickers = blockComments.map((marks) => {
       const begin = escapeRegExp(marks[0]);
       const end = escapeRegExp(marks[1]);
       const linePrefix = marks[0].slice(-1);
@@ -130,14 +134,14 @@ export function useParser() {
    */
   function pickLineComments(activeEditor: TextEditor): void {
   // If highlight single line comments is off, single line comments are not supported for this language
-    if (!highlightSingleLineComments) {
+    if (!highlightLineComments) {
       return;
     }
 
     const text = activeEditor.document.getText();
 
     let match: RegExpExecArray | null | undefined;
-    while (match = linePicker.picker?.exec(text)) {
+    while (match = linePicker.pick?.exec(text)) {
       const startPos = activeEditor.document.positionAt(match.index + match[1].length);
       const endPos = activeEditor.document.positionAt(match.index + match[0].length);
       const range = new vscode.Range(startPos, endPos);
@@ -162,7 +166,7 @@ export function useParser() {
    */
   function pickBlockComments(activeEditor: TextEditor): void {
   // If highlight multiline is off in package.json or doesn't apply to his language, return
-    if (!highlightMultilineComments) {
+    if (!highlightBlockComments) {
       return;
     }
 
@@ -210,8 +214,11 @@ export function useParser() {
     }
   }
 
+  /**
+   * This is used to trigger the events when a supported language code is found
+   */
   function isSupportedLanguage() {
-    return isSupportedLang;
+    return highlightLineComments || highlightBlockComments;
   }
 
   /**
