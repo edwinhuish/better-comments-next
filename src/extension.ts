@@ -17,7 +17,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await parser.setupPickers(activeEditor.document.languageId);
 
     // Update decorators
-    updateDecorations();
+    triggerUpdateDecorations(0);
   }
 
   // * Handle extensions being added or removed
@@ -34,7 +34,7 @@ export async function activate(context: vscode.ExtensionContext) {
       await parser.setupPickers(editor.document.languageId);
 
       // Update decorations for newly active file
-      updateDecorations();
+      triggerUpdateDecorations(0);
     }
   }, null, context.subscriptions);
 
@@ -71,11 +71,11 @@ export async function activate(context: vscode.ExtensionContext) {
   // * IMPORTANT:
   // * To avoid calling update too often,
   // * set a timer for 100ms to wait before updating decorations
-  function triggerUpdateDecorations() {
+  function triggerUpdateDecorations(ms = 100) {
     if (triggerUpdateTimeout) {
       clearTimeout(triggerUpdateTimeout);
     }
-    triggerUpdateTimeout = setTimeout(updateDecorations, 100);
+    triggerUpdateTimeout = setTimeout(updateDecorations, ms);
   }
 }
 
