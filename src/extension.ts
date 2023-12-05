@@ -16,8 +16,8 @@ export async function activate(context: vscode.ExtensionContext) {
     // Set the regex patterns for the specified language's comments
     await parser.setupPickers(activeEditor.document.languageId);
 
-    // Trigger first update of decorators
-    triggerUpdateDecorations();
+    // Update decorators
+    updateDecorations();
   }
 
   // * Handle extensions being added or removed
@@ -33,8 +33,8 @@ export async function activate(context: vscode.ExtensionContext) {
       // Set regex for updated language
       await parser.setupPickers(editor.document.languageId);
 
-      // Trigger update to set decorations for newly active file
-      triggerUpdateDecorations();
+      // Update decorations for newly active file
+      updateDecorations();
     }
   }, null, context.subscriptions);
 
@@ -64,7 +64,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // Finds the multi line comments using the language comment delimiter
     parser.pickBlockComments(activeEditor);
 
-    // Apply the styles set in the package.json
+    // Apply decoration styles
     parser.applyDecorations(activeEditor);
   }
 
