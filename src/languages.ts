@@ -3,7 +3,7 @@ import { TextDecoder } from 'util';
 import * as vscode from 'vscode';
 import { parse as parseJson5 } from 'json5';
 import * as console from './console';
-import type { CommentRule } from 'vscode';
+import type { CharacterPair, CommentRule } from 'vscode';
 
 export interface LanguageConfig {
   configPath: string;
@@ -12,7 +12,7 @@ export interface LanguageConfig {
 
 export interface AvailableCommentRules {
   lineComments: string[];
-  blockComments: [string, string][];
+  blockComments: CharacterPair[];
 }
 
 // Comment rules of languages

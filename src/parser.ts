@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { getConfigurationFlatten } from './configuration';
 import * as languages from './languages';
 import type { TagFlatten } from './configuration';
-import type { DecorationRenderOptions, TextEditor } from 'vscode';
+import type { CharacterPair, DecorationRenderOptions, TextEditor } from 'vscode';
 
 export interface TagDecoration {
   tag: string;
@@ -20,7 +20,7 @@ export interface BlockPicker {
   linePick: RegExp;
   docLinePick: RegExp;
   linePrefix: string;
-  marks: [string, string];
+  marks: CharacterPair;
 }
 
 export function useParser() {
@@ -58,7 +58,7 @@ export function useParser() {
   /**
    * Set up line picker
    */
-  function setupLinePicker(languageCode: string, lineComments: languages.AvailableCommentRules['lineComments']) {
+  function setupLinePicker(languageCode: string, lineComments: string[]) {
     highlightLineComments = languageCode === 'plaintext'
       ? configs.highlightPlainText // If highlight plaintext is enabled, this is a supported language
       : lineComments.length > 0;
@@ -92,7 +92,7 @@ export function useParser() {
   /**
    * Set up block pickers
    */
-  function setupBlockPickers(languageCode: string, blockComments: languages.AvailableCommentRules['blockComments']) {
+  function setupBlockPickers(languageCode: string, blockComments: CharacterPair[]) {
     highlightBlockComments = blockComments.length > 0 && configs.multilineComments;
 
     if (!highlightBlockComments) {
