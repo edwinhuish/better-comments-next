@@ -11,7 +11,7 @@ export interface TagDecoration {
 }
 
 export interface LinePicker {
-  pick: RegExp | undefined;
+  pick: RegExp;
   marks: string[];
 }
 export interface BlockPicker {
@@ -20,11 +20,6 @@ export interface BlockPicker {
   docLinePick: RegExp;
   linePrefix: string;
   marks: vscode.CharacterPair;
-}
-
-export interface SetupPickerParams extends languages.AvailableCommentRules {
-  languageId: string;
-  escapedTags: string[];
 }
 
 export interface PickParams {
@@ -42,7 +37,7 @@ export function useParser() {
   const tagDecorations: TagDecoration[] = generateTagDecorations();
 
   // Line picker
-  let linePicker: LinePicker = { pick: undefined, marks: [] };
+  let linePicker: LinePicker | undefined;
 
   // Block pickers
   let blockPickers: BlockPicker[] = [];
@@ -71,34 +66,33 @@ export function useParser() {
 
     const comments = await languages.getAvailableCommentRules(activedEditor.document.languageId);
 
-    const escapedTags = tagDecorations.map(tag => tag.escapedTag);
+    setupLinePicker(comments);
 
-    const params: SetupPickerParams = {
-      ...comments,
-      languageId: activedEditor.document.languageId,
-      escapedTags,
-    };
-
-    setupLinePicker(params);
-
-    setupBlockPickers(params);
+    setupBlockPickers(comments);
   }
 
   /**
    * Set up line picker
    */
-  function setupLinePicker({ languageId, lineComments, escapedTags }: SetupPickerParams) {
-    highlightLineComments = languageId === 'plaintext'
+  function setupLinePicker({ lineComments }: languages.AvailableCommentRules) {
+    if (!activedEditor) {
+      linePicker = undefined;
+      return;
+    }
+
+    highlightLineComments = activedEditor.document.languageId === 'plaintext'
       ? configs.highlightPlainText // If highlight plaintext is enabled, this is a supported language
       : lineComments.length > 0;
 
     if (!highlightLineComments) {
-      linePicker = { pick: undefined, marks: [] };
+      linePicker = undefined;
 
       return;
     }
 
-    if (languageId === 'plaintext') {
+    const escapedTags = tagDecorations.map(tag => tag.escapedTag);
+
+    if (activedEditor.document.languageId === 'plaintext') {
       linePicker = {
         marks: [],
         // start by tying the regex to the first character in a line
@@ -119,13 +113,15 @@ export function useParser() {
   /**
    * Set up block pickers
    */
-  function setupBlockPickers({ blockComments, escapedTags }: SetupPickerParams) {
+  function setupBlockPickers({ blockComments }: languages.AvailableCommentRules) {
     highlightBlockComments = blockComments.length > 0 && configs.multilineComments;
 
-    if (!highlightBlockComments) {
+    if (!activedEditor || !highlightBlockComments) {
       blockPickers = [];
       return;
     }
+
+    const escapedTags = tagDecorations.map(tag => tag.escapedTag);
 
     blockPickers = blockComments.map((marks) => {
       const begin = escapeRegExp(marks[0]);
@@ -148,16 +144,12 @@ export function useParser() {
    */
   function pickLineComments(params: PickParams): void {
   // If highlight single line comments is off, single line comments are not supported for this language
-    if (!highlightLineComments) {
-      return;
-    }
-
-    if (!activedEditor) {
+    if (!activedEditor || !highlightLineComments) {
       return;
     }
 
     let match: RegExpExecArray | null | undefined;
-    while (match = linePicker.pick?.exec(params.text)) {
+    while (match = linePicker?.pick.exec(params.text)) {
       const startPos = activedEditor.document.positionAt(match.index + match[1].length);
       const endPos = activedEditor.document.positionAt(match.index + match[0].length);
       const range = new vscode.Range(startPos, endPos);
@@ -176,12 +168,8 @@ export function useParser() {
    * @param params Pass params in object avoid copy values
    */
   function pickBlockComments(params: PickParams): void {
-  // If highlight multiline is off in package.json or doesn't apply to his language, return
-    if (!highlightBlockComments) {
-      return;
-    }
-
-    if (!activedEditor) {
+    // If highlight multiline is off then return
+    if (!activedEditor || !highlightBlockComments) {
       return;
     }
 
