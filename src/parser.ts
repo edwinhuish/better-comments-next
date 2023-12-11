@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { getConfigurationFlatten } from './configuration';
 import * as languages from './languages';
 import type { TagFlatten } from './configuration';
-import type { CharacterPair, DecorationRenderOptions, TextEditor } from 'vscode';
 
 export interface TagDecoration {
   tag: string;
@@ -20,7 +19,16 @@ export interface BlockPicker {
   linePick: RegExp;
   docLinePick: RegExp;
   linePrefix: string;
-  marks: CharacterPair;
+  marks: vscode.CharacterPair;
+}
+
+export interface SetupPickerParams extends languages.AvailableCommentRules {
+  languageId: string;
+  escapedTags: string[];
+}
+
+export interface PickParams {
+  text: string;
 }
 
 export function useParser() {
@@ -42,24 +50,45 @@ export function useParser() {
   let highlightLineComments = true;
   let highlightBlockComments = false;
 
+  // Vscode active editor
+  let activedEditor: vscode.TextEditor | undefined;
+
+  // Trigger update time out
+  let triggerUpdateTimeout: NodeJS.Timer | undefined;
+
   /**
-   * Sets the regex to be used by the matcher based on the config specified
-   * @param languageCode The short code of the current language
-   * https://code.visualstudio.com/docs/languages/identifiers
+   * Get actived editor
    */
-  async function setupPickers(languageCode: string) {
-    const comments = await languages.getAvailableCommentRules(languageCode);
+  function getEditor() {
+    return activedEditor;
+  }
 
-    setupLinePicker(languageCode, comments.lineComments);
+  /**
+   * Switch editor for parser and setup pickers
+   */
+  async function setEditor(editor: vscode.TextEditor) {
+    activedEditor = editor;
 
-    setupBlockPickers(languageCode, comments.blockComments);
+    const comments = await languages.getAvailableCommentRules(activedEditor.document.languageId);
+
+    const escapedTags = tagDecorations.map(tag => tag.escapedTag);
+
+    const params: SetupPickerParams = {
+      ...comments,
+      languageId: activedEditor.document.languageId,
+      escapedTags,
+    };
+
+    setupLinePicker(params);
+
+    setupBlockPickers(params);
   }
 
   /**
    * Set up line picker
    */
-  function setupLinePicker(languageCode: string, lineComments: string[]) {
-    highlightLineComments = languageCode === 'plaintext'
+  function setupLinePicker({ languageId, lineComments, escapedTags }: SetupPickerParams) {
+    highlightLineComments = languageId === 'plaintext'
       ? configs.highlightPlainText // If highlight plaintext is enabled, this is a supported language
       : lineComments.length > 0;
 
@@ -69,9 +98,7 @@ export function useParser() {
       return;
     }
 
-    const escapedTags = tagDecorations.map(tag => tag.escapedTag);
-
-    if (languageCode === 'plaintext') {
+    if (languageId === 'plaintext') {
       linePicker = {
         marks: [],
         // start by tying the regex to the first character in a line
@@ -92,15 +119,13 @@ export function useParser() {
   /**
    * Set up block pickers
    */
-  function setupBlockPickers(languageCode: string, blockComments: CharacterPair[]) {
+  function setupBlockPickers({ blockComments, escapedTags }: SetupPickerParams) {
     highlightBlockComments = blockComments.length > 0 && configs.multilineComments;
 
     if (!highlightBlockComments) {
       blockPickers = [];
       return;
     }
-
-    const escapedTags = tagDecorations.map(tag => tag.escapedTag);
 
     blockPickers = blockComments.map((marks) => {
       const begin = escapeRegExp(marks[0]);
@@ -119,20 +144,22 @@ export function useParser() {
 
   /**
    * Pick up all single line comments delimited by a given delimiter and matching tags.
-   * @param activeEditor The active text editor containing the code document
+   * @param params Pass params in object avoid copy values
    */
-  function pickLineComments(activeEditor: TextEditor): void {
+  function pickLineComments(params: PickParams): void {
   // If highlight single line comments is off, single line comments are not supported for this language
     if (!highlightLineComments) {
       return;
     }
 
-    const text = activeEditor.document.getText();
+    if (!activedEditor) {
+      return;
+    }
 
     let match: RegExpExecArray | null | undefined;
-    while (match = linePicker.pick?.exec(text)) {
-      const startPos = activeEditor.document.positionAt(match.index + match[1].length);
-      const endPos = activeEditor.document.positionAt(match.index + match[0].length);
+    while (match = linePicker.pick?.exec(params.text)) {
+      const startPos = activedEditor.document.positionAt(match.index + match[1].length);
+      const endPos = activedEditor.document.positionAt(match.index + match[0].length);
       const range = new vscode.Range(startPos, endPos);
 
       // Find which custom delimiter was used in order to add it to the collection
@@ -146,20 +173,22 @@ export function useParser() {
 
   /**
    * Pick up block comments as indicated by start and end delimiter.
-   * @param activeEditor The active text editor containing the code document
+   * @param params Pass params in object avoid copy values
    */
-  function pickBlockComments(activeEditor: TextEditor): void {
+  function pickBlockComments(params: PickParams): void {
   // If highlight multiline is off in package.json or doesn't apply to his language, return
     if (!highlightBlockComments) {
       return;
     }
 
-    const text = activeEditor.document.getText();
+    if (!activedEditor) {
+      return;
+    }
 
     for (const picker of blockPickers) {
     // Find the multiline comment block
       let block: RegExpExecArray | null;
-      while (block = picker.blockPick.exec(text)) {
+      while (block = picker.blockPick.exec(params.text)) {
         const comment = block[3];
         const isJsDoc = block[2] === '/**';
 
@@ -172,8 +201,8 @@ export function useParser() {
           const matchString = line[3];
 
           const startIdx = block.index + block[1].length + block[2].length + line.index + line[1].length;
-          const startPos = activeEditor.document.positionAt(startIdx);
-          const endPos = activeEditor.document.positionAt(startIdx + line[2].length);
+          const startPos = activedEditor.document.positionAt(startIdx);
+          const endPos = activedEditor.document.positionAt(startIdx + line[2].length);
           const range = new vscode.Range(startPos, endPos);
 
           const found = tagDecorations.find(td => td.tag.toLowerCase() === matchString?.toLowerCase());
@@ -185,24 +214,50 @@ export function useParser() {
       }
     }
   }
+
   /**
    * Apply decorations after finding all relevant comments
-   * @param activeEditor The active text editor containing the code document
    */
-  function applyDecorations(activeEditor: vscode.TextEditor): void {
+  function applyDecorations(): void {
+    if (!activedEditor) {
+      return;
+    }
+
     for (const td of tagDecorations) {
-      activeEditor.setDecorations(td.decoration, td.decorationOptions);
+      activedEditor.setDecorations(td.decoration, td.decorationOptions);
 
       // clear the decoration options for the next pass
       td.decorationOptions = [];
     }
   }
 
-  /**
-   * This is used to trigger the events when a supported language code is found
-   */
-  function isSupportedLanguage() {
-    return highlightLineComments || highlightBlockComments;
+  // * IMPORTANT:
+  // * To avoid calling update too often,
+  // * set a timer for 100ms to wait before updating decorations
+  function triggerUpdateDecorations(ms = 100) {
+    if (triggerUpdateTimeout) {
+      clearTimeout(triggerUpdateTimeout);
+    }
+
+    triggerUpdateTimeout = setTimeout(() => {
+      // if no active window is open, return
+      if (!activedEditor) {
+        return;
+      }
+
+      const opt = {
+        text: activedEditor.document.getText(),
+      };
+
+      // Finds the single line comments using the language comment delimiter
+      pickLineComments(opt);
+
+      // Finds the multi line comments using the language comment delimiter
+      pickBlockComments(opt);
+
+      // Apply decoration styles
+      applyDecorations();
+    }, ms);
   }
 
   /**
@@ -247,7 +302,7 @@ export function useParser() {
    * Parse decoration render option by tag configuration
    */
   function parseDecorationRenderOption(tag: TagFlatten) {
-    const options: DecorationRenderOptions = { color: tag.color, backgroundColor: tag.backgroundColor };
+    const options: vscode.DecorationRenderOptions = { color: tag.color, backgroundColor: tag.backgroundColor };
 
     // ? the textDecoration is initialised to empty so we can concat a preceeding space on it
     options.textDecoration = '';
@@ -272,11 +327,9 @@ export function useParser() {
   }
 
   return {
-    setupPickers,
-    pickLineComments,
-    pickBlockComments,
-    applyDecorations,
     updateLanguagesDefinitions: languages.updateDefinitions,
-    isSupportedLanguage,
+    getEditor,
+    setEditor,
+    triggerUpdateDecorations,
   };
 }
