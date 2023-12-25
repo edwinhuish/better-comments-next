@@ -24,6 +24,7 @@ export interface BlockPicker {
 
 export interface PickParams {
   text: string;
+  blockRanges: [number, number][]; // array of [beginIndex, endIndex]
 }
 
 export function useParser() {
@@ -150,6 +151,11 @@ export function useParser() {
 
     let match: RegExpExecArray | null | undefined;
     while (match = linePicker?.pick.exec(params.text)) {
+      // skip if line mark inside block comments
+      if (params.blockRanges.find(range => range[0] <= match!.index && match![0].length <= range[1])) {
+        continue;
+      }
+
       const startPos = activedEditor.document.positionAt(match.index + match[1].length);
       const endPos = activedEditor.document.positionAt(match.index + match[0].length);
       const range = new vscode.Range(startPos, endPos);
@@ -168,15 +174,23 @@ export function useParser() {
    * @param params Pass params in object avoid copy values
    */
   function pickBlockComments(params: PickParams): void {
-    // If highlight multiline is off then return
-    if (!activedEditor || !highlightBlockComments) {
+    // If activedEditor undefined then return
+    if (!activedEditor) {
       return;
     }
 
     for (const picker of blockPickers) {
-    // Find the multiline comment block
+      // Find the multiline comment block
       let block: RegExpExecArray | null;
       while (block = picker.blockPick.exec(params.text)) {
+        // remember block comment range
+        params.blockRanges.push([block.index, block.index + block[0].length]);
+
+        // If highlight multiline is off then continue
+        if (!highlightBlockComments) {
+          continue;
+        }
+
         const comment = block[3];
         const isJsDoc = block[2] === '/**';
 
@@ -233,15 +247,16 @@ export function useParser() {
         return;
       }
 
-      const opt = {
+      const opt: PickParams = {
         text: activedEditor.document.getText(),
+        blockRanges: [],
       };
-
-      // Finds the single line comments using the language comment delimiter
-      pickLineComments(opt);
 
       // Finds the multi line comments using the language comment delimiter
       pickBlockComments(opt);
+
+      // Finds the single line comments using the language comment delimiter
+      pickLineComments(opt);
 
       // Apply decoration styles
       applyDecorations();
