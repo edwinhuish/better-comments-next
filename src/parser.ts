@@ -130,7 +130,7 @@ export function useParser() {
       const linePrefix = marks[0].slice(-1);
       const prefix = escapeRegExp(linePrefix);
       return {
-        blockPick: new RegExp(`(^|[ \\t]+)(${begin}+)([^]*?)(${end})`, 'gm'),
+        blockPick: new RegExp(`(^|[ \\t]+)(${begin}+)([^${end}]*?)(${end})`, 'gm'),
         linePick: new RegExp(`(^[ \\t]*)((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
         docLinePick: new RegExp(`(^[ \\t]*${prefix}[ \\t])((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
         linePrefix,
