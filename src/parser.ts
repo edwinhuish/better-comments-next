@@ -152,7 +152,9 @@ export function useParser() {
     let match: RegExpExecArray | null | undefined;
     while (match = linePicker?.pick.exec(params.text)) {
       // skip if line mark inside block comments
-      if (params.blockRanges.find(range => range[0] <= match!.index && match![0].length <= range[1])) {
+      const beginIndex = match.index;
+      const endIndex = match.index + match[0].length;
+      if (params.blockRanges.find(range => range[0] <= beginIndex && endIndex <= range[1])) {
         continue;
       }
 
