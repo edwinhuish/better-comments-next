@@ -69,11 +69,6 @@ function parseDecorationRenderOption(tag: TagFlatten) {
   return options;
 }
 
-export interface ParserOptions {
-  langId: string;
-  configs?: ConfigurationFlatten;
-}
-
 export function useParser(configuration?: ConfigurationFlatten) {
   // Better comments configuration in flatten
   const configs = configuration || getConfigurationFlatten();
