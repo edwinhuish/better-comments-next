@@ -53,8 +53,6 @@ export async function activate(context: vscode.ExtensionContext) {
       // Update decorators
       parser.triggerUpdateDecorations(0);
     }
-
-    await parser.triggerUpdateDecorations(0);
   }, null, context.subscriptions);
 }
 

@@ -59,7 +59,6 @@ export function updateDefinitions() {
 /**
  * Gets the configuration information for the specified language
  * @param languageCode
- * @returns
  */
 export async function getAvailableCommentRules(languageCode: string): Promise<AvailableCommentRules> {
   await loadCommentRules(languageCode);

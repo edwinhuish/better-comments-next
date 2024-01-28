@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { getConfigurationFlatten } from './configuration';
 import * as languages from './languages';
-import type { TagFlatten } from './configuration';
+import type { ConfigurationFlatten, TagFlatten } from './configuration';
 
 export interface TagDecoration {
   tag: string;
@@ -27,6 +27,72 @@ export interface PickParams {
   blockRanges: [number, number][]; // array of [beginIndex, endIndex]
 }
 
+/**
+ * Escapes a given string for use in a regular expression
+ * @param input The input string to be escaped
+ * @returns {string} The escaped string
+ */
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'); // $& means the whole matched string
+}
+
+/**
+ * Generate tags decorations
+ */
+function generateTagDecorations(configs: ConfigurationFlatten) {
+  const decorations: TagDecoration[] = [];
+  for (const tag of configs.tags) {
+    const opt = parseDecorationRenderOption(tag);
+
+    const tagLight = configs.tagsLight.find(t => t.tag === tag.tag);
+    if (tagLight) {
+      opt.light = parseDecorationRenderOption(tagLight);
+    }
+
+    const tagDark = configs.tagsDark.find(t => t.tag === tag.tag);
+    if (tagDark) {
+      opt.dark = parseDecorationRenderOption(tagDark);
+    }
+
+    decorations.push({
+      tag: tag.tag,
+      escapedTag: escapeRegExp(tag.tag),
+      decoration: vscode.window.createTextEditorDecorationType(opt),
+      decorationOptions: [],
+    });
+  }
+
+  return decorations;
+}
+
+/**
+ * Parse decoration render option by tag configuration
+ */
+function parseDecorationRenderOption(tag: TagFlatten) {
+  const options: vscode.DecorationRenderOptions = { color: tag.color, backgroundColor: tag.backgroundColor };
+
+  // ? the textDecoration is initialised to empty so we can concat a preceeding space on it
+  options.textDecoration = '';
+
+  if (tag.strikethrough) {
+    options.textDecoration += 'line-through';
+  }
+
+  if (tag.underline) {
+    options.textDecoration += ' underline';
+  }
+
+  if (tag.bold) {
+    options.fontWeight = 'bold';
+  }
+
+  if (tag.italic) {
+    options.fontStyle = 'italic';
+  }
+
+  return options;
+}
+
 export function useParser() {
   // Update languages definitions
   languages.updateDefinitions();
@@ -35,7 +101,7 @@ export function useParser() {
   const configs = getConfigurationFlatten();
 
   // Tags for decoration
-  const tagDecorations: TagDecoration[] = generateTagDecorations();
+  const tagDecorations: TagDecoration[] = generateTagDecorations(configs);
 
   // Line picker
   let linePicker: LinePicker | undefined;
@@ -222,10 +288,21 @@ export function useParser() {
   /**
    * Apply decorations after finding all relevant comments
    */
-  function applyDecorations(): void {
+  function updateDecorations(): void {
     if (!activedEditor) {
       return;
     }
+
+    const opt: PickParams = {
+      text: activedEditor.document.getText(),
+      blockRanges: [],
+    };
+
+    // Finds the multi line comments using the language comment delimiter
+    pickBlockComments(opt);
+
+    // Finds the single line comments using the language comment delimiter
+    pickLineComments(opt);
 
     for (const td of tagDecorations) {
       activedEditor.setDecorations(td.decoration, td.decorationOptions);
@@ -244,98 +321,14 @@ export function useParser() {
       clearTimeout(triggerUpdateTimeout);
     }
 
-    triggerUpdateTimeout = setTimeout(() => {
-      // if no active window is open, return
-      if (!activedEditor) {
-        return;
-      }
-
-      const opt: PickParams = {
-        text: activedEditor.document.getText(),
-        blockRanges: [],
-      };
-
-      // Finds the multi line comments using the language comment delimiter
-      pickBlockComments(opt);
-
-      // Finds the single line comments using the language comment delimiter
-      pickLineComments(opt);
-
-      // Apply decoration styles
-      applyDecorations();
-    }, ms);
-  }
-
-  /**
-   * Escapes a given string for use in a regular expression
-   * @param input The input string to be escaped
-   * @returns {string} The escaped string
-   */
-  function escapeRegExp(input: string): string {
-    return input.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'); // $& means the whole matched string
-  }
-
-  /**
-   * Generate tags decorations
-   */
-  function generateTagDecorations() {
-    const decorations: TagDecoration[] = [];
-    for (const tag of configs.tags) {
-      const opt = parseDecorationRenderOption(tag);
-
-      const tagLight = configs.tagsLight.find(t => t.tag === tag.tag);
-      if (tagLight) {
-        opt.light = parseDecorationRenderOption(tagLight);
-      }
-
-      const tagDark = configs.tagsDark.find(t => t.tag === tag.tag);
-      if (tagDark) {
-        opt.dark = parseDecorationRenderOption(tagDark);
-      }
-
-      decorations.push({
-        tag: tag.tag,
-        escapedTag: escapeRegExp(tag.tag),
-        decoration: vscode.window.createTextEditorDecorationType(opt),
-        decorationOptions: [],
-      });
-    }
-
-    return decorations;
-  }
-
-  /**
-   * Parse decoration render option by tag configuration
-   */
-  function parseDecorationRenderOption(tag: TagFlatten) {
-    const options: vscode.DecorationRenderOptions = { color: tag.color, backgroundColor: tag.backgroundColor };
-
-    // ? the textDecoration is initialised to empty so we can concat a preceeding space on it
-    options.textDecoration = '';
-
-    if (tag.strikethrough) {
-      options.textDecoration += 'line-through';
-    }
-
-    if (tag.underline) {
-      options.textDecoration += ' underline';
-    }
-
-    if (tag.bold) {
-      options.fontWeight = 'bold';
-    }
-
-    if (tag.italic) {
-      options.fontStyle = 'italic';
-    }
-
-    return options;
+    triggerUpdateTimeout = setTimeout(updateDecorations, ms);
   }
 
   return {
     updateLanguagesDefinitions: languages.updateDefinitions,
     getEditor,
     setEditor,
+    updateDecorations,
     triggerUpdateDecorations,
   };
 }
