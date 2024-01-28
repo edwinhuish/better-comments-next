@@ -147,6 +147,7 @@ export function useParser() {
     }
 
     let match: RegExpExecArray | null | undefined;
+    // eslint-disable-next-line no-cond-assign
     while (match = linePicker?.pick.exec(params.text)) {
       // skip if line mark inside block comments
       const beginIndex = match.index;
@@ -181,6 +182,7 @@ export function useParser() {
     for (const picker of blockPickers) {
       // Find the multiline comment block
       let block: RegExpExecArray | null;
+      // eslint-disable-next-line no-cond-assign
       while (block = picker.blockPick.exec(params.text)) {
         // remember block comment range
         params.blockRanges.push([block.index, block.index + block[0].length]);
@@ -197,6 +199,7 @@ export function useParser() {
 
         // Find the line
         let line: RegExpExecArray | null;
+        // eslint-disable-next-line no-cond-assign
         while (line = linePick.exec(comment)) {
           // Find which custom delimiter was used in order to add it to the collection
           const matchString = line[3];

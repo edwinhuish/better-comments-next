@@ -1,9 +1,9 @@
-import { join as joinPath } from 'path';
-import { TextDecoder } from 'util';
+import { join as joinPath } from 'node:path';
+import { TextDecoder } from 'node:util';
 import * as vscode from 'vscode';
 import { parse as parseJson5 } from 'json5';
-import * as console from './console';
 import type { CharacterPair, CommentRule } from 'vscode';
+import * as console from './console';
 
 export interface LanguageConfig {
   configPath: string;
@@ -128,7 +128,8 @@ async function loadCommentRuleFromFile(filepath?: string): Promise<CommentRule |
     const config = parseJson5(content);
 
     return config.comments;
-  } catch (error) {
+  }
+  catch (error) {
     console.error(error);
     return undefined;
   }

@@ -1,17 +1,78 @@
 // Place your settings in this file to overwrite default and user settings.
 {
-    "files.exclude": {
-        "out": false, // set this to true to hide the "out" folder with the compiled JS files
-        "npm-debug.log": true
+  "files.exclude": {
+    "out": false, // set this to true to hide the "out" folder with the compiled JS files
+    "npm-debug.log": true
+  },
+  "search.exclude": {
+    "out": true // set this to false to include "out" folder in search results
+  },
+  "vsicons.presets.angular": false,
+  // Enable the ESlint flat config support
+  "eslint.experimental.useFlatConfig": true,
+  // Disable the default formatter, use eslint instead
+  "prettier.enable": false,
+  "editor.formatOnSave": true,
+  // Auto fix
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
+  },
+  // Silent the stylistic rules in you IDE, but still auto fix them
+  "eslint.rules.customizations": [
+    {
+      "rule": "style/*",
+      "severity": "off"
     },
-    "search.exclude": {
-        "out": true // set this to false to include "out" folder in search results
+    {
+      "rule": "format/*",
+      "severity": "off"
     },
-    "vsicons.presets.angular": false,
-    "[javascript]": {
-        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    {
+      "rule": "*-indent",
+      "severity": "off"
     },
-    "[typescript]": {
-        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    {
+      "rule": "*-spacing",
+      "severity": "off"
+    },
+    {
+      "rule": "*-spaces",
+      "severity": "off"
+    },
+    {
+      "rule": "*-order",
+      "severity": "off"
+    },
+    {
+      "rule": "*-dangle",
+      "severity": "off"
+    },
+    {
+      "rule": "*-newline",
+      "severity": "off"
+    },
+    {
+      "rule": "*quotes",
+      "severity": "off"
+    },
+    {
+      "rule": "*semi",
+      "severity": "off"
     }
+  ],
+  // Enable eslint for all supported languages
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact",
+    "vue",
+    "html",
+    "markdown",
+    "json",
+    "jsonc",
+    "yaml",
+    "toml"
+  ]
 }

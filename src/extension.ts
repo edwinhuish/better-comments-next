@@ -39,21 +39,21 @@ export async function activate(context: vscode.ExtensionContext) {
   }, null, context.subscriptions);
 
   // * Handle configuration changed
-  vscode.workspace.onDidChangeConfiguration(async (event)=>{
-    if(!event.affectsConfiguration('better-comments')){
+  vscode.workspace.onDidChangeConfiguration(async (event) => {
+    if (!event.affectsConfiguration('better-comments')) {
       return;
     }
 
-    parser = useParser();  
+    parser = useParser();
     // Get the active editor for the first time and initialise the regex
     if (vscode.window.activeTextEditor) {
       // Set the regex patterns for the specified language's comments
       await parser.setEditor(vscode.window.activeTextEditor);
-  
+
       // Update decorators
       parser.triggerUpdateDecorations(0);
     }
-  
+
     await parser.triggerUpdateDecorations(0);
   }, null, context.subscriptions);
 }

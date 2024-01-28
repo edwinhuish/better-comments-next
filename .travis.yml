@@ -1,20 +1,20 @@
 sudo: false
 os: linux
 language: node_js
-node_js: '8.9.2'
+node_js: 8.9.2
 
 services:
   - xvfb
 
 before_install:
-- export CXX="g++-4.9" CC="gcc-4.9" DISPLAY=:99.0;
+  - export CXX="g++-4.9" CC="gcc-4.9" DISPLAY=:99.0;
 
 install:
-- npm install
-- npm run vscode:prepublish
+  - npm install
+  - npm run vscode:prepublish
 
 script:
   - npm test --silent
 
 after_failure:
-- "cat /home/travis/build/edwinhuish/better-comments/npm-debug.log"
+  - cat /home/travis/build/edwinhuish/better-comments/npm-debug.log
