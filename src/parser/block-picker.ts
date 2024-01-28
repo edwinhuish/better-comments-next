@@ -114,34 +114,34 @@ function _pick(options: _BlockPickOptions) {
   };
 }
 
+function _pickMany(options: BlockPickOptions, pickers: BlockPicker[], hightlight: boolean) {
+  let blockRanges: [number, number][] = [];
+  let decorationOptions: TagDecorationOptions[] = [];
+
+  for (const picker of (options.pickers || pickers)) {
+    const picked = _pick({ ...options, picker, hightlight });
+
+    if (!picked) {
+      continue;
+    }
+
+    blockRanges = [...blockRanges, ...(picked.blockRanges || [])];
+    decorationOptions = [...decorationOptions, ...(picked.decorationOptions || [])];
+  }
+
+  return {
+    blockRanges,
+    decorationOptions,
+  };
+}
+
 export function useBlockPicker(options: UseBlockPickerOptions) {
   const pickers = parseBlockPickers(options);
 
   const hightlight = options.blockComments.length > 0 && options.configs.multilineComments;
 
-  function pick(options: BlockPickOptions) {
-    let blockRanges: [number, number][] = [];
-    let decorationOptions: TagDecorationOptions[] = [];
-
-    for (const picker of (options.pickers || pickers)) {
-      const picked = _pick({ ...options, picker, hightlight });
-
-      if (!picked) {
-        continue;
-      }
-
-      blockRanges = [...blockRanges, ...(picked.blockRanges || [])];
-      decorationOptions = [...decorationOptions, ...(picked.decorationOptions || [])];
-    }
-
-    return {
-      blockRanges,
-      decorationOptions,
-    };
-  }
-
   return {
     ...options,
-    pick,
+    pick: (options: BlockPickOptions) => _pickMany(options, pickers, hightlight),
   };
 }
