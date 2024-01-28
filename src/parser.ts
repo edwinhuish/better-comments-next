@@ -49,9 +49,6 @@ export function useParser() {
   // Vscode active editor
   let activedEditor: vscode.TextEditor | undefined;
 
-  // Trigger update time out
-  let triggerUpdateTimeout: NodeJS.Timer | undefined;
-
   /**
    * Get actived editor
    */
@@ -144,7 +141,7 @@ export function useParser() {
    * @param params Pass params in object avoid copy values
    */
   function pickLineComments(params: PickParams): void {
-  // If highlight single line comments is off, single line comments are not supported for this language
+    // If highlight single line comments is off, single line comments are not supported for this language
     if (!activedEditor || !highlightLineComments) {
       return;
     }
@@ -201,7 +198,7 @@ export function useParser() {
         // Find the line
         let line: RegExpExecArray | null;
         while (line = linePick.exec(comment)) {
-        // Find which custom delimiter was used in order to add it to the collection
+          // Find which custom delimiter was used in order to add it to the collection
           const matchString = line[3];
 
           const startIdx = block.index + block[1].length + block[2].length + line.index + line[1].length;
@@ -238,6 +235,7 @@ export function useParser() {
   // * IMPORTANT:
   // * To avoid calling update too often,
   // * set a timer for 100ms to wait before updating decorations
+  let triggerUpdateTimeout: NodeJS.Timer | undefined;
   function triggerUpdateDecorations(ms = 100) {
     if (triggerUpdateTimeout) {
       clearTimeout(triggerUpdateTimeout);
