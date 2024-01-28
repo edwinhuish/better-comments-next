@@ -20,6 +20,12 @@ const commentRules = new Map<string, CommentRule>();
 // Language config path and embedded languages
 const languageConfigs = new Map<string, LanguageConfig>();
 
+export function initDefinitions() {
+  if (commentRules.size === 0 || languageConfigs.size === 0) {
+    updateDefinitions();
+  }
+}
+
 /**
  * Generate a map of configuration files by language as defined by extensions
  * External extensions can override default configurations os VSCode
@@ -61,6 +67,7 @@ export function updateDefinitions() {
  * @param languageCode
  */
 export async function getAvailableCommentRules(languageCode: string): Promise<AvailableCommentRules> {
+  initDefinitions();
   await loadCommentRules(languageCode);
 
   const lineComments = new Set<string>();
