@@ -1,6 +1,6 @@
 # Better Comments Next
 
-The Better Comments extension will help you create more human-friendly comments in your code.  
+The Better Comments extension will help you create more human-friendly comments in your code.
 With this extension, you will be able to categorise your annotations into:
 
 * Alerts
@@ -10,17 +10,17 @@ With this extension, you will be able to categorise your annotations into:
 * Commented out code can also be styled to make it clear the code shouldn't be there
 * Any other comment styles you'd like can be specified in the settings
 
-![Annotated code](images/better-comments.PNG)
+![Annotated code](static/better-comments.png)
 
 ## Configuration
 
 This extension can be configured in User Settings or Workspace settings.
 
-`"better-comments.multilineComments": true`  
+`"better-comments.multilineComments": true`
  This setting will control whether multiline comments are styled using the annotation tags.
  When false, multiline comments will be presented without decoration.
 
-`"better-comments.highlightPlainText": false`  
+`"better-comments.highlightPlainText": false`
 This setting will control whether comments in a plain text file are styled using the annotation tags.
 When true, the tags (defaults: `! * ? //`) will be detected if they're the first character on a line.
 

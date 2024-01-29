@@ -1,4 +1,3 @@
-import { join as joinPath } from 'path';
 import { TextDecoder } from 'util';
 import * as vscode from 'vscode';
 import { parse as parseJson5 } from 'json5';
@@ -6,7 +5,7 @@ import type { CharacterPair, CommentRule } from 'vscode';
 import * as console from './console';
 
 export interface LanguageConfig {
-  configPath: string;
+  configUri: vscode.Uri;
   embeddedLanguages: string[];
 }
 
@@ -52,10 +51,8 @@ export function updateDefinitions() {
         }
       }
 
-      const configPath = joinPath(extension.extensionPath, language.configuration);
-
       languageConfigs.set(language.id, {
-        configPath,
+        configUri: extension.extensionUri,
         embeddedLanguages: [...embeddedLanguages],
       });
     }
@@ -106,7 +103,7 @@ async function loadCommentRules(languageCode: string) {
 
   let commentRule;
 
-  commentRule = await loadCommentRuleFromFile(language?.configPath);
+  commentRule = await loadCommentRuleFromFile(language?.configUri);
   if (!commentRule) {
     commentRule = getBaseCommentRule(languageCode);
   }
@@ -120,13 +117,13 @@ async function loadCommentRules(languageCode: string) {
   }
 }
 
-async function loadCommentRuleFromFile(filepath?: string): Promise<CommentRule | undefined> {
-  if (!filepath) {
+async function loadCommentRuleFromFile(fileUri?: vscode.Uri): Promise<CommentRule | undefined> {
+  if (!fileUri) {
     return undefined;
   }
   try {
-    // Get the filepath from the map
-    const rawContent = await vscode.workspace.fs.readFile(vscode.Uri.file(filepath));
+    // Read file
+    const rawContent = await vscode.workspace.fs.readFile(fileUri);
 
     const content = new TextDecoder().decode(rawContent);
 
