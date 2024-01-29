@@ -3,8 +3,8 @@ const antfu = require('@antfu/eslint-config').default;
 module.exports = antfu(
   {
     ignores: [
-      'src/test'
-    ]
+      'src/test',
+    ],
   },
   {
     // style
@@ -25,6 +25,11 @@ module.exports = antfu(
     files: ['package.json'],
     rules: {
       'jsonc/indent': ['error', 4],
+    },
+  },
+  {
+    rules: {
+      'unicorn/prefer-node-protocol': 'off',
     },
   },
 );

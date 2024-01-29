@@ -1,5 +1,5 @@
-import { join as joinPath } from 'node:path';
-import { TextDecoder } from 'node:util';
+import { join as joinPath } from 'path';
+import { TextDecoder } from 'util';
 import * as vscode from 'vscode';
 import { parse as parseJson5 } from 'json5';
 import type { CharacterPair, CommentRule } from 'vscode';
