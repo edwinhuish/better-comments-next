@@ -20,7 +20,7 @@ const commentRules = new Map<string, CommentRule>();
 const languageConfigs = new Map<string, LanguageConfig>();
 
 export function initDefinitions() {
-  if (commentRules.size === 0 || languageConfigs.size === 0) {
+  if (languageConfigs.size === 0) {
     updateDefinitions();
   }
 }
@@ -52,7 +52,7 @@ export function updateDefinitions() {
       }
 
       languageConfigs.set(language.id, {
-        configUri: extension.extensionUri,
+        configUri: vscode.Uri.joinPath(extension.extensionUri, language.configuration),
         embeddedLanguages: [...embeddedLanguages],
       });
     }
