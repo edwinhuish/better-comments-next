@@ -1,10 +1,12 @@
 import * as vscode from 'vscode';
 import type { ConfigurationFlatten } from '../configuration';
 import { escapeRegexString } from '../utils';
+import type { AvailableCommentRules } from '../languages';
 import type { TagDecorationOptions } from '.';
 
 export interface UseBlockPickerOptions {
-  blockComments: vscode.CharacterPair[];
+  editor: vscode.TextEditor;
+  comments: AvailableCommentRules;
   configs: ConfigurationFlatten;
 }
 
@@ -17,17 +19,17 @@ export interface BlockPicker {
 
 function parseBlockPickers(options: UseBlockPickerOptions) {
   const {
-    blockComments,
+    comments,
     configs,
   } = options;
 
-  if (!blockComments || !blockComments.length) {
+  if (!comments.blockComments || !comments.blockComments.length) {
     return [];
   }
 
   const escapedTags = configs.tags.map(tag => tag.tagEscaped);
 
-  const pickers: BlockPicker[] = blockComments.map((marks) => {
+  const pickers: BlockPicker[] = comments.blockComments.map((marks) => {
     const begin = escapeRegexString(marks[0]);
     const end = escapeRegexString(marks[1]);
     const linePrefix = marks[0].slice(-1);
@@ -52,8 +54,6 @@ interface _BlockPickOptions {
 
 export interface BlockPickOptions {
   text?: string;
-  editor: vscode.TextEditor;
-  pickers?: BlockPicker[];
 }
 
 function _pick(options: _BlockPickOptions) {
@@ -114,12 +114,23 @@ function _pick(options: _BlockPickOptions) {
   };
 }
 
-function _pickMany(options: BlockPickOptions, pickers: BlockPicker[], hightlight: boolean) {
+interface _BlockPickManyOptions extends Omit<_BlockPickOptions, 'picker'> {
+  pickers: BlockPicker[];
+}
+
+function _pickMany(options: _BlockPickManyOptions) {
+  const {
+    editor,
+    pickers,
+    text = editor.document.getText(),
+    hightlight = true,
+  } = options;
+
   let blockRanges: [number, number][] = [];
   let decorationOptions: TagDecorationOptions[] = [];
 
-  for (const picker of (options.pickers || pickers)) {
-    const picked = _pick({ ...options, picker, hightlight });
+  for (const picker of pickers) {
+    const picked = _pick({ editor, text, hightlight, picker });
 
     if (!picked) {
       continue;
@@ -136,12 +147,22 @@ function _pickMany(options: BlockPickOptions, pickers: BlockPicker[], hightlight
 }
 
 export function useBlockPicker(options: UseBlockPickerOptions) {
-  const pickers = parseBlockPickers(options);
+  const {
+    editor,
+    comments,
+    configs,
+  } = options;
 
-  const hightlight = options.blockComments.length > 0 && options.configs.multilineComments;
+  const pickers = parseBlockPickers({ editor, comments, configs });
+
+  const hightlight = comments.blockComments.length > 0 && configs.multilineComments;
 
   return {
-    ...options,
-    pick: (options: BlockPickOptions) => _pickMany(options, pickers, hightlight),
+    pick: (opts: BlockPickOptions = {}) => _pickMany({
+      ...opts,
+      editor,
+      pickers,
+      hightlight,
+    }),
   };
 }

@@ -1,27 +1,25 @@
 import * as vscode from 'vscode';
 import { escapeRegexString } from '../utils';
 import type { ConfigurationFlatten } from '../configuration';
+import type { AvailableCommentRules } from '../languages';
 import type { TagDecorationOptions } from '.';
 
 export interface UseLinePickerOptions {
-  lineComments: string[];
+  editor: vscode.TextEditor;
+  comments: AvailableCommentRules;
   configs: ConfigurationFlatten;
 }
 
-export interface ParseLinePickerOptions extends UseLinePickerOptions {
-  languageId: string;
-}
-
-function parseLinePicker(options: ParseLinePickerOptions) {
+function parseLinePicker(options: UseLinePickerOptions) {
   const {
-    languageId,
-    lineComments,
+    editor,
+    comments,
     configs,
   } = options;
 
   const escapedTags = configs.tags.map(tag => tag.tagEscaped);
 
-  if (languageId === 'plaintext') {
+  if (editor.document.languageId === 'plaintext') {
     if (!configs.highlightPlainText) {
       return;
     }
@@ -29,11 +27,11 @@ function parseLinePicker(options: ParseLinePickerOptions) {
     return new RegExp(`(^)([ \\t]*)(${escapedTags.join('|')})+(.*)`, 'igm');
   }
 
-  if (!lineComments || !lineComments.length) {
+  if (!comments.lineComments || !comments.lineComments.length) {
     return;
   }
 
-  const escapedMarks = lineComments.map(s => `${escapeRegexString(s)}+`).join('|');
+  const escapedMarks = comments.lineComments.map(s => `${escapeRegexString(s)}+`).join('|');
 
   return new RegExp(`(^|[ \\t]+)(${escapedMarks})[ \\t](${escapedTags.join('|')})(.*)`, 'igm');
 }
@@ -41,11 +39,10 @@ function parseLinePicker(options: ParseLinePickerOptions) {
 export interface LinePickOptions {
   text?: string;
   picker?: RegExp;
-  editor: vscode.TextEditor;
   skipRanges?: [number, number][]; // array of [beginIndex, endIndex]
 }
 
-function _pick(options: LinePickOptions) {
+function _pick(options: LinePickOptions & { editor: vscode.TextEditor }) {
   if (!options.editor) {
     return;
   }
@@ -85,11 +82,17 @@ function _pick(options: LinePickOptions) {
 }
 
 export function useLinePicker(options: UseLinePickerOptions) {
+  const {
+    editor,
+    comments,
+    configs,
+  } = options;
+
   return {
-    ...options,
-    pick: (opt: LinePickOptions) => {
-      const picker = parseLinePicker({ ...options, languageId: opt.editor.document.languageId });
-      return _pick({ picker, ...opt });
+    pick: (opt: LinePickOptions = {}) => {
+      const picker = parseLinePicker({ editor, comments, configs });
+      opt.text = opt.text || editor.document.getText();
+      return _pick({ ...opt, picker, editor });
     },
   };
 }

@@ -2,9 +2,7 @@ import * as vscode from 'vscode';
 import { getConfigurationFlatten } from '../configuration';
 import * as languages from '../languages';
 import type { ConfigurationFlatten, TagFlatten } from '../configuration';
-import type { LinePickOptions } from './line-picker';
 import { useLinePicker } from './line-picker';
-import type { BlockPickOptions } from './block-picker';
 import { useBlockPicker } from './block-picker';
 
 export type LinePicker = ReturnType<typeof useLinePicker>;
@@ -101,15 +99,9 @@ export function useParser(configuration?: ConfigurationFlatten) {
 
     const comments = await languages.getAvailableCommentRules(activedEditor.document.languageId);
 
-    linePicker = useLinePicker({
-      lineComments: comments.lineComments,
-      configs,
-    });
+    linePicker = useLinePicker({ editor, comments, configs });
 
-    blockPicker = useBlockPicker({
-      blockComments: comments.blockComments,
-      configs,
-    });
+    blockPicker = useBlockPicker({ editor, comments, configs });
   }
 
   /**
@@ -120,13 +112,9 @@ export function useParser(configuration?: ConfigurationFlatten) {
       return;
     }
 
-    const text = activedEditor.document.getText();
+    const blockPicked = blockPicker?.pick();
 
-    const options: BlockPickOptions = { text, editor: activedEditor };
-    const blockPicked = blockPicker?.pick(options);
-
-    (options as LinePickOptions).skipRanges = blockPicked?.blockRanges;
-    const linePicked = linePicker?.pick(options);
+    const linePicked = linePicker?.pick({ skipRanges: blockPicked?.blockRanges });
 
     for (const td of tagDecorations) {
       const lowerTag = td.tag.toLowerCase();
