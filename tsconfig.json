@@ -12,7 +12,7 @@
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "outDir": "out",
+    "outDir": "dist",
     "sourceMap": true /* Report errors on unused locals. */
   },
   "exclude": [
