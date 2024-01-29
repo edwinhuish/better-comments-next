@@ -2,7 +2,7 @@
     "publisher": "edwinhuish",
     "name": "better-comments-next",
     "displayName": "Better Comments Next",
-    "version": "3.1.16",
+    "version": "3.1.17",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
     "author": {
         "name": "Edwin Xu"
@@ -35,7 +35,7 @@
         "color": "#e3f4ff",
         "theme": "light"
     },
-    "browser": "./dist/extension.js",
+    "browser": "./dist/extension.browser.js",
     "contributes": {
         "configuration": {
             "title": "Better Comments Next",
@@ -247,14 +247,15 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "npm run esbuild-base -- --minify",
-        "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node",
-        "esbuild": "npm run esbuild-base -- --sourcemap",
-        "esbuild-watch": "npm run esbuild-base -- --sourcemap --watch",
-        "test-compile": "tsc -p ./",
-        "pretest": "npm test-compile && npm lint",
-        "type-check": "tsc -p . --noEmit",
-        "lint": "npm run type-check && eslint --cache --max-warnings 0 \"{src,build}/**/*.{ts,js}\" --fix"
+        "clean:dist": "rimraf dist",
+        "vscode:prepublish": "npm run clean:dist && npm run compile",
+        "compile": "npm run lint && npm run compile:bundle",
+        "compile:bundle": "node ./build/esbuild.mjs",
+        "test-compile": "tsc -p .",
+        "watch": "tsc -watch -p .",
+        "lint": "npm run lint:type && npm run lint:eslint",
+        "lint:type": "tsc -p . --noEmit",
+        "lint:eslint": "eslint --cache --max-warnings 0 \"{src,build}/**/*.{ts,js}\" --fix"
     },
     "dependencies": {
         "json5": "^2.2.1"
@@ -269,6 +270,7 @@
         "husky": "^8.0.3",
         "lint-staged": "^15.1.0",
         "ovsx": "^0.8.3",
+        "rimraf": "^5.0.5",
         "ts-loader": "^9.5.0",
         "typescript": "^4.6.3",
         "util": "^0.12.4"
