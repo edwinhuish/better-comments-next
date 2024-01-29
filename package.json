@@ -2,7 +2,7 @@
     "publisher": "edwinhuish",
     "name": "better-comments-next",
     "displayName": "Better Comments Next",
-    "version": "3.1.17",
+    "version": "3.1.18",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
     "author": {
         "name": "Edwin Xu"
@@ -35,7 +35,7 @@
         "color": "#e3f4ff",
         "theme": "light"
     },
-    "browser": "./dist/extension.browser.js",
+    "browser": "./dist/extension.web.js",
     "contributes": {
         "configuration": {
             "title": "Better Comments Next",
@@ -248,14 +248,20 @@
     },
     "scripts": {
         "clean:dist": "rimraf dist",
-        "vscode:prepublish": "npm run clean:dist && npm run compile",
-        "compile": "npm run lint && npm run compile:bundle",
-        "compile:bundle": "node ./build/esbuild.mjs",
-        "test-compile": "tsc -p .",
-        "watch": "tsc -watch -p .",
+        "vscode:prepublish": "npm run clean:dist && npm run package",
+        "package": "npm run lint && npm run package:node && npm run package:web",
+        "package:node": "cross-env NODE_ENV=production node ./build/esbuild.node.js",
+        "package:web": "cross-env NODE_ENV=production webpack --config ./build/webpack.web.js",
         "lint": "npm run lint:type && npm run lint:eslint",
         "lint:type": "tsc -p . --noEmit",
-        "lint:eslint": "eslint --cache --max-warnings 0 \"{src,build}/**/*.{ts,js}\" --fix"
+        "lint:eslint": "eslint --cache --max-warnings 0 \"{src,build}/**/*.{ts,js}\" --fix",
+        "run-in-browser": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. .",
+        "pretest": "npm run compile:node && npm run compile:web",
+        "test": "vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/web/test/suite/index.js",
+        "compile:node": "node ./build/esbuild.node.js",
+        "compile:web": "webpack --config ./build/webpack.web.js",
+        "watch": "tsc -watch -p .",
+        "watch:web": "webpack --watch --config ./build/webpack.web.js"
     },
     "dependencies": {
         "json5": "^2.2.1"
@@ -265,14 +271,19 @@
         "@types/node": "^17.0.23",
         "@types/vscode": "^1.65.0",
         "@vscode/vsce": "^2.21.1",
+        "cross-env": "^7.0.3",
         "esbuild": "^0.20.0",
         "eslint": "^8.56.0",
         "husky": "^8.0.3",
         "lint-staged": "^15.1.0",
         "ovsx": "^0.8.3",
+        "path-browserify": "^1.0.1",
+        "process": "^0.11.10",
         "rimraf": "^5.0.5",
         "ts-loader": "^9.5.0",
         "typescript": "^4.6.3",
-        "util": "^0.12.4"
+        "util": "^0.12.4",
+        "webpack": "^5.90.0",
+        "webpack-cli": "^5.1.4"
     }
 }
