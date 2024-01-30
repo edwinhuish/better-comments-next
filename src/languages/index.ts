@@ -20,6 +20,21 @@ export function initDefinitions() {
   }
 }
 
+export function useLanguage(langId: string, autoUpdateDefinition = true) {
+  if (languages.size === 0 && autoUpdateDefinition) {
+    updateDefinitions();
+  }
+
+  let lang = languages.get(langId);
+
+  if (!lang) {
+    lang = new Language(langId);
+    languages.set(langId, lang);
+  }
+
+  return lang;
+}
+
 /**
  * Generate a map of configuration files by language as defined by extensions
  * External extensions can override default configurations os VSCode
@@ -30,14 +45,11 @@ export function updateDefinitions() {
   for (const extension of vscode.extensions.all) {
     const packageJSON = extension.packageJSON;
     for (const language of (packageJSON?.contributes?.languages || [])) {
-      // if no configuration continue
-      if (!language.configuration) {
-        continue;
-      }
+      const lang = useLanguage(language.id, false);
 
-      // already set language
-      if (languages.has(language.id)) {
-        continue;
+      // if has configuration
+      if (language.configuration) {
+        lang.setConfigUri(vscode.Uri.joinPath(extension.extensionUri, language.configuration));
       }
 
       const embeddedLanguages = new Set<string>();
@@ -50,8 +62,7 @@ export function updateDefinitions() {
         }
       }
 
-      const lang = new Language(language.id, vscode.Uri.joinPath(extension.extensionUri, language.configuration));
-      languages.set(language.id, lang);
+      lang.setEmbeddedLanguages(embeddedLanguages);
     }
   }
 }
@@ -60,15 +71,7 @@ export function updateDefinitions() {
  * Gets the configuration information for the specified language
  */
 export async function getAvailableCommentRules(langId: string): Promise<AvailableCommentRules> {
-  initDefinitions();
-
-  const language = languages.get(langId);
-  if (!language) {
-    return {
-      lineComments: [],
-      blockComments: [],
-    };
-  }
+  const language = useLanguage(langId);
 
   const lineComments = new Set<string>();
   const blockComments = new Map<string, CharacterPair>();
@@ -93,7 +96,7 @@ export async function getAvailableCommentRules(langId: string): Promise<Availabl
 
   const embeddedLanguages = language.getEmbeddedLanguages();
   for (const embeddedLanguageCode of embeddedLanguages) {
-    const lang = languages.get(embeddedLanguageCode);
+    const lang = useLanguage(embeddedLanguageCode);
     await addCommentByLang(lang);
   }
 

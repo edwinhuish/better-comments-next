@@ -34,14 +34,29 @@ export default class Language {
     configUri?: vscode.Uri,
   ) {
     this.langId = langId;
+    this.setConfigUri(configUri);
+  }
+
+  /**
+   * Set configuration uri
+   */
+  setConfigUri(configUri?: vscode.Uri) {
     this.configUri = configUri;
+    return this;
+  }
+
+  /**
+   * Check if config uri already setup
+   */
+  hasConfigUri() {
+    return !!this.configUri;
   }
 
   /**
    * Get language comments rules
    */
-  async getComments() {
-    if (!this.comments) {
+  async getComments(forceRefresh = false) {
+    if (!this.comments || forceRefresh) {
       // load comment rule from file
       let comments = await loadCommentRuleFromFile(this.configUri);
       // get base comment rule if undefined from file
