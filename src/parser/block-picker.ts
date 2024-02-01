@@ -35,7 +35,7 @@ function parseBlockPickers(options: UseBlockPickerOptions) {
     const linePrefix = marks[0].slice(-1);
     const prefix = escapeRegexString(linePrefix);
     return {
-      blockpicker: new RegExp(`(^|[ \\t]+)(${begin}+)([ \\t\\r\\n])([\\s\\S]*?)(${end})`, 'gm'),
+      blockpicker: new RegExp(`(${begin}+)([ \\t\\r\\n])([\\s\\S]*?)(${end})`, 'gm'),
       linePicker: new RegExp(`(^[ \\t]*)((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
       docLinePicker: new RegExp(`(^[ \\t]*${prefix}[ \\t])((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
       docLinePrefix: linePrefix,
@@ -89,15 +89,15 @@ function _pick(options: _BlockPickOptions) {
       continue;
     }
 
-    const comment = block[4];
-    const isJsDoc = block[2] === '/**' && block[0].includes('\n');
+    const comment = block[3];
+    const isJsDoc = block[1] === '/**' && block[0].includes('\n');
 
     const linePicker = isJsDoc ? picker.docLinePicker : picker.linePicker;
     // Find the line
     let line: RegExpExecArray | null;
     // eslint-disable-next-line no-cond-assign
     while (line = linePicker.exec(comment)) {
-      const startIdx = block.index + block[1].length + block[2].length + block[3].length + line.index + line[1].length;
+      const startIdx = block.index + block[1].length + block[2].length + line.index + line[1].length;
       const startPos = editor.document.positionAt(startIdx);
       const endPos = editor.document.positionAt(startIdx + line[2].length);
       const range = new vscode.Range(startPos, endPos);

@@ -16,9 +16,9 @@ import './index.css';
  * ? to question
  */
 
- /*
- ! and the other format
- */
+/*
+! and the other format
+*/
 
 // finally
 // ! single line comments
@@ -29,6 +29,7 @@ const store = createStore<StoreState>(enthusiasm, {
 
 ReactDOM.render(
   <Provider store={store}>
+    {/* ! this is the react comment alert */}
     <Hello />
   </Provider>,
   document.getElementById('root') as HTMLElement
