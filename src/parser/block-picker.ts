@@ -39,7 +39,7 @@ function parseBlockPickers(options: UseBlockPickerOptions) {
     return {
       markStart: marks[0],
       markEnd: marks[1],
-      blockpicker: new RegExp(`(${start}+)(.*?)(${end})|(${start}+)([\\s\\S]*?)(${end})`, 'gm'),
+      blockpicker: new RegExp(`(${start}+)([ \\t\\r\\n]?)(.*?)(${end})|(${start}+)([ \\t\\r\\n]?)([\\s\\S]*?)(${end})`, 'gm'),
       linePicker: new RegExp(`(^([ \\t]*))((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
       docLinePicker: new RegExp(`(^[ \\t]*${prefix}([ \\t]))((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
       docLinePrefix: linePrefix,
@@ -96,28 +96,23 @@ function _pick(options: _BlockPickOptions) {
     // if the regex of block as line success
     const isLineComment = block[1] !== undefined;
 
-    const comment = isLineComment ? block[2] : block[5];
+    const comment = isLineComment ? block[3] : block[7];
+    const space = isLineComment ? block[2] : block[6];
 
-    if (!comment) {
+    if (!comment || !space) {
       continue;
     }
 
-    const markStart = isLineComment ? block[1] : block[4];
-    // const markEnd = isLineComment ? block[3] : block[6];
+    const markStart = isLineComment ? block[1] : block[5];
+    // const markEnd = isLineComment ? block[4] : block[8];
     const isDocComment = !isLineComment && markStart === '/**';
     const linePicker = isDocComment ? picker.docLinePicker : picker.linePicker;
 
     // Find the matched line
     let line: RegExpExecArray | null;
-    let isFirstLine = true;
     // eslint-disable-next-line no-cond-assign
     while (line = linePicker.exec(comment)) {
-      // if is first line comment, but space count !== 1
-      if (isFirstLine && line[2].length !== 1) {
-        continue;
-      }
-
-      const startIdx = block.index + markStart.length + line.index + line[1].length;
+      const startIdx = block.index + markStart.length + space.length + line.index + line[1].length;
       const startPos = editor.document.positionAt(startIdx);
       const endPos = editor.document.positionAt(startIdx + line[3].length);
       const range = new vscode.Range(startPos, endPos);
@@ -125,8 +120,6 @@ function _pick(options: _BlockPickOptions) {
       const tag = line![4].toLowerCase();
 
       decorationOptions.push({ tag, range });
-
-      isFirstLine = false;
     }
   }
 
