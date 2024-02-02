@@ -2,7 +2,7 @@
     "publisher": "edwinhuish",
     "name": "better-comments-next",
     "displayName": "Better Comments Next",
-    "version": "3.1.22",
+    "version": "3.1.23",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
     "author": {
         "name": "Edwin Xu"

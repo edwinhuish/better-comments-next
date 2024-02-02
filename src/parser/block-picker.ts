@@ -40,8 +40,8 @@ function parseBlockPickers(options: UseBlockPickerOptions) {
       markStart: marks[0],
       markEnd: marks[1],
       blockpicker: new RegExp(`(${start}+)(.*?)(${end})|(${start}+)([\\s\\S]*?)(${end})`, 'gm'),
-      linePicker: new RegExp(`(^[ \\t]*)((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
-      docLinePicker: new RegExp(`(^[ \\t]*${prefix}[ \\t])((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
+      linePicker: new RegExp(`(^([ \\t]*))((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
+      docLinePicker: new RegExp(`(^[ \\t]*${prefix}([ \\t]))((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
       docLinePrefix: linePrefix,
     };
   });
@@ -107,23 +107,26 @@ function _pick(options: _BlockPickOptions) {
     const isDocComment = !isLineComment && markStart === '/**';
     const linePicker = isDocComment ? picker.docLinePicker : picker.linePicker;
 
-    // Find the line
+    // Find the matched line
     let line: RegExpExecArray | null;
+    let isFirstLine = true;
     // eslint-disable-next-line no-cond-assign
     while (line = linePicker.exec(comment)) {
-      // if is line comment, but space count !== 1
-      if (isLineComment && line[1].length !== 1) {
+      // if is first line comment, but space count !== 1
+      if (isFirstLine && line[2].length !== 1) {
         continue;
       }
 
       const startIdx = block.index + markStart.length + line.index + line[1].length;
       const startPos = editor.document.positionAt(startIdx);
-      const endPos = editor.document.positionAt(startIdx + line[2].length);
+      const endPos = editor.document.positionAt(startIdx + line[3].length);
       const range = new vscode.Range(startPos, endPos);
 
-      const tag = line![3].toLowerCase();
+      const tag = line![4].toLowerCase();
 
       decorationOptions.push({ tag, range });
+
+      isFirstLine = false;
     }
   }
 
