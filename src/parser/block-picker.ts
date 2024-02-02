@@ -11,6 +11,8 @@ export interface UseBlockPickerOptions {
 }
 
 export interface BlockPicker {
+  markStart: string;
+  markEnd: string;
   blockpicker: RegExp;
   linePicker: RegExp;
   docLinePicker: RegExp;
@@ -30,12 +32,14 @@ function parseBlockPickers(options: UseBlockPickerOptions) {
   const escapedTags = configs.tags.map(tag => tag.tagEscaped);
 
   const pickers: BlockPicker[] = comments.blockComments.map((marks) => {
-    const begin = escapeRegexString(marks[0]);
+    const start = escapeRegexString(marks[0]);
     const end = escapeRegexString(marks[1]);
     const linePrefix = marks[0].slice(-1);
     const prefix = escapeRegexString(linePrefix);
     return {
-      blockpicker: new RegExp(`(${begin}+)([ \\t\\r\\n])([\\s\\S]*?)(${end})`, 'gm'),
+      markStart: marks[0],
+      markEnd: marks[1],
+      blockpicker: new RegExp(`(${start}+)(.*?)(${end})|(${start}+)([\\s\\S]*?)(${end})`, 'gm'),
       linePicker: new RegExp(`(^[ \\t]*)((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
       docLinePicker: new RegExp(`(^[ \\t]*${prefix}[ \\t])((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
       docLinePrefix: linePrefix,
@@ -89,15 +93,30 @@ function _pick(options: _BlockPickOptions) {
       continue;
     }
 
-    const comment = block[3];
-    const isJsDoc = block[1] === '/**' && block[0].includes('\n');
+    // if the regex of block as line success
+    const isLineComment = block[1] !== undefined;
 
-    const linePicker = isJsDoc ? picker.docLinePicker : picker.linePicker;
+    const comment = isLineComment ? block[2] : block[5];
+
+    if (!comment) {
+      continue;
+    }
+
+    const markStart = isLineComment ? block[1] : block[4];
+    // const markEnd = isLineComment ? block[3] : block[6];
+    const isDocComment = !isLineComment && markStart === '/**';
+    const linePicker = isDocComment ? picker.docLinePicker : picker.linePicker;
+
     // Find the line
     let line: RegExpExecArray | null;
     // eslint-disable-next-line no-cond-assign
     while (line = linePicker.exec(comment)) {
-      const startIdx = block.index + block[1].length + block[2].length + line.index + line[1].length;
+      // if is line comment, but space count !== 1
+      if (isLineComment && line[1].length !== 1) {
+        continue;
+      }
+
+      const startIdx = block.index + markStart.length + line.index + line[1].length;
       const startPos = editor.document.positionAt(startIdx);
       const endPos = editor.document.positionAt(startIdx + line[2].length);
       const range = new vscode.Range(startPos, endPos);
