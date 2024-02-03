@@ -47,16 +47,10 @@ function generateTagDecorations(configs: ConfigurationFlatten) {
 function parseDecorationRenderOption(tag: TagFlatten) {
   const options: vscode.DecorationRenderOptions = { color: tag.color, backgroundColor: tag.backgroundColor };
 
-  // ? the textDecoration is initialised to empty so we can concat a preceeding space on it
-  options.textDecoration = '';
-
-  if (tag.strikethrough) {
-    options.textDecoration += 'line-through';
-  }
-
-  if (tag.underline) {
-    options.textDecoration += ' underline';
-  }
+  const textDecorations: string[] = [];
+  tag.strikethrough && textDecorations.push('line-through');
+  tag.underline && textDecorations.push('underline');
+  options.textDecoration = textDecorations.join(' ');
 
   if (tag.bold) {
     options.fontWeight = 'bold';
