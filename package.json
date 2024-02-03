@@ -267,7 +267,7 @@
         "watch:test": "tsc -p . -w --outDir out"
     },
     "dependencies": {
-        "json5": "^2.2.1"
+        "json5": "^2.2.3"
     },
     "devDependencies": {
         "@antfu/eslint-config": "^2.6.3",
