@@ -1,5 +1,17 @@
 # Change Log
 
+## [3.2.0] (2024-02-03)
+
+### Features
+
+* Listen `better-comments` configuration change. See [#8](https://github.com/edwinhuish/better-comments-next/issues/8)
+
+### Fix
+
+* Skip decorate line comment like inside the block comment. 
+* Fix python decoration. [#4](https://github.com/edwinhuish/better-comments-next/issues/4)
+* Wrong matching for block comments. [#9](https://github.com/edwinhuish/better-comments-next/issues/9)
+
 ## [3.1.0] (2023-12-03)
 
 ### Features
