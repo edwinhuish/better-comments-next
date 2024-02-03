@@ -2,25 +2,13 @@ import * as vscode from 'vscode';
 import type { CharacterPair } from 'vscode';
 import Language from './Language';
 
-export * from './Language';
-
 export interface AvailableCommentRules {
   lineComments: string[];
   blockComments: CharacterPair[];
 }
 
 const languages = new Map<string, Language>();
-
-/**
- * Init definitions if not inited
- */
-export function initDefinitions() {
-  if (languages.size === 0) {
-    updateDefinitions();
-  }
-}
-
-export function useLanguage(langId: string, autoUpdateDefinition = true) {
+function useLanguage(langId: string, autoUpdateDefinition = true) {
   if (languages.size === 0 && autoUpdateDefinition) {
     updateDefinitions();
   }
@@ -33,6 +21,15 @@ export function useLanguage(langId: string, autoUpdateDefinition = true) {
   }
 
   return lang;
+}
+
+/**
+ * Init definitions if not inited
+ */
+export function initDefinitions() {
+  if (languages.size === 0) {
+    updateDefinitions();
+  }
 }
 
 /**
