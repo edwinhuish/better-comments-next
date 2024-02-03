@@ -1,27 +1,5 @@
-import * as vscode from 'vscode';
-import { parse as parseJson5 } from 'json5';
-import { getBaseCommentRule } from './base';
-
-async function loadCommentRuleFromFile(fileUri?: vscode.Uri): Promise<vscode.CommentRule | undefined> {
-  if (!fileUri) {
-    return undefined;
-  }
-  try {
-    // Read file
-    const raw = await vscode.workspace.fs.readFile(fileUri);
-
-    const content = raw.toString();
-
-    // use json5, because the config can contains comments
-    const config = parseJson5(content);
-
-    return config.comments;
-  }
-  catch (error) {
-    console.error(error);
-    return undefined;
-  }
-}
+import type * as vscode from 'vscode';
+import { getBaseCommentRule, loadCommentRuleFromFile } from './base';
 
 export interface AvailableComments {
   lineComments: string[];

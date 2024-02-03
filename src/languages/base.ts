@@ -1,6 +1,28 @@
-import type { CommentRule } from 'vscode';
+import * as vscode from 'vscode';
+import { parse as parseJson5 } from 'json5';
 
-export function getBaseCommentRule(languageCode: string): CommentRule | undefined {
+export async function loadCommentRuleFromFile(fileUri?: vscode.Uri): Promise<vscode.CommentRule | undefined> {
+  if (!fileUri) {
+    return undefined;
+  }
+  try {
+    // Read file
+    const raw = await vscode.workspace.fs.readFile(fileUri);
+
+    const content = raw.toString();
+
+    // use json5, because the config can contains comments
+    const config = parseJson5(content) as vscode.LanguageConfiguration;
+
+    return config.comments;
+  }
+  catch (error: any) {
+    console.error(`Parse configuration file ${fileUri.toString()} failed: ${error.message}`);
+    return undefined;
+  }
+}
+
+export function getBaseCommentRule(languageCode: string): vscode.CommentRule | undefined {
   switch (languageCode) {
     case 'asciidoc':
       return ({ lineComment: '//', blockComment: ['////', '////'] });
