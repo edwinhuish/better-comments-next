@@ -73,6 +73,12 @@ export function updateDefinitions() {
 export async function getAvailableCommentRules(langId: string): Promise<AvailableCommentRules> {
   const language = useLanguage(langId);
 
+  let availableComments = language.getAvailableComments();
+
+  if (availableComments) {
+    return availableComments;
+  }
+
   const lineComments = new Set<string>();
   const blockComments = new Map<string, CharacterPair>();
   async function addCommentByLang(lang?: Language) {
@@ -100,8 +106,12 @@ export async function getAvailableCommentRules(langId: string): Promise<Availabl
     await addCommentByLang(lang);
   }
 
-  return {
+  availableComments = {
     lineComments: Array.from(lineComments),
     blockComments: [...blockComments.values()],
   };
+
+  language.setAvailableComments(availableComments);
+
+  return availableComments;
 }

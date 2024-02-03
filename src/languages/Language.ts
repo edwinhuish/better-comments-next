@@ -23,11 +23,17 @@ async function loadCommentRuleFromFile(fileUri?: vscode.Uri): Promise<vscode.Com
   }
 }
 
+export interface AvailableComments {
+  lineComments: string[];
+  blockComments: vscode.CharacterPair[];
+}
+
 export default class Language {
   public readonly langId: string;
   private configUri: vscode.Uri | undefined;
   private embeddedLanguages = new Set<string>();
   private comments: vscode.CommentRule | undefined;
+  private availableComments: AvailableComments | undefined;
 
   constructor(
     langId: string,
@@ -104,6 +110,21 @@ export default class Language {
    */
   setEmbeddedLanguages(embeddedLanguages: Set<string>) {
     this.embeddedLanguages = embeddedLanguages;
+    return this;
+  }
+
+  /**
+   * Get avaiable comments
+   */
+  getAvailableComments() {
+    return this.availableComments;
+  }
+
+  /**
+   * Set avaiable comments
+   */
+  setAvailableComments(comments: AvailableComments) {
+    this.availableComments = comments;
     return this;
   }
 }
