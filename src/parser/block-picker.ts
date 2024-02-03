@@ -39,7 +39,7 @@ function parseBlockPickers(options: UseBlockPickerOptions) {
     return {
       markStart: marks[0],
       markEnd: marks[1],
-      blockpicker: new RegExp(`(${start}+)([ \\t\\r\\n]?)(.*?)(${end})|(${start}+)([ \\t\\r\\n]?)([\\s\\S]*?)(${end})`, 'gm'),
+      blockpicker: new RegExp(`(${start}+)([ \\t]?)(.*?)(${end})|(${start}+)([ \\t\\r\\n]?)([\\s\\S]*?)(${end})`, 'gm'),
       linePicker: new RegExp(`(^([ \\t]*))((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
       docLinePicker: new RegExp(`(^[ \\t]*${prefix}([ \\t]))((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
       docLinePrefix: linePrefix,
