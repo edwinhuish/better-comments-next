@@ -52,7 +52,7 @@
                 },
                 "better-comments.tags": {
                     "type": "array",
-                    "description": "Tags which are used to color the comments. Changes require a restart of VS Code to take effect",
+                    "description": "Tags which are used to color the comments.",
                     "items": {
                         "type": "object",
                         "title": "tag item",
