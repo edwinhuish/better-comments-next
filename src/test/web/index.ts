@@ -1,12 +1,11 @@
 // Imports mocha for the browser, defining the `mocha` global.
-require('mocha/mocha');
+import 'mocha/mocha';
 
 export function run(): Promise<void> {
-
   return new Promise((c, e) => {
     mocha.setup({
       ui: 'tdd',
-      reporter: undefined
+      reporter: undefined,
     });
 
     // Bundles all files in the current directory matching `*.test`
@@ -15,14 +14,16 @@ export function run(): Promise<void> {
 
     try {
       // Run the mocha test
-      mocha.run(failures => {
+      mocha.run((failures) => {
         if (failures > 0) {
           e(new Error(`${failures} tests failed.`));
-        } else {
+        }
+        else {
           c();
         }
       });
-    } catch (err) {
+    }
+    catch (err) {
       console.error(err);
       e(err);
     }
