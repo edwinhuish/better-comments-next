@@ -14,85 +14,79 @@ With this extension, you will be able to categorise your annotations into:
 
 ## Configuration
 
-This extension can be configured in User Settings or Workspace settings.
+Default setting as below:
 
-`"better-comments.multilineComments": true`
- This setting will control whether multiline comments are styled using the annotation tags.
- When false, multiline comments will be presented without decoration.
-
-`"better-comments.highlightPlainText": false`
-This setting will control whether comments in a plain text file are styled using the annotation tags.
-When true, the tags (defaults: `! * ? //`) will be detected if they're the first character on a line.
-
-`"better-comments.tagsLight"`
-Overwrite tags styles of `"better-comments.tags"` for light themes.
-
-`"better-comments.tagsDark"`
-Overwrite tags styles of `"better-comments.tags"` for dark themes.
-
-`"better-comments.tags"`
-The tags are the characters or sequences used to mark a comment for decoration.
-The default 5 can be modified to change the colors, and more can be added.
-
-```json
-"better-comments.tags": [
-  {
-    "tag": "#",
-    "color": "#18b566",
-    "strikethrough": false,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": true,
-    "italic": false
-  },
-  {
-    "tag": "!",
-    "color": "#FF2D00",
-    "strikethrough": false,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": false,
-    "italic": false
-  },
-  {
-    "tag": "?",
-    "color": "#3498DB",
-    "strikethrough": false,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": false,
-    "italic": false
-  },
-  {
-    "tag": "//",
-    "color": "#474747",
-    "strikethrough": true,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": false,
-    "italic": false
-  },
-  {
-    "tag": ["todo", "to-do"],
-    "color": "#FF8C00",
-    "strikethrough": false,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": false,
-    "italic": false
-  },
-  {
-    "tag": "*",
-    "color": "#98C379",
-    "strikethrough": false,
-    "underline": false,
-    "backgroundColor": "transparent",
-    "bold": false,
-    "italic": false
-  }
-]
+```jsonc
+{
+  // Enable/disable block comment decoration.
+  "better-comments.multilineComments": true,
+  // Enable/disable hightlight plain text.
+  "better-comments.highlightPlainText": false,
+  // Overwrite the specified tag styles of `"better-comments.tags"` for light themes.
+  "better-comments.tagsLight": [],
+  // Overwrite the specified tag styles of `"better-comments.tags"` for dark themes.
+  "better-comments.tagsDark": [],
+  // Tags for decoration.
+  "better-comments.tags": [
+    {
+      "tag": "#",
+      "color": "#18b566",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": true,
+      "italic": false
+    },
+    {
+      "tag": "!",
+      "color": "#FF2D00",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    },
+    {
+      "tag": "?",
+      "color": "#3498DB",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    },
+    {
+      "tag": "//",
+      "color": "#474747",
+      "strikethrough": true,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    },
+    {
+      "tag": ["todo", "to-do"],
+      "color": "#FF8C00",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    },
+    {
+      "tag": "*",
+      "color": "#98C379",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "transparent",
+      "bold": false,
+      "italic": false
+    }
+  ]
+}
 ```
 
 ## Supported Languages
 
-* Any language that your editor correctly recognizes
+Any language that your editor correctly recognizes. (
+`better-comments-next` read the extensions language configuration JSON in [contributes.languages](https://code.visualstudio.com/api/references/contribution-points#contributes.languages) to know what comment use for the each language. )
