@@ -6,12 +6,9 @@
     {
       "type": "npm",
       "script": "watch",
-      "problemMatcher": "$ts-webpack-watch",
       "isBackground": true,
-      "presentation": {
-        "reveal": "never",
-        "group": "watchers"
-      },
+      "label": "npm: watch",
+      "problemMatcher": "$tsup-cjs-watch",
       "group": {
         "kind": "build",
         "isDefault": true
@@ -19,44 +16,11 @@
     },
     {
       "type": "npm",
-      "script": "watch:test",
-      "problemMatcher": "$tsc-watch",
+      "script": "watch-web",
       "isBackground": true,
-      "presentation": {
-        "reveal": "never",
-        "group": "watchers"
-      },
+      "label": "npm: watch-web",
+      "problemMatcher": "$tsup-cjs-watch",
       "group": "build"
-    },
-    {
-      "label": "tasks: watch-tests",
-      "dependsOn": [
-        "npm: watch",
-        "npm: watch:test"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "type": "npm",
-      "script": "compile:web",
-      "group": {
-        "kind": "build",
-        "isDefault": true
-      },
-      "problemMatcher": [
-        "$ts-webpack",
-        "$tslint-webpack"
-      ]
-    },
-    {
-      "type": "npm",
-      "script": "watch:web",
-      "group": "build",
-      "isBackground": true,
-      "problemMatcher": [
-        "$ts-webpack-watch",
-        "$tslint-webpack-watch"
-      ]
     }
   ]
 }

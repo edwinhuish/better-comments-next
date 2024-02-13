@@ -1,7 +1,6 @@
 {
   "recommendations": [
     "dbaeumer.vscode-eslint",
-    "amodio.tsl-problem-matcher",
-    "ms-vscode.extension-test-runner"
+    "connor4312.esbuild-problem-matchers"
   ]
 }

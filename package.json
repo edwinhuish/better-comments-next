@@ -2,7 +2,7 @@
     "publisher": "edwinhuish",
     "name": "better-comments-next",
     "displayName": "Better Comments Next",
-    "version": "3.2.1",
+    "version": "3.2.2",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
     "author": {
         "name": "Edwin Xu"
@@ -248,50 +248,32 @@
     },
     "scripts": {
         "clean:dist": "rimraf dist",
-        "vscode:prepublish": "npm run clean:dist && npm run package",
-        "package": "npm run lint && npm run package:node && npm run package:web",
-        "package:node": "cross-env NODE_ENV=production webpack --config ./build/webpack.node.js",
-        "package:web": "cross-env NODE_ENV=production webpack --config ./build/webpack.web.js",
+        "vscode:prepublish": "npm run package",
+        "package": "npm run clean:dist && npm run lint && npm run build && npm run build-web",
+        "build": "tsup --config=build/tsup.node.js",
+        "watch": "tsup --config=build/tsup.node.js --watch",
+        "build-web": "tsup --config=build/tsup.web.js",
+        "watch-web": "tsup --config=build/tsup.web.js --watch",
         "lint": "npm run lint:type && npm run lint:eslint",
         "lint:type": "tsc -p . --noEmit",
-        "lint:eslint": "eslint --cache --max-warnings 0 \"{src,build}/**/*.{ts,js}\" --fix",
-        "test": "npm run compile:test && npm run compile && npm run lint && vscode-test",
-        "test:web": "npm run compile:web && vscode-test-web --browserType=chromium --extensionDevelopmentPath=. --extensionTestsPath=dist/test/web/index.js",
-        "compile": "npm run compile:node",
-        "compile:node": "webpack --config ./build/webpack.node.js",
-        "compile:web": "webpack --config ./build/webpack.web.js",
-        "compile:test": "tsc -p . --outDir out",
-        "watch": "npm run watch:node",
-        "watch:node": "webpack --watch --config ./build/webpack.node.js",
-        "watch:web": "webpack --watch --config ./build/webpack.web.js",
-        "watch:test": "tsc -p . -w --outDir out"
+        "lint:eslint": "eslint --cache --max-warnings 0 \"{src,build}/**/*.{ts,js}\" --fix"
     },
     "dependencies": {
         "json5": "^2.2.3"
     },
     "devDependencies": {
         "@antfu/eslint-config": "^2.6.3",
-        "@types/mocha": "^10.0.6",
         "@types/node": "^17.0.23",
         "@types/vscode": "^1.65.0",
-        "@types/webpack-env": "^1.18.4",
-        "@vscode/test-cli": "^0.0.4",
-        "@vscode/test-electron": "^2.3.9",
-        "@vscode/test-web": "^0.0.51",
         "@vscode/vsce": "^2.21.1",
-        "cross-env": "^7.0.3",
         "eslint": "^8.56.0",
         "husky": "^8.0.3",
         "lint-staged": "^15.1.0",
-        "mocha": "^10.2.0",
         "ovsx": "^0.8.3",
         "path-browserify": "^1.0.1",
         "process": "^0.11.10",
         "rimraf": "^5.0.5",
-        "ts-loader": "^9.5.0",
-        "typescript": "5.4.0-dev.20240129",
-        "util": "^0.12.4",
-        "webpack": "^5.90.0",
-        "webpack-cli": "^5.1.4"
+        "tsup": "^8.0.2",
+        "typescript": "^5.3.3"
     }
 }

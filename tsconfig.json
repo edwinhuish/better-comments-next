@@ -4,7 +4,7 @@
     "lib": [
       "ES2020", "WebWorker"
     ],
-    "rootDir": "src",
+    "rootDir": ".",
     "module": "NodeNext",
     "strict": true,
     "strictNullChecks": true, /* enable all strict type-checking options */
@@ -12,7 +12,6 @@
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noUnusedLocals": true,
-    "outDir": "out",
     "sourceMap": true, /* Report errors on unused locals. */
     "skipLibCheck": true
   },
