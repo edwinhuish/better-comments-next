@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import { parse as parseJson5 } from 'json5';
+import { parse as json5Parse } from 'json5';
+import * as console from '../console';
 
 export async function loadCommentRuleFromFile(fileUri?: vscode.Uri): Promise<vscode.CommentRule | undefined> {
   if (!fileUri) {
@@ -12,7 +13,7 @@ export async function loadCommentRuleFromFile(fileUri?: vscode.Uri): Promise<vsc
     const content = raw.toString();
 
     // use json5, because the config can contains comments
-    const config = parseJson5(content) as vscode.LanguageConfiguration;
+    const config = json5Parse(content) as vscode.LanguageConfiguration;
 
     return config.comments;
   }

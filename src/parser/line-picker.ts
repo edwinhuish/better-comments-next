@@ -1,31 +1,23 @@
 import * as vscode from 'vscode';
+import * as configuration from '../configuration';
+import * as languages from '../languages';
 import { escapeRegexString } from '../utils';
-import type { ConfigurationFlatten } from '../configuration';
-import type { AvailableCommentRules } from '../languages';
 import type { TagDecorationOptions } from '.';
 
-export interface UseLinePickerOptions {
-  editor: vscode.TextEditor;
-  comments: AvailableCommentRules;
-  configs: ConfigurationFlatten;
-}
-
-function parseLinePicker(options: UseLinePickerOptions) {
-  const {
-    editor,
-    comments,
-    configs,
-  } = options;
+async function parseLinePicker(langId: string) {
+  const configs = configuration.getConfigurationFlatten();
 
   const escapedTags = configs.tags.map(tag => tag.tagEscaped);
 
-  if (editor.document.languageId === 'plaintext') {
+  if (langId === 'plaintext') {
     if (!configs.highlightPlainText) {
       return;
     }
 
     return new RegExp(`(^)([ \\t]*)(${escapedTags.join('|')})+(.*)`, 'igm');
   }
+
+  const comments = await languages.getAvailableCommentRules(langId);
 
   if (!comments.lineComments || !comments.lineComments.length) {
     return;
@@ -36,17 +28,14 @@ function parseLinePicker(options: UseLinePickerOptions) {
   return new RegExp(`(^|[ \\t]+)(${escapedMarks})[ \\t](${escapedTags.join('|')})(.*)`, 'igm');
 }
 
-export interface LinePickOptions {
-  text?: string;
+interface _LinePickOptions {
+  editor: vscode.TextEditor;
   picker?: RegExp;
   skipRanges?: [number, number][]; // array of [beginIndex, endIndex]
+  text?: string;
 }
 
-function _pick(options: LinePickOptions & { editor: vscode.TextEditor }) {
-  if (!options.editor) {
-    return;
-  }
-
+function _pick(options: _LinePickOptions) {
   if (!options.picker) {
     return;
   }
@@ -81,18 +70,43 @@ function _pick(options: LinePickOptions & { editor: vscode.TextEditor }) {
   };
 }
 
-export function useLinePicker(options: UseLinePickerOptions) {
-  const {
-    editor,
-    comments,
-    configs,
-  } = options;
+export interface LinePickOptions {
+  editor: vscode.TextEditor;
+  skipRanges?: [number, number][]; // array of [beginIndex, endIndex]
+}
+
+export function useLinePicker(langId: string) {
+  let _picker: RegExp | undefined;
+  async function getPicker() {
+    if (!_picker) {
+      _picker = await parseLinePicker(langId);
+    }
+    return _picker!;
+  }
+
+  languages.onDidChange(() => {
+    _picker = undefined;
+    getPicker(); // Init picker once
+  });
+
+  configuration.onDidChange(() => {
+    _picker = undefined;
+    getPicker(); // Init picker once
+  });
+
+  async function pick(opts: LinePickOptions) {
+    const {
+      editor,
+      skipRanges = [],
+    } = opts;
+
+    const text = editor.document.getText();
+    const picker = await getPicker();
+
+    return await _pick({ skipRanges, text, editor, picker });
+  }
 
   return {
-    pick: (opt: LinePickOptions = {}) => {
-      const picker = parseLinePicker({ editor, comments, configs });
-      opt.text = opt.text || editor.document.getText();
-      return _pick({ ...opt, picker, editor });
-    },
+    pick,
   };
 }

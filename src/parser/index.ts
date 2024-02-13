@@ -1,7 +1,5 @@
 import * as vscode from 'vscode';
-import { getConfigurationFlatten } from '../configuration';
-import * as languages from '../languages';
-import type { ConfigurationFlatten, TagFlatten } from '../configuration';
+import * as configuration from '../configuration';
 import { useLinePicker } from './line-picker';
 import { useBlockPicker } from './block-picker';
 
@@ -17,7 +15,8 @@ export interface TagDecoration {
   decorationType: vscode.TextEditorDecorationType;
 }
 
-function generateTagDecorations(configs: ConfigurationFlatten) {
+function generateTagDecorations() {
+  const configs = configuration.getConfigurationFlatten();
   const decorations: TagDecoration[] = [];
   for (const tag of configs.tags) {
     const opt = parseDecorationRenderOption(tag);
@@ -44,7 +43,7 @@ function generateTagDecorations(configs: ConfigurationFlatten) {
 /**
  * Parse decoration render option by tag configuration
  */
-function parseDecorationRenderOption(tag: TagFlatten) {
+function parseDecorationRenderOption(tag: configuration.TagFlatten) {
   const options: vscode.DecorationRenderOptions = { color: tag.color, backgroundColor: tag.backgroundColor };
 
   const textDecorations: string[] = [];
@@ -63,20 +62,34 @@ function parseDecorationRenderOption(tag: TagFlatten) {
   return options;
 }
 
-export function useParser(configuration?: ConfigurationFlatten) {
-  // Better comments configuration in flatten
-  const configs = configuration || getConfigurationFlatten();
-
-  const tagDecorations: TagDecoration[] = generateTagDecorations(configs);
-
-  // Line picker
-  let linePicker: LinePicker | undefined;
-
-  // Block pickers
-  let blockPicker: BlockPicker | undefined;
-
+export function useParser() {
   // Vscode active editor
   let activedEditor: vscode.TextEditor | undefined;
+
+  let tagDecorations: TagDecoration[] = generateTagDecorations();
+  configuration.onDidChange(() => {
+    tagDecorations = generateTagDecorations();
+  });
+
+  const linePickers = new Map<string, LinePicker>();
+  function getLinePicker(langId: string) {
+    let linePicker = linePickers.get(langId);
+    if (!linePicker) {
+      linePicker = useLinePicker(langId);
+      linePickers.set(langId, linePicker);
+    }
+    return linePicker;
+  }
+
+  const blockPickes = new Map<string, BlockPicker>();
+  function getBlockPicker(langId: string) {
+    let blockPicker = blockPickes.get(langId);
+    if (!blockPicker) {
+      blockPicker = useBlockPicker(langId);
+      blockPickes.set(langId, blockPicker);
+    }
+    return blockPicker;
+  }
 
   /**
    * Get actived editor
@@ -90,25 +103,21 @@ export function useParser(configuration?: ConfigurationFlatten) {
    */
   async function setEditor(editor: vscode.TextEditor) {
     activedEditor = editor;
-
-    const comments = await languages.getAvailableCommentRules(activedEditor.document.languageId);
-
-    linePicker = useLinePicker({ editor, comments, configs });
-
-    blockPicker = useBlockPicker({ editor, comments, configs });
   }
 
   /**
    * Apply decorations after finding all relevant comments
    */
-  function updateDecorations(): void {
+  async function updateDecorations(): Promise<void> {
     if (!activedEditor) {
       return;
     }
 
-    const blockPicked = blockPicker?.pick();
+    const blockPicker = await getBlockPicker(activedEditor.document.languageId);
+    const blockPicked = await blockPicker.pick({ editor: activedEditor });
 
-    const linePicked = linePicker?.pick({ skipRanges: blockPicked?.blockRanges });
+    const linePicker = await getLinePicker(activedEditor.document.languageId);
+    const linePicked = await linePicker.pick({ skipRanges: blockPicked.blockRanges, editor: activedEditor });
 
     for (const td of tagDecorations) {
       const lowerTag = td.tag.toLowerCase();
@@ -131,8 +140,10 @@ export function useParser(configuration?: ConfigurationFlatten) {
     triggerUpdateTimeout = setTimeout(updateDecorations, ms);
   }
 
+  // Update decorations when configuration changed
+  configuration.onDidChange(updateDecorations);
+
   return {
-    updateLanguagesDefinitions: languages.updateDefinitions,
     getEditor,
     setEditor,
     updateDecorations,

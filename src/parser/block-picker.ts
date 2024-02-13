@@ -1,14 +1,8 @@
 import * as vscode from 'vscode';
-import type { ConfigurationFlatten } from '../configuration';
+import * as configuration from '../configuration';
+import * as languages from '../languages';
 import { escapeRegexString } from '../utils';
-import type { AvailableCommentRules } from '../languages';
 import type { TagDecorationOptions } from '.';
-
-export interface UseBlockPickerOptions {
-  editor: vscode.TextEditor;
-  comments: AvailableCommentRules;
-  configs: ConfigurationFlatten;
-}
 
 export interface BlockPicker {
   markStart: string;
@@ -19,15 +13,14 @@ export interface BlockPicker {
   docLinePrefix: string;
 }
 
-function parseBlockPickers(options: UseBlockPickerOptions) {
-  const {
-    comments,
-    configs,
-  } = options;
+async function parseBlockPickers(langId: string) {
+  const comments = await languages.getAvailableCommentRules(langId);
 
   if (!comments.blockComments || !comments.blockComments.length) {
     return [];
   }
+
+  const configs = configuration.getConfigurationFlatten();
 
   const escapedTags = configs.tags.map(tag => tag.tagEscaped);
 
@@ -54,10 +47,6 @@ interface _BlockPickOptions {
   editor: vscode.TextEditor;
   picker?: BlockPicker;
   hightlight?: boolean;
-}
-
-export interface BlockPickOptions {
-  text?: string;
 }
 
 function _pick(options: _BlockPickOptions) {
@@ -161,23 +150,47 @@ function _pickMany(options: _BlockPickManyOptions) {
   };
 }
 
-export function useBlockPicker(options: UseBlockPickerOptions) {
-  const {
-    editor,
-    comments,
-    configs,
-  } = options;
+export interface PickOptions {
+  editor: vscode.TextEditor;
+}
 
-  const pickers = parseBlockPickers({ editor, comments, configs });
+export function useBlockPicker(langId: string) {
+  let _pickers: BlockPicker[] | undefined;
+  async function getPickers() {
+    if (!_pickers) {
+      _pickers = await parseBlockPickers(langId);
+    }
+    return _pickers;
+  }
 
-  const hightlight = comments.blockComments.length > 0 && configs.multilineComments;
+  languages.onDidChange(() => {
+    _pickers = undefined;
+    getPickers(); // Init pickers once
+  });
 
-  return {
-    pick: (opts: BlockPickOptions = {}) => _pickMany({
-      ...opts,
+  configuration.onDidChange(() => {
+    _pickers = undefined;
+    getPickers(); // Init pickers once
+  });
+
+  async function pick({ editor }: PickOptions) {
+    const text = editor.document.getText();
+    const configs = configuration.getConfigurationFlatten();
+    const comments = await languages.getAvailableCommentRules(langId);
+
+    const hightlight = comments.blockComments.length > 0 && configs.multilineComments;
+
+    const pickers = await getPickers();
+
+    return await _pickMany({
+      text,
       editor,
       pickers,
       hightlight,
-    }),
+    });
+  }
+
+  return {
+    pick,
   };
 }

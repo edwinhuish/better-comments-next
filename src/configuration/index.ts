@@ -1,4 +1,4 @@
-export * from './languages';
+export * from './configuration';
 export {
   onDidChange,
   registerEvent as activate,

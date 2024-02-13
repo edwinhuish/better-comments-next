@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import type { WorkspaceConfiguration } from 'vscode';
-import { escapeRegexString } from './utils';
+import { escapeRegexString } from '../utils';
 
 export interface Tag {
   tag: string | string[];
@@ -35,17 +35,22 @@ export interface ConfigurationFlatten extends Configuration {
 /**
  * Get better comments configuration
  */
-export function getConfiguration() {
+function getConfiguration() {
   return vscode.workspace.getConfiguration('better-comments') as Configuration & WorkspaceConfiguration;
 }
 
+// Cache configuration
+let configFlatten: ConfigurationFlatten;
 /**
  * Get better comments configuration in flatten
  */
-export function getConfigurationFlatten() {
+export function getConfigurationFlatten(forceRefresh = false) {
+  if (configFlatten && !forceRefresh) {
+    return configFlatten;
+  }
   const orig = getConfiguration();
 
-  const flatten: ConfigurationFlatten = {
+  configFlatten = {
     multilineComments: orig.multilineComments,
     useJSDocStyle: orig.useJSDocStyle,
     highlightPlainText: orig.highlightPlainText,
@@ -54,7 +59,7 @@ export function getConfigurationFlatten() {
     tagsDark: flattenTags(orig.tagsDark),
   };
 
-  return flatten;
+  return configFlatten;
 }
 
 /**

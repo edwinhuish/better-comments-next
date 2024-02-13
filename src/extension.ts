@@ -1,9 +1,13 @@
 import * as vscode from 'vscode';
 import { useParser } from './parser';
+import * as configuration from './configuration';
+import * as languages from './languages';
 
 // this method is called when vs code is activated
 export async function activate(context: vscode.ExtensionContext) {
-  let parser = useParser();
+  configuration.activate();
+  languages.activate();
+  const parser = useParser();
 
   // Get the active editor for the first time and initialise the regex
   if (vscode.window.activeTextEditor) {
@@ -13,11 +17,6 @@ export async function activate(context: vscode.ExtensionContext) {
     // Update decorators
     parser.triggerUpdateDecorations(0);
   }
-
-  // * Handle extensions being added or removed
-  vscode.extensions.onDidChange(() => {
-    parser.updateLanguagesDefinitions();
-  }, null, context.subscriptions);
 
   // * Handle active file changed
   vscode.window.onDidChangeActiveTextEditor(async (editor) => {
@@ -37,23 +36,9 @@ export async function activate(context: vscode.ExtensionContext) {
       parser.triggerUpdateDecorations();
     }
   }, null, context.subscriptions);
-
-  // * Handle configuration changed
-  vscode.workspace.onDidChangeConfiguration(async (event) => {
-    if (!event.affectsConfiguration('better-comments')) {
-      return;
-    }
-
-    parser = useParser();
-    // Get the active editor for the first time and initialise the regex
-    if (vscode.window.activeTextEditor) {
-      // Set the regex patterns for the specified language's comments
-      await parser.setEditor(vscode.window.activeTextEditor);
-
-      // Update decorators
-      parser.triggerUpdateDecorations(0);
-    }
-  }, null, context.subscriptions);
 }
 
-export function deactivate() { }
+export function deactivate() {
+  configuration.deactivate();
+  languages.deactivate();
+}
