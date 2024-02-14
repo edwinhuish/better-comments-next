@@ -15,7 +15,7 @@ export async function activate(context: vscode.ExtensionContext) {
     await parser.setEditor(vscode.window.activeTextEditor);
 
     // Update decorators
-    parser.triggerUpdateDecorations(0);
+    parser.updateDecorations(true);
   }
 
   // * Handle active file changed
@@ -25,7 +25,7 @@ export async function activate(context: vscode.ExtensionContext) {
       await parser.setEditor(editor);
 
       // Update decorations for newly active file
-      parser.triggerUpdateDecorations(0);
+      parser.updateDecorations(true);
     }
   }, null, context.subscriptions);
 
@@ -33,7 +33,7 @@ export async function activate(context: vscode.ExtensionContext) {
   vscode.workspace.onDidChangeTextDocument((event) => {
     // Trigger updates if the text was changed in the same document
     if (event.document === parser.getEditor()?.document) {
-      parser.triggerUpdateDecorations();
+      parser.updateDecorations();
     }
   }, null, context.subscriptions);
 }

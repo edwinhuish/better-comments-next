@@ -108,7 +108,7 @@ export function useParser() {
   /**
    * Apply decorations after finding all relevant comments
    */
-  async function updateDecorations(): Promise<void> {
+  async function updateDecorationsDirectly(): Promise<void> {
     if (!activedEditor) {
       return;
     }
@@ -134,21 +134,25 @@ export function useParser() {
   // * To avoid calling update too often,
   // * set a timer for 100ms to wait before updating decorations
   let triggerUpdateTimeout: NodeJS.Timer | undefined;
-  function triggerUpdateDecorations(ms = 100) {
+  function updateDecorations(time: true | number = 100) {
     if (triggerUpdateTimeout) {
       clearTimeout(triggerUpdateTimeout);
     }
 
-    triggerUpdateTimeout = setTimeout(updateDecorations, ms);
+    if (time === true) {
+      updateDecorationsDirectly();
+      return;
+    }
+
+    triggerUpdateTimeout = setTimeout(updateDecorationsDirectly, time);
   }
 
   // Update decorations when configuration changed
-  configuration.onDidChange(updateDecorations);
+  configuration.onDidChange(updateDecorationsDirectly);
 
   return {
     getEditor,
     setEditor,
     updateDecorations,
-    triggerUpdateDecorations,
   };
 }
