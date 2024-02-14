@@ -113,10 +113,12 @@ export function useParser() {
       return;
     }
 
-    const blockPicker = await getBlockPicker(activedEditor.document.languageId);
-    const blockPicked = await blockPicker.pick({ editor: activedEditor });
+    const [linePicker, blockPicker] = await Promise.all([
+      getLinePicker(activedEditor.document.languageId),
+      getBlockPicker(activedEditor.document.languageId),
+    ]);
 
-    const linePicker = await getLinePicker(activedEditor.document.languageId);
+    const blockPicked = await blockPicker.pick({ editor: activedEditor });
     const linePicked = await linePicker.pick({ skipRanges: blockPicked.blockRanges, editor: activedEditor });
 
     for (const td of tagDecorations) {
