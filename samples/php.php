@@ -1,4 +1,4 @@
-<?
+<?php
 
 /**
  * * Is some important information
@@ -14,7 +14,7 @@
  * @param
  */
 
- // TODO: test
- // info: not highlighted
+// TODO: test
+// info: not highlighted
 
-?>
+# ! shell style comment alert

@@ -1,37 +1,29 @@
 import * as vscode from 'vscode';
-import type { CharacterPair } from 'vscode';
-import Language from './Language';
-
-export interface AvailableCommentRules {
-  lineComments: string[];
-  blockComments: CharacterPair[];
-}
+import { PHPLanguage } from './lang/php';
+import { Language } from './lang/default';
+import type { AvailableComments } from './lang/default';
 
 export type Languages = Map<string, Language>;
 
 const languages: Languages = new Map<string, Language>();
-function useLanguage(langId: string, autoUpdateDefinition = true) {
-  if (languages.size === 0 && autoUpdateDefinition) {
-    updateDefinitions();
-  }
-
+function useLanguage(langId: string) {
   let lang = languages.get(langId);
 
-  if (!lang) {
-    lang = new Language(langId);
-    languages.set(langId, lang);
+  if (lang) {
+    return lang;
   }
+
+  switch (langId) {
+    case 'php':
+      lang = new PHPLanguage(langId);
+      break;
+    default:
+      lang = new Language(langId);
+  }
+
+  languages.set(langId, lang);
 
   return lang;
-}
-
-/**
- * Init definitions if not inited
- */
-export function initDefinitions() {
-  if (languages.size === 0) {
-    updateDefinitions();
-  }
 }
 
 /**
@@ -44,14 +36,18 @@ export function updateDefinitions() {
   for (const extension of vscode.extensions.all) {
     const packageJSON = extension.packageJSON;
     for (const language of (packageJSON?.contributes?.languages || [])) {
-      const lang = useLanguage(language.id, false);
+      const lang = useLanguage(language.id);
 
       // if has configuration
       if (language.configuration) {
-        lang.setConfigUri(vscode.Uri.joinPath(extension.extensionUri, language.configuration));
+        lang.setConfigurationUri(vscode.Uri.joinPath(extension.extensionUri, language.configuration));
       }
 
-      const embeddedLanguages = new Set<string>();
+      const embeddedLanguages = lang.getEmbeddedLanguages();
+      if (embeddedLanguages.size > 0) {
+        // If already set embedded languages, skip it
+        continue;
+      }
       for (const grammar of (packageJSON.contributes?.grammars || [])) {
         if (grammar.language !== language.id || !grammar.embeddedLanguages) {
           continue;
@@ -69,7 +65,7 @@ export function updateDefinitions() {
 /**
  * Gets the configuration information for the specified language
  */
-export async function getAvailableCommentRules(langId: string): Promise<AvailableCommentRules> {
+export async function getAvailableComments(langId: string): Promise<AvailableComments> {
   const language = useLanguage(langId);
 
   let availableComments = language.getAvailableComments();
@@ -79,7 +75,7 @@ export async function getAvailableCommentRules(langId: string): Promise<Availabl
   }
 
   const lineComments = new Set<string>();
-  const blockComments = new Map<string, CharacterPair>();
+  const blockComments = new Map<string, vscode.CharacterPair>();
   async function addCommentByLang(lang?: Language) {
     if (!lang) {
       return;

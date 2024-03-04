@@ -17,7 +17,7 @@ async function parseLinePicker(langId: string) {
     return new RegExp(`(^)([ \\t]*)(${escapedTags.join('|')})+(.*)`, 'igm');
   }
 
-  const comments = await languages.getAvailableCommentRules(langId);
+  const comments = await languages.getAvailableComments(langId);
 
   if (!comments.lineComments || !comments.lineComments.length) {
     return;

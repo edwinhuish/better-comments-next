@@ -14,7 +14,7 @@ export interface BlockPicker {
 }
 
 async function parseBlockPickers(langId: string) {
-  const comments = await languages.getAvailableCommentRules(langId);
+  const comments = await languages.getAvailableComments(langId);
 
   if (!comments.blockComments || !comments.blockComments.length) {
     return [];
@@ -176,7 +176,7 @@ export function useBlockPicker(langId: string) {
   async function pick({ editor }: PickOptions) {
     const text = editor.document.getText();
     const configs = configuration.getConfigurationFlatten();
-    const comments = await languages.getAvailableCommentRules(langId);
+    const comments = await languages.getAvailableComments(langId);
 
     const hightlight = comments.blockComments.length > 0 && configs.multilineComments;
 
