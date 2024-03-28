@@ -88,5 +88,6 @@ Default setting as below:
 
 ## Supported Languages
 
-Any language that your editor correctly recognizes. (
-`better-comments-next` read the extensions language configuration JSON in [contributes.languages](https://code.visualstudio.com/api/references/contribution-points#contributes.languages) to know what comment use for the each language. )
+Most languages that your editor correctly recognizes.
+
+`better-comments-next` reads the language configuration JSON in [contributes.languages](https://code.visualstudio.com/api/references/contribution-points#contributes.languages) to know what comments look like in a language. Some language extensions provide that information dynamically via the [`vscode.languages.setLanguageConfiguration`](https://code.visualstudio.com/api/references/vscode-api#languages) API method. This extension is unable to support those languages.
