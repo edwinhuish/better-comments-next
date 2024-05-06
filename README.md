@@ -12,7 +12,7 @@ With this extension, you will be able to categorise your annotations into:
 
 ![Annotated code](static/better-comments.png)
 
-## Configuration
+## configuration
 
 Default setting as below:
 
@@ -86,7 +86,13 @@ Default setting as below:
 }
 ```
 
-## Supported Languages
+## extension scope / complementary extension
+
+This extension is only about highlighting and categorizing comments. There are complementary extensions for features like a tree-view or exporting your comments.
+
+You may want to use [ToDo tree](https://marketplace.visualstudio.com/items?itemName=Gruntfuggly.todo-tree) by Gruntfuggly; note that the extension uses a different approach for recognizing comments, so you likely have to [configure it for your workspace](https://github.com/Gruntfuggly/todo-tree/wiki/Configuration-Examples#regexs-for-various-languages).
+
+## supported Languages
 
 Most languages that your editor correctly recognizes.
 
