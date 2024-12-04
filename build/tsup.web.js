@@ -1,5 +1,6 @@
-const { defineConfig } = require('tsup');
 const { dependencies } = require('../package.json');
+
+const { defineConfig } = require('tsup');
 
 // function replaceNodeBuiltIns(replaces) {
 //   const filter = RegExp(`^(${Object.keys(replaces).join('|')})$`);

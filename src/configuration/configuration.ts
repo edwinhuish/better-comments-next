@@ -1,6 +1,8 @@
-import * as vscode from 'vscode';
-import type { WorkspaceConfiguration } from 'vscode';
 import { escapeRegexString } from '../utils';
+
+import * as vscode from 'vscode';
+
+import type { WorkspaceConfiguration } from 'vscode';
 
 export interface Tag {
   tag: string | string[];
@@ -95,12 +97,12 @@ export function getTagDecorationTypes() {
   for (const tag of configs.tags) {
     const opt = parseDecorationRenderOption(tag);
 
-    const tagLight = configs.tagsLight.find(t => t.tag === tag.tag);
+    const tagLight = configs.tagsLight.find((t) => t.tag === tag.tag);
     if (tagLight) {
       opt.light = parseDecorationRenderOption(tagLight);
     }
 
-    const tagDark = configs.tagsDark.find(t => t.tag === tag.tag);
+    const tagDark = configs.tagsDark.find((t) => t.tag === tag.tag);
     if (tagDark) {
       opt.dark = parseDecorationRenderOption(tagDark);
     }

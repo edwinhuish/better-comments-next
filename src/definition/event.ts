@@ -1,5 +1,6 @@
-import * as vscode from 'vscode';
 import * as definition from './definition';
+
+import * as vscode from 'vscode';
 
 export type OnDidChangeCallback = () => void;
 

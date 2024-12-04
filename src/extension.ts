@@ -1,9 +1,11 @@
-import * as vscode from 'vscode';
-import type { Parser } from './parser';
-import { useParser } from './parser';
 import * as configuration from './configuration';
 import * as definition from './definition';
+import { useParser } from './parser';
 import { debounce } from './utils';
+
+import * as vscode from 'vscode';
+
+import type { Parser } from './parser';
 
 // this method is called when vs code is activated
 export async function activate(context: vscode.ExtensionContext) {
@@ -21,25 +23,33 @@ export async function activate(context: vscode.ExtensionContext) {
   }
 
   // * Handle active file changed
-  vscode.window.onDidChangeActiveTextEditor(async (editor) => {
-    if (editor) {
-      parser = useParser(editor);
+  vscode.window.onDidChangeActiveTextEditor(
+    async (editor) => {
+      if (editor) {
+        parser = useParser(editor);
 
-      // Update decorations for newly active file
-      parser!.updateDecorations();
-    }
-  }, null, context.subscriptions);
+        // Update decorations for newly active file
+        parser!.updateDecorations();
+      }
+    },
+    null,
+    context.subscriptions,
+  );
 
   // * Handle file contents changed
-  vscode.workspace.onDidChangeTextDocument((event) => {
-    if (!parser) {
-      return;
-    }
-    // Trigger updates if the text was changed in the same document
-    if (event.document === parser.getEditor()?.document) {
-      debounce(parser.updateDecorations, 100)();
-    }
-  }, null, context.subscriptions);
+  vscode.workspace.onDidChangeTextDocument(
+    (event) => {
+      if (!parser) {
+        return;
+      }
+      // Trigger updates if the text was changed in the same document
+      if (event.document === parser.getEditor()?.document) {
+        debounce(parser.updateDecorations, 100)();
+      }
+    },
+    null,
+    context.subscriptions,
+  );
 }
 
 export function deactivate() {

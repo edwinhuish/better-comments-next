@@ -3,7 +3,7 @@
  * @param ms micro second to sleep
  */
 export function sleep(ms: number) {
-  return new Promise<void>(resolve => setTimeout(resolve, ms));
+  return new Promise<void>((resolve) => setTimeout(resolve, ms));
 }
 
 export function debounce<T extends (...args: any[]) => any>(fn: T, delay: number) {

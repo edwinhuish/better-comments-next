@@ -1,5 +1,6 @@
-import type { AvailableComments } from './common';
 import { Language } from './common';
+
+import type { AvailableComments } from './common';
 
 export class PHPLanguage extends Language {
   public setAvailableComments(comments: AvailableComments): this {

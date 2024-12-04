@@ -1,5 +1,6 @@
-import * as vscode from 'vscode';
 import * as langs from './langs';
+
+import * as vscode from 'vscode';
 
 const cached = new Map<string, langs.Language>();
 
@@ -22,7 +23,7 @@ export function refresh() {
 
   for (const extension of vscode.extensions.all) {
     const packageJSON = extension.packageJSON;
-    for (const language of (packageJSON?.contributes?.languages || [])) {
+    for (const language of packageJSON?.contributes?.languages || []) {
       // if language is not defined, skip it
       if (!language || !language.id) {
         continue;
@@ -30,7 +31,9 @@ export function refresh() {
 
       const lang = useLanguage(language.id);
 
-      const configUri = language.configuration ? vscode.Uri.joinPath(extension.extensionUri, language.configuration) : undefined;
+      const configUri = language.configuration
+        ? vscode.Uri.joinPath(extension.extensionUri, language.configuration)
+        : undefined;
       lang.setConfigurationUri(configUri);
 
       const embeddedLanguages = lang.getEmbeddedLanguages();
@@ -38,7 +41,7 @@ export function refresh() {
         // If already set embedded languages, skip it
         continue;
       }
-      for (const grammar of (packageJSON.contributes?.grammars || [])) {
+      for (const grammar of packageJSON.contributes?.grammars || []) {
         if (grammar.language !== language.id || !grammar.embeddedLanguages) {
           continue;
         }

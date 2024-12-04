@@ -1,7 +1,8 @@
-import * as vscode from 'vscode';
 import * as configuration from '../../configuration';
 import * as definition from '../../definition';
 import { escapeRegexString } from '../../utils';
+
+import * as vscode from 'vscode';
 
 export interface BlockPicker {
   markStart: string;
@@ -44,8 +45,10 @@ export class Parser {
 
     for (const t of tagDecorationTypes) {
       const lowerTag = t.tag.toLowerCase();
-      const blockOpts = (blockPicked.decorationOptions.filter(opt => opt.tag === lowerTag) || []) as vscode.DecorationOptions[];
-      const lineOpts = (linePicked.decorationOptions.filter(opt => opt.tag === lowerTag) || []) as vscode.DecorationOptions[];
+      const blockOpts = (blockPicked.decorationOptions.filter((opt) => opt.tag === lowerTag) ||
+        []) as vscode.DecorationOptions[];
+      const lineOpts = (linePicked.decorationOptions.filter((opt) => opt.tag === lowerTag) ||
+        []) as vscode.DecorationOptions[];
 
       this.editor.setDecorations(t.decorationType, [...blockOpts, ...lineOpts]);
     }
@@ -76,8 +79,8 @@ export class Parser {
     for (const picker of pickers) {
       // Find the multiline comment block
       let block: RegExpExecArray | null;
-      // eslint-disable-next-line no-cond-assign
-      while (block = picker.blockpicker.exec(this.getText())) {
+
+      while ((block = picker.blockpicker.exec(this.getText()))) {
         blockRanges.push([block.index, block.index + block[0].length]);
 
         // if the regex of block as line comment
@@ -97,8 +100,8 @@ export class Parser {
 
         // Find the matched line
         let line: RegExpExecArray | null;
-        // eslint-disable-next-line no-cond-assign
-        while (line = linePicker.exec(comment)) {
+
+        while ((line = linePicker.exec(comment))) {
           const startIdx = block.index + markStart.length + space.length + line.index + line[1].length;
           const startPos = this.editor.document.positionAt(startIdx);
           const endPos = this.editor.document.positionAt(startIdx + line[3].length);
@@ -123,11 +126,11 @@ export class Parser {
 
     if (picker) {
       let match: RegExpExecArray | null | undefined;
-      // eslint-disable-next-line no-cond-assign
-      while (match = picker.exec(this.getText())) {
+
+      while ((match = picker.exec(this.getText()))) {
         const beginIndex = match.index;
         const endIndex = match.index + match[0].length;
-        if (skipRanges.find(range => range[0] <= beginIndex && endIndex <= range[1])) {
+        if (skipRanges.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
           // skip if line mark inside block comments
           continue;
         }
@@ -156,7 +159,7 @@ export class Parser {
 
     const configs = configuration.getConfigurationFlatten();
 
-    const escapedTags = configs.tags.map(tag => tag.tagEscaped);
+    const escapedTags = configs.tags.map((tag) => tag.tagEscaped);
 
     const pickers: BlockPicker[] = comments.blockComments.map((marks) => {
       const start = escapeRegexString(marks[0]);
@@ -166,7 +169,10 @@ export class Parser {
       return {
         markStart: marks[0],
         markEnd: marks[1],
-        blockpicker: new RegExp(`(${start}+)([ \\t]?)(.*?)(${end})|(${start}+)([ \\t\\r\\n]?)([\\s\\S]*?)(${end})`, 'gm'),
+        blockpicker: new RegExp(
+          `(${start}+)([ \\t]?)(.*?)(${end})|(${start}+)([ \\t\\r\\n]?)([\\s\\S]*?)(${end})`,
+          'gm',
+        ),
         linePicker: new RegExp(`(^([ \\t]*))((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
         docLinePicker: new RegExp(`(^[ \\t]*${prefix}([ \\t]))((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
         docLinePrefix: linePrefix,
@@ -179,7 +185,7 @@ export class Parser {
   private async parseLinePicker() {
     const configs = configuration.getConfigurationFlatten();
 
-    const escapedTags = configs.tags.map(tag => tag.tagEscaped);
+    const escapedTags = configs.tags.map((tag) => tag.tagEscaped);
 
     const comments = await definition.getAvailableComments(this.editor.document.languageId);
 
@@ -187,10 +193,10 @@ export class Parser {
       return;
     }
 
-    const escapedMarks = comments.lineComments.map(s => `${escapeRegexString(s)}+`).join('|');
+    const escapedMarks = comments.lineComments.map((s) => `${escapeRegexString(s)}+`).join('|');
 
     return new RegExp(`(^|[ \\t]+)(${escapedMarks})[ \\t](${escapedTags.join('|')})(.*)`, 'igm');
   }
 }
 
-export class CommonParser extends Parser { }
+export class CommonParser extends Parser {}

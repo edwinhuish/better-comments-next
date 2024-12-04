@@ -8,7 +8,7 @@ export function escapeRegexString(input: string): string {
   let escaped = escapeRegexCache.get(input);
 
   if (!escaped) {
-    escaped = input.replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&'); // $& means the whole matched string
+    escaped = input.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&'); // $& means the whole matched string
     escapeRegexCache.set(input, escaped);
   }
 

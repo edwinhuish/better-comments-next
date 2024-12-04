@@ -1,7 +1,10 @@
-import * as vscode from 'vscode';
-import * as configuration from '../../configuration';
-import type { TagDecorationOptions } from './common';
 import { CommonParser } from './common';
+
+import * as configuration from '../../configuration';
+
+import * as vscode from 'vscode';
+
+import type { TagDecorationOptions } from './common';
 
 export class PlainTextParser extends CommonParser {
   protected async pickFromBlockComment() {
@@ -17,17 +20,17 @@ export class PlainTextParser extends CommonParser {
     const configs = configuration.getConfigurationFlatten();
 
     if (configs.highlightPlainText) {
-      const escapedTags = configs.tags.map(tag => tag.tagEscaped);
+      const escapedTags = configs.tags.map((tag) => tag.tagEscaped);
 
       const picker = new RegExp(`(^)([ \\t]*)(${escapedTags.join('|')})+(.*)`, 'igm');
 
       if (picker) {
         let match: RegExpExecArray | null | undefined;
-        // eslint-disable-next-line no-cond-assign
-        while (match = picker.exec(this.getText())) {
+
+        while ((match = picker.exec(this.getText()))) {
           const beginIndex = match.index;
           const endIndex = match.index + match[0].length;
-          if (skipRanges.find(range => range[0] <= beginIndex && endIndex <= range[1])) {
+          if (skipRanges.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
             // skip if line mark inside block comments
             continue;
           }

@@ -1,5 +1,5 @@
-import * as vscode from 'vscode';
 import { parse as json5Parse } from 'json5';
+import * as vscode from 'vscode';
 
 export interface AvailableComments {
   lineComments: string[];
@@ -14,9 +14,7 @@ export class Language {
   protected embeddedLanguages = new Set<string>();
   protected availableComments: AvailableComments | undefined;
 
-  constructor(
-    id: string,
-  ) {
+  constructor(id: string) {
     this.id = id;
   }
 
@@ -58,8 +56,7 @@ export class Language {
       this.configuration = json5Parse(content) as vscode.LanguageConfiguration;
 
       return this.configuration;
-    }
-    catch (error: any) {
+    } catch (error: any) {
       console.error(`Parse configuration file ${this.configurationUri.toString()} failed: ${error.message}`);
       return undefined;
     }
@@ -118,12 +115,12 @@ export class Language {
   }
 }
 
-export class CommonLanguage extends Language { };
+export class CommonLanguage extends Language {}
 
 function getDefaultComments(languageCode: string): vscode.CommentRule | undefined {
   switch (languageCode) {
     case 'asciidoc':
-      return ({ lineComment: '//', blockComment: ['////', '////'] });
+      return { lineComment: '//', blockComment: ['////', '////'] };
     case 'apex':
     case 'javascript':
     case 'javascriptreact':
@@ -153,9 +150,9 @@ function getDefaultComments(languageCode: string): vscode.CommentRule | undefine
     case 'stylus':
     case 'swift':
     case 'verilog':
-      return ({ lineComment: '//', blockComment: ['/*', '*/'] });
+      return { lineComment: '//', blockComment: ['/*', '*/'] };
     case 'css':
-      return ({ blockComment: ['/*', '*/'] });
+      return { blockComment: ['/*', '*/'] };
     case 'coffeescript':
     case 'dockerfile':
     case 'gdscript':
@@ -170,63 +167,63 @@ function getDefaultComments(languageCode: string): vscode.CommentRule | undefine
     case 'shellscript':
     case 'tcl':
     case 'yaml':
-      return ({ lineComment: '#' });
+      return { lineComment: '#' };
     case 'elixir':
     case 'python':
-      return ({ lineComment: '#', blockComment: ['"""', '"""'] });
+      return { lineComment: '#', blockComment: ['"""', '"""'] };
     case 'nim':
-      return ({ lineComment: '#', blockComment: ['#[', ']#'] });
+      return { lineComment: '#', blockComment: ['#[', ']#'] };
     case 'powershell':
-      return ({ lineComment: '#', blockComment: ['<#', '#>'] });
+      return { lineComment: '#', blockComment: ['<#', '#>'] };
     case 'ada':
     case 'hive-sql':
     case 'pig':
     case 'plsql':
     case 'sql':
-      return ({ lineComment: '--' });
+      return { lineComment: '--' };
     case 'lua':
-      return ({ lineComment: '--', blockComment: ['--[[', ']]'] });
+      return { lineComment: '--', blockComment: ['--[[', ']]'] };
     case 'elm':
     case 'haskell':
-      return ({ lineComment: '--', blockComment: ['{-', '-}'] });
+      return { lineComment: '--', blockComment: ['{-', '-}'] };
     case 'vb':
     case 'asp':
     case 'diagram': // ? PlantUML is recognized as Diagram (diagram)
-      return ({ lineComment: '\'' });
+      return { lineComment: "'" };
     case 'bibtex':
     case 'erlang':
     case 'latex':
     case 'matlab':
-      return ({ lineComment: '%' });
+      return { lineComment: '%' };
     case 'clojure':
     case 'elps':
     case 'racket':
     case 'lisp':
-      return ({ lineComment: ';' });
+      return { lineComment: ';' };
     case 'terraform':
-      return ({ lineComment: '#', blockComment: ['/*', '*/'] });
+      return { lineComment: '#', blockComment: ['/*', '*/'] };
     case 'COBOL':
-      return ({ lineComment: '*>' });
+      return { lineComment: '*>' };
     case 'fortran-modern':
-      return ({ lineComment: 'c' });
+      return { lineComment: 'c' };
     case 'SAS':
     case 'stata':
-      return ({ lineComment: '*', blockComment: ['/*', '*/'] });
+      return { lineComment: '*', blockComment: ['/*', '*/'] };
     case 'html':
     case 'xml':
     case 'markdown':
     case 'vue':
-      return ({ blockComment: ['<!--', '-->'] });
+      return { blockComment: ['<!--', '-->'] };
     case 'twig':
-      return ({ blockComment: ['{#', '#}'] });
+      return { blockComment: ['{#', '#}'] };
     case 'genstat':
-      return ({ lineComment: '\\', blockComment: ['"', '"'] });
+      return { lineComment: '\\', blockComment: ['"', '"'] };
     case 'cfml':
-      return ({ blockComment: ['<!---', '--->'] });
+      return { blockComment: ['<!---', '--->'] };
     case 'shaderlab':
-      return ({ lineComment: '//' });
+      return { lineComment: '//' };
     case 'razor':
-      return ({ blockComment: ['@*', '*@'] });
+      return { blockComment: ['@*', '*@'] };
     default:
       return undefined;
   }

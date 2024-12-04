@@ -1,6 +1,8 @@
-import * as vscode from 'vscode';
-import type { ConfigurationFlatten } from './configuration';
 import { getConfigurationFlatten } from './configuration';
+
+import * as vscode from 'vscode';
+
+import type { ConfigurationFlatten } from './configuration';
 
 export type OnDidChangeCallback = (config: ConfigurationFlatten) => void;
 
