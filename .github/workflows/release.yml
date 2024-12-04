@@ -71,13 +71,13 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Generate extension package
-        run: npx vsce package
+      # - name: Generate extension package
+      #   run: npx vsce package
 
-      - name: Publish extension to vscode
-        run: npx vsce publish
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+      # - name: Publish extension to vscode
+      #   run: npx vsce publish
+      #   env:
+      #     VSCE_PAT: ${{ secrets.VSCE_PAT }}
 
       - name: Publish extension to Open VSX
         run: npx ovsx publish
