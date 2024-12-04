@@ -1,5 +1,10 @@
 # Change Log
 
+## [3.3.0] (2024-12-04)
+
+### House Keeping
+* Refactoring code for split different programming languages
+
 ## [3.2.0] (2024-02-03)
 
 ### Features
@@ -11,6 +16,7 @@
 * Skip decorate line comment like inside the block comment. 
 * Fix python decoration. [#4](https://github.com/edwinhuish/better-comments-next/issues/4)
 * Wrong matching for block comments. [#9](https://github.com/edwinhuish/better-comments-next/issues/9)
+* Fix PHP hash comments [#14](https://github.com/edwinhuish/better-comments-next/issues/14)
 
 ## [3.1.0] (2023-12-03)
 

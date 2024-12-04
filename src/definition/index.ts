@@ -1,7 +1,7 @@
 import { registerEvent } from './event';
-import { updateDefinitions } from './languages';
+import * as definition from './definition';
 
-export * from './languages';
+export * from './definition';
 export {
   onDidChange,
   unregisterEvent as deactivate,
@@ -9,5 +9,5 @@ export {
 
 export function activate() {
   registerEvent();
-  updateDefinitions();
+  definition.refresh();
 }

@@ -83,3 +83,55 @@ function flattenTags(tags: Tag[]) {
   }
   return flatTags;
 }
+
+export interface TagDecorationType {
+  tag: string;
+  decorationType: vscode.TextEditorDecorationType;
+}
+
+export function getTagDecorationTypes() {
+  const configs = getConfigurationFlatten();
+  const types: TagDecorationType[] = [];
+  for (const tag of configs.tags) {
+    const opt = parseDecorationRenderOption(tag);
+
+    const tagLight = configs.tagsLight.find(t => t.tag === tag.tag);
+    if (tagLight) {
+      opt.light = parseDecorationRenderOption(tagLight);
+    }
+
+    const tagDark = configs.tagsDark.find(t => t.tag === tag.tag);
+    if (tagDark) {
+      opt.dark = parseDecorationRenderOption(tagDark);
+    }
+
+    types.push({
+      tag: tag.tag,
+      decorationType: vscode.window.createTextEditorDecorationType(opt),
+    });
+  }
+
+  return types;
+}
+
+/**
+ * Parse decoration render option by tag configuration
+ */
+function parseDecorationRenderOption(tag: TagFlatten) {
+  const options: vscode.DecorationRenderOptions = { color: tag.color, backgroundColor: tag.backgroundColor };
+
+  const textDecorations: string[] = [];
+  tag.strikethrough && textDecorations.push('line-through');
+  tag.underline && textDecorations.push('underline');
+  options.textDecoration = textDecorations.join(' ');
+
+  if (tag.bold) {
+    options.fontWeight = 'bold';
+  }
+
+  if (tag.italic) {
+    options.fontStyle = 'italic';
+  }
+
+  return options;
+}

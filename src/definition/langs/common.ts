@@ -16,16 +16,14 @@ export class Language {
 
   constructor(
     id: string,
-    configurationUri?: vscode.Uri,
   ) {
     this.id = id;
-    this.configurationUri = configurationUri;
   }
 
   /**
    * Set configuration uri
    */
-  setConfigurationUri(configurationUri?: vscode.Uri) {
+  public setConfigurationUri(configurationUri?: vscode.Uri) {
     this.configurationUri = configurationUri;
     return this;
   }
@@ -33,7 +31,7 @@ export class Language {
   /**
    * Check if config uri already setup
    */
-  hasConfigurationUri() {
+  public hasConfigurationUri() {
     return !!this.configurationUri;
   }
 
@@ -41,7 +39,7 @@ export class Language {
    * Get language configuration
    * @param forceRefresh force refresh configuration
    */
-  async getConfiguration(forceRefresh = false) {
+  public async getConfiguration(forceRefresh = false) {
     if (this.configuration && !forceRefresh) {
       return this.configuration;
     }
@@ -51,7 +49,7 @@ export class Language {
     }
 
     try {
-    // Read file
+      // Read file
       const raw = await vscode.workspace.fs.readFile(this.configurationUri);
 
       const content = raw.toString();
@@ -71,7 +69,7 @@ export class Language {
    * Get language comments rules
    * @param forceRefresh force refresh configuration
    */
-  async getComments(forceRefresh = false) {
+  public async getComments(forceRefresh = false) {
     const config = await this.getConfiguration(forceRefresh);
 
     if (config && config.comments) {
@@ -84,7 +82,7 @@ export class Language {
   /**
    * Add embedded language id
    */
-  addEmbeddedLanguage(langId: string) {
+  public addEmbeddedLanguage(langId: string) {
     this.embeddedLanguages.add(langId);
     return this;
   }
@@ -92,14 +90,14 @@ export class Language {
   /**
    * Get embedded language ids
    */
-  getEmbeddedLanguages() {
+  public getEmbeddedLanguages() {
     return this.embeddedLanguages;
   }
 
   /**
    * Replace embeddedLanguages
    */
-  setEmbeddedLanguages(embeddedLanguages: string[] | Set<string>) {
+  public setEmbeddedLanguages(embeddedLanguages: string[] | Set<string>) {
     this.embeddedLanguages = new Set(embeddedLanguages);
     return this;
   }
@@ -107,18 +105,20 @@ export class Language {
   /**
    * Get avaiable comments
    */
-  getAvailableComments() {
+  public getAvailableComments() {
     return this.availableComments;
   }
 
   /**
    * Set avaiable comments
    */
-  setAvailableComments(comments: AvailableComments) {
+  public setAvailableComments(comments: AvailableComments) {
     this.availableComments = comments;
     return this;
   }
 }
+
+export class CommonLanguage extends Language { };
 
 function getDefaultComments(languageCode: string): vscode.CommentRule | undefined {
   switch (languageCode) {

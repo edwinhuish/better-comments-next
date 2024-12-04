@@ -1,47 +1,37 @@
 import * as vscode from 'vscode';
-import { PHPLanguage } from './lang/php';
-import { Language } from './lang/default';
-import type { AvailableComments } from './lang/default';
+import * as langs from './langs';
 
-export type Languages = Map<string, Language>;
+const cached = new Map<string, langs.Language>();
 
-const languages: Languages = new Map<string, Language>();
-function useLanguage(langId: string) {
-  let lang = languages.get(langId);
+function useLanguage(langId: string): langs.Language {
+  let lang = cached.get(langId);
 
-  if (lang) {
-    return lang;
+  if (!lang) {
+    lang = langs.useLanguage(langId);
+    cached.set(langId, lang);
   }
-
-  switch (langId) {
-    case 'php':
-      lang = new PHPLanguage(langId);
-      break;
-    default:
-      lang = new Language(langId);
-  }
-
-  languages.set(langId, lang);
 
   return lang;
 }
 
 /**
- * Generate a map of configuration files by language as defined by extensions
- * External extensions can override default configurations os VSCode
+ * Refresh the language cache
  */
-export function updateDefinitions() {
-  languages.clear();
+export function refresh() {
+  cached.clear();
 
   for (const extension of vscode.extensions.all) {
     const packageJSON = extension.packageJSON;
     for (const language of (packageJSON?.contributes?.languages || [])) {
+      // if language is not defined, skip it
+      if (!language || !language.id) {
+        continue;
+      }
+
       const lang = useLanguage(language.id);
 
-      // if has configuration
-      if (language.configuration) {
-        lang.setConfigurationUri(vscode.Uri.joinPath(extension.extensionUri, language.configuration));
-      }
+      const configUri = language.configuration ? vscode.Uri.joinPath(extension.extensionUri, language.configuration) : undefined;
+      lang.setConfigurationUri(configUri);
 
       const embeddedLanguages = lang.getEmbeddedLanguages();
       if (embeddedLanguages.size > 0) {
@@ -65,7 +55,7 @@ export function updateDefinitions() {
 /**
  * Gets the configuration information for the specified language
  */
-export async function getAvailableComments(langId: string): Promise<AvailableComments> {
+export async function getAvailableComments(langId: string): Promise<langs.AvailableComments> {
   const language = useLanguage(langId);
 
   let availableComments = language.getAvailableComments();
@@ -76,7 +66,7 @@ export async function getAvailableComments(langId: string): Promise<AvailableCom
 
   const lineComments = new Set<string>();
   const blockComments = new Map<string, vscode.CharacterPair>();
-  async function addCommentByLang(lang?: Language) {
+  async function addCommentByLang(lang?: langs.Language) {
     if (!lang) {
       return;
     }
