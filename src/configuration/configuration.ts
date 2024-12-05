@@ -34,20 +34,33 @@ export interface ConfigurationFlatten extends Configuration {
   tagsDark: TagFlatten[];
 }
 
+let config: (Configuration & WorkspaceConfiguration) | undefined;
+let configFlatten: ConfigurationFlatten | undefined;
+let tagDecorationTypes: Map<string, vscode.TextEditorDecorationType> | undefined;
+
+export function refresh() {
+  config = undefined;
+  configFlatten = undefined;
+  tagDecorationTypes = undefined;
+}
+
 /**
  * Get better comments configuration
  */
 function getConfiguration() {
-  return vscode.workspace.getConfiguration('better-comments') as Configuration & WorkspaceConfiguration;
+  if (!config) {
+    config = vscode.workspace.getConfiguration('better-comments') as Configuration & WorkspaceConfiguration;
+  }
+
+  return config!;
 }
 
 // Cache configuration
-let configFlatten: ConfigurationFlatten;
 /**
  * Get better comments configuration in flatten
  */
-export function getConfigurationFlatten(forceRefresh = false) {
-  if (configFlatten && !forceRefresh) {
+export function getConfigurationFlatten() {
+  if (configFlatten) {
     return configFlatten;
   }
   const orig = getConfiguration();
@@ -87,28 +100,30 @@ function flattenTags(tags: Tag[]) {
 }
 
 export function getTagDecorationTypes() {
-  const configs = getConfigurationFlatten();
+  if (!tagDecorationTypes) {
+    const configs = getConfigurationFlatten();
 
-  const tagTypes = new Map<string, vscode.TextEditorDecorationType>();
+    tagDecorationTypes = new Map<string, vscode.TextEditorDecorationType>();
 
-  for (const tag of configs.tags) {
-    const opt = parseDecorationRenderOption(tag);
+    for (const tag of configs.tags) {
+      const opt = parseDecorationRenderOption(tag);
 
-    const tagLight = configs.tagsLight.find((t) => t.tag === tag.tag);
-    if (tagLight) {
-      opt.light = parseDecorationRenderOption(tagLight);
+      const tagLight = configs.tagsLight.find((t) => t.tag === tag.tag);
+      if (tagLight) {
+        opt.light = parseDecorationRenderOption(tagLight);
+      }
+
+      const tagDark = configs.tagsDark.find((t) => t.tag === tag.tag);
+      if (tagDark) {
+        opt.dark = parseDecorationRenderOption(tagDark);
+      }
+
+      const tagName = tag.tag.toLowerCase();
+      tagDecorationTypes.set(tagName, vscode.window.createTextEditorDecorationType(opt));
     }
-
-    const tagDark = configs.tagsDark.find((t) => t.tag === tag.tag);
-    if (tagDark) {
-      opt.dark = parseDecorationRenderOption(tagDark);
-    }
-
-    const tagName = tag.tag.toLowerCase();
-    tagTypes.set(tagName, vscode.window.createTextEditorDecorationType(opt));
   }
 
-  return tagTypes;
+  return tagDecorationTypes;
 }
 
 /**

@@ -1,4 +1,4 @@
-import { getConfigurationFlatten } from './configuration';
+import { getConfigurationFlatten, refresh } from './configuration';
 
 import * as vscode from 'vscode';
 
@@ -21,7 +21,9 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      const config = getConfigurationFlatten(true);
+      refresh();
+
+      const config = getConfigurationFlatten();
 
       // Run change callback
       for (const callback of onDidChangeCallbacks) {
