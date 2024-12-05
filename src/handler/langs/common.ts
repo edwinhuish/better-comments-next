@@ -13,10 +13,6 @@ export interface BlockPicker {
   docLinePrefix: string;
 }
 
-export interface TagDecorationOptions extends vscode.DecorationOptions {
-  tag: string;
-}
-
 export abstract class Handler {
   public readonly langId: string;
   constructor(langId: string) {
@@ -47,16 +43,12 @@ export class CommonHandler extends Handler {
 
     const tagDecorationTypes = configuration.getTagDecorationTypes();
 
-    for (const t of tagDecorationTypes) {
-      const lowerTag = t.tag.toLowerCase();
-      const blockOpts = (blockPicked.decorationOptions.filter((opt) => opt.tag === lowerTag) ||
-        []) as vscode.DecorationOptions[];
-      const lineOpts = (linePicked.decorationOptions.filter((opt) => opt.tag === lowerTag) ||
-        []) as vscode.DecorationOptions[];
-
+    tagDecorationTypes.forEach((t, tag) => {
+      const blockOpts = blockPicked.decorationOptions.get(tag) || [];
+      const lineOpts = linePicked.decorationOptions.get(tag) || [];
       const ranges = [...blockOpts, ...lineOpts];
-      editor.setDecorations(t.decorationType, ranges);
-    }
+      editor.setDecorations(t, ranges);
+    });
   }
 
   public async triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 100) {
@@ -88,7 +80,7 @@ export class CommonHandler extends Handler {
     const pickers = await this.getBlockPickers();
 
     const blockRanges: [number, number][] = [];
-    const decorationOptions: TagDecorationOptions[] = [];
+    const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
     for (const picker of pickers) {
       // Find the multiline comment block
@@ -121,9 +113,11 @@ export class CommonHandler extends Handler {
           const endPos = editor.document.positionAt(startIdx + line[3].length);
           const range = new vscode.Range(startPos, endPos);
 
-          const tag = line![4].toLowerCase();
+          const tagName = line![4].toLowerCase();
 
-          decorationOptions.push({ tag, range });
+          const opt = decorationOptions.get(tagName) || [];
+          opt.push({ range });
+          decorationOptions.set(tagName, opt);
         }
       }
     }
@@ -134,7 +128,7 @@ export class CommonHandler extends Handler {
   }
 
   protected async pickFromLineComment(editor: vscode.TextEditor, skipRanges: [number, number][] = []) {
-    const decorationOptions: TagDecorationOptions[] = [];
+    const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
     const picker = await this.getLinePicker();
 
@@ -153,9 +147,11 @@ export class CommonHandler extends Handler {
         const endPos = editor.document.positionAt(match.index + match[0].length);
         const range = new vscode.Range(startPos, endPos);
 
-        const tag = match![3].toLowerCase();
+        const tagName = match![3].toLowerCase();
 
-        decorationOptions.push({ tag, range });
+        const opt = decorationOptions.get(tagName) || [];
+        opt.push({ range });
+        decorationOptions.set(tagName, opt);
       }
     }
 

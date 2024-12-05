@@ -86,14 +86,11 @@ function flattenTags(tags: Tag[]) {
   return flatTags;
 }
 
-export interface TagDecorationType {
-  tag: string;
-  decorationType: vscode.TextEditorDecorationType;
-}
-
 export function getTagDecorationTypes() {
   const configs = getConfigurationFlatten();
-  const types: TagDecorationType[] = [];
+
+  const tagTypes = new Map<string, vscode.TextEditorDecorationType>();
+
   for (const tag of configs.tags) {
     const opt = parseDecorationRenderOption(tag);
 
@@ -107,13 +104,11 @@ export function getTagDecorationTypes() {
       opt.dark = parseDecorationRenderOption(tagDark);
     }
 
-    types.push({
-      tag: tag.tag,
-      decorationType: vscode.window.createTextEditorDecorationType(opt),
-    });
+    const tagName = tag.tag.toLowerCase();
+    tagTypes.set(tagName, vscode.window.createTextEditorDecorationType(opt));
   }
 
-  return types;
+  return tagTypes;
 }
 
 /**

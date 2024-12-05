@@ -2,20 +2,18 @@ import { CommonHandler } from './common';
 
 import * as vscode from 'vscode';
 
-import type { TagDecorationOptions } from './common';
-
 import * as configuration from '@/configuration';
 
 export class PlainTextHandler extends CommonHandler {
   protected async pickFromBlockComment() {
     return {
       blockRanges: [],
-      decorationOptions: [],
+      decorationOptions: new Map<string, vscode.DecorationOptions[]>(),
     };
   }
 
   protected async pickFromLineComment(editor: vscode.TextEditor, skipRanges: [number, number][] = []) {
-    const decorationOptions: TagDecorationOptions[] = [];
+    const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
     const configs = configuration.getConfigurationFlatten();
 
@@ -39,9 +37,11 @@ export class PlainTextHandler extends CommonHandler {
           const endPos = editor.document.positionAt(match.index + match[0].length);
           const range = new vscode.Range(startPos, endPos);
 
-          const tag = match![3].toLowerCase();
+          const tagName = match![3].toLowerCase();
 
-          decorationOptions.push({ tag, range });
+          const opt = decorationOptions.get(tagName) || [];
+          opt.push({ range });
+          decorationOptions.set(tagName, opt);
         }
       }
     }
