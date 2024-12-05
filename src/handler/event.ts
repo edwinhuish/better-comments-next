@@ -2,7 +2,7 @@ import * as handler from './handler';
 
 import * as vscode from 'vscode';
 
-export type OnDidChangeCallback = (event: vscode.TextDocumentChangeEvent) => void;
+export type OnDidChangeCallback = (event: vscode.TextDocumentChangeEvent, editor?: vscode.TextEditor) => void;
 
 const onDidChangeCallbacks: OnDidChangeCallback[] = [];
 export function onDidChange(callback: OnDidChangeCallback) {
@@ -11,10 +11,9 @@ export function onDidChange(callback: OnDidChangeCallback) {
 
 let disposable: vscode.Disposable | undefined;
 export function activate(context: vscode.ExtensionContext) {
-  // Get the active editor for the first time and initialise the regex
-  if (vscode.window.activeTextEditor) {
-    // Update decorators
-    handler.updateDecorations(vscode.window.activeTextEditor);
+  // Loop all visible editor for the first time and initialise the regex
+  for (const editor of vscode.window.visibleTextEditors) {
+    handler.triggerUpdateDecorations(editor);
   }
 
   // * Handle active file changed
@@ -32,14 +31,15 @@ export function activate(context: vscode.ExtensionContext) {
   // * Handle file contents changed
   disposable = vscode.workspace.onDidChangeTextDocument(
     (event) => {
-      // Trigger updates if the text was changed in the same document
-      if (event.document === vscode.window.activeTextEditor?.document) {
-        handler.triggerUpdateDecorations(vscode.window.activeTextEditor!);
+      // Trigger updates if the text was changed in the visible editor
+      const editor = vscode.window.visibleTextEditors.find((e) => e.document === event.document);
+      if (editor) {
+        handler.triggerUpdateDecorations(editor);
       }
 
       // Run change callbacks
       for (const callback of onDidChangeCallbacks) {
-        callback(event);
+        callback(event, editor);
       }
     },
     null,

@@ -1,12 +1,10 @@
 import { CommonHandler } from './langs/common';
 import { PlainTextHandler } from './langs/plaintext';
 
-import * as vscode from 'vscode';
-
 import type { Handler } from './langs/common';
+import type * as vscode from 'vscode';
 
 const cached = new Map<string, Handler>();
-let triggerUpdateTimeout: NodeJS.Timer | undefined;
 
 function newHandler(languageId: string): Handler {
   switch (languageId) {
@@ -29,18 +27,9 @@ function useHandler(languageId: string): Handler {
 }
 
 export function updateDecorations(editor: vscode.TextEditor) {
-  if (triggerUpdateTimeout) {
-    clearTimeout(triggerUpdateTimeout);
-  }
-
   return useHandler(editor.document.languageId).updateDecorations(editor);
 }
 
 export function triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 100) {
-  triggerUpdateTimeout = setTimeout(() => {
-    if (vscode.window.activeTextEditor !== editor) {
-      return;
-    }
-    updateDecorations(editor);
-  }, timeout);
+  return useHandler(editor.document.languageId).triggerUpdateDecorations(editor, timeout);
 }

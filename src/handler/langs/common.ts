@@ -24,14 +24,22 @@ export abstract class Handler {
   }
 
   public abstract updateDecorations(editor: vscode.TextEditor): Promise<void>;
+  public abstract triggerUpdateDecorations(editor: vscode.TextEditor, timeout?: number): Promise<void>;
 }
 
 export class CommonHandler extends Handler {
+  protected linePicker?: RegExp = undefined;
   protected blockPickers?: BlockPicker[] = undefined;
+
+  protected triggerUpdateTimeout?: NodeJS.Timeout = undefined;
 
   public async updateDecorations(editor: vscode.TextEditor): Promise<void> {
     if (!editor || editor.document.languageId !== this.langId) {
       return;
+    }
+
+    if (this.triggerUpdateTimeout) {
+      clearTimeout(this.triggerUpdateTimeout);
     }
 
     const blockPicked = await this.pickFromBlockComment(editor);
@@ -46,8 +54,26 @@ export class CommonHandler extends Handler {
       const lineOpts = (linePicked.decorationOptions.filter((opt) => opt.tag === lowerTag) ||
         []) as vscode.DecorationOptions[];
 
-      editor.setDecorations(t.decorationType, [...blockOpts, ...lineOpts]);
+      const ranges = [...blockOpts, ...lineOpts];
+      editor.setDecorations(t.decorationType, ranges);
     }
+  }
+
+  public async triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 100) {
+    this.triggerUpdateTimeout = setTimeout(() => {
+      if (vscode.window.activeTextEditor !== editor) {
+        return;
+      }
+      this.updateDecorations(editor);
+    }, timeout);
+  }
+
+  protected async getLinePicker() {
+    if (this.linePicker === undefined) {
+      this.linePicker = await this.parseLinePicker();
+    }
+
+    return this.linePicker;
   }
 
   protected async getBlockPickers() {
@@ -110,7 +136,7 @@ export class CommonHandler extends Handler {
   protected async pickFromLineComment(editor: vscode.TextEditor, skipRanges: [number, number][] = []) {
     const decorationOptions: TagDecorationOptions[] = [];
 
-    const picker = await this.parseLinePicker(editor);
+    const picker = await this.getLinePicker();
 
     if (picker) {
       let match: RegExpExecArray | null | undefined;
@@ -170,12 +196,12 @@ export class CommonHandler extends Handler {
     return pickers;
   }
 
-  private async parseLinePicker(editor: vscode.TextEditor) {
+  private async parseLinePicker() {
     const configs = configuration.getConfigurationFlatten();
 
     const escapedTags = configs.tags.map((tag) => tag.tagEscaped);
 
-    const comments = await definition.getAvailableComments(editor.document.languageId);
+    const comments = await definition.getAvailableComments(this.langId);
 
     if (!comments.lineComments || !comments.lineComments.length) {
       return;
