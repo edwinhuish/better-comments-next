@@ -39,6 +39,16 @@ let configFlatten: ConfigurationFlatten | undefined;
 let tagDecorationTypes: Map<string, vscode.TextEditorDecorationType> | undefined;
 
 export function refresh() {
+  // if already set tagDecorationTypes, clear decoration for visible editors
+  if (tagDecorationTypes) {
+    for (const editor of vscode.window.visibleTextEditors) {
+      for (const [_, decorationType] of tagDecorationTypes) {
+        // clear decoration
+        editor.setDecorations(decorationType, []);
+      }
+    }
+  }
+
   config = undefined;
   configFlatten = undefined;
   tagDecorationTypes = undefined;
