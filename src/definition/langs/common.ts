@@ -1,6 +1,8 @@
 import { parse as json5Parse } from 'json5';
 import * as vscode from 'vscode';
 
+import * as log from '@/log';
+
 export interface AvailableComments {
   lineComments: string[];
   blockComments: vscode.CharacterPair[];
@@ -57,7 +59,7 @@ export class Language {
 
       return this.configuration;
     } catch (error: any) {
-      console.error(`Parse configuration file ${this.configurationUri.toString()} failed: ${error.message}`);
+      log.error(`Parse configuration file ${this.configurationUri.toString()} failed: ${error.message}`);
       return undefined;
     }
   }
@@ -115,7 +117,9 @@ export class Language {
   }
 }
 
-export class CommonLanguage extends Language {}
+export class CommonLanguage extends Language {
+  // ignore eslint-prettier error
+}
 
 function getDefaultComments(languageCode: string): vscode.CommentRule | undefined {
   switch (languageCode) {

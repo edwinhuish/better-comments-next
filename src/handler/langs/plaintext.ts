@@ -1,10 +1,10 @@
 import { CommonHandler } from './common';
 
-import * as configuration from '../../configuration';
-
 import * as vscode from 'vscode';
 
 import type { TagDecorationOptions } from './common';
+
+import * as configuration from '@/configuration';
 
 export class PlainTextHandler extends CommonHandler {
   protected async pickFromBlockComment() {

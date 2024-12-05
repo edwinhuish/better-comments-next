@@ -1,8 +1,8 @@
-import * as configuration from '../../configuration';
-import * as definition from '../../definition';
-import { escapeRegexString } from '../../utils';
-
 import * as vscode from 'vscode';
+
+import * as configuration from '@/configuration';
+import * as definition from '@/definition';
+import { escapeRegexString } from '@/utils';
 
 export interface BlockPicker {
   markStart: string;
