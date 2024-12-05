@@ -4,6 +4,9 @@ import { PlainTextHandler } from './langs/plaintext';
 import type { Handler } from './langs/common';
 import type * as vscode from 'vscode';
 
+const cached = new Map<string, Handler>();
+let triggerUpdateTimeout: NodeJS.Timer | undefined;
+
 function newHandler(editor: vscode.TextEditor): Handler {
   switch (editor.document.languageId) {
     case 'plaintext':
@@ -13,10 +16,7 @@ function newHandler(editor: vscode.TextEditor): Handler {
   }
 }
 
-const cached = new Map<string, Handler>();
-let triggerUpdateTimeout: NodeJS.Timer | undefined;
-
-export function updateDecorations(editor: vscode.TextEditor) {
+function useHandler(editor: vscode.TextEditor): Handler {
   let handler = cached.get(editor.document.languageId);
 
   if (!handler) {
@@ -28,11 +28,15 @@ export function updateDecorations(editor: vscode.TextEditor) {
     handler.setEditor(editor);
   }
 
+  return handler;
+}
+
+export function updateDecorations(editor: vscode.TextEditor) {
   if (triggerUpdateTimeout) {
     clearTimeout(triggerUpdateTimeout);
   }
 
-  return handler.updateDecorations();
+  return useHandler(editor).updateDecorations();
 }
 
 export function triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 100) {
