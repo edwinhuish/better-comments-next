@@ -65,7 +65,6 @@ function getConfiguration() {
   return config!;
 }
 
-// Cache configuration
 /**
  * Get better comments configuration in flatten
  */
