@@ -14,7 +14,7 @@ export class PlainTextHandler extends CommonHandler {
     };
   }
 
-  protected async pickFromLineComment(skipRanges: [number, number][] = []) {
+  protected async pickFromLineComment(editor: vscode.TextEditor, skipRanges: [number, number][] = []) {
     const decorationOptions: TagDecorationOptions[] = [];
 
     const configs = configuration.getConfigurationFlatten();
@@ -27,7 +27,7 @@ export class PlainTextHandler extends CommonHandler {
       if (picker) {
         let match: RegExpExecArray | null | undefined;
 
-        while ((match = picker.exec(this.getText()))) {
+        while ((match = picker.exec(editor.document.getText()))) {
           const beginIndex = match.index;
           const endIndex = match.index + match[0].length;
           if (skipRanges.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
@@ -35,8 +35,8 @@ export class PlainTextHandler extends CommonHandler {
             continue;
           }
 
-          const startPos = this.editor.document.positionAt(match.index + match[1].length);
-          const endPos = this.editor.document.positionAt(match.index + match[0].length);
+          const startPos = editor.document.positionAt(match.index + match[1].length);
+          const endPos = editor.document.positionAt(match.index + match[0].length);
           const range = new vscode.Range(startPos, endPos);
 
           const tag = match![3].toLowerCase();

@@ -1,31 +1,28 @@
 import { CommonHandler } from './langs/common';
 import { PlainTextHandler } from './langs/plaintext';
 
+import * as vscode from 'vscode';
+
 import type { Handler } from './langs/common';
-import type * as vscode from 'vscode';
 
 const cached = new Map<string, Handler>();
 let triggerUpdateTimeout: NodeJS.Timer | undefined;
 
-function newHandler(editor: vscode.TextEditor): Handler {
-  switch (editor.document.languageId) {
+function newHandler(languageId: string): Handler {
+  switch (languageId) {
     case 'plaintext':
-      return new PlainTextHandler(editor);
+      return new PlainTextHandler(languageId);
     default:
-      return new CommonHandler(editor);
+      return new CommonHandler(languageId);
   }
 }
 
-function useHandler(editor: vscode.TextEditor): Handler {
-  let handler = cached.get(editor.document.languageId);
+function useHandler(languageId: string): Handler {
+  let handler = cached.get(languageId);
 
   if (!handler) {
-    handler = newHandler(editor);
-    cached.set(editor.document.languageId, handler);
-  }
-
-  if (handler.getEditor() !== editor) {
-    handler.setEditor(editor);
+    handler = newHandler(languageId);
+    cached.set(languageId, handler);
   }
 
   return handler;
@@ -36,11 +33,14 @@ export function updateDecorations(editor: vscode.TextEditor) {
     clearTimeout(triggerUpdateTimeout);
   }
 
-  return useHandler(editor).updateDecorations();
+  return useHandler(editor.document.languageId).updateDecorations(editor);
 }
 
 export function triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 100) {
   triggerUpdateTimeout = setTimeout(() => {
+    if (vscode.window.activeTextEditor !== editor) {
+      return;
+    }
     updateDecorations(editor);
   }, timeout);
 }
