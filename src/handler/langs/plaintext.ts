@@ -1,4 +1,4 @@
-import { CommonParser } from './common';
+import { CommonHandler } from './common';
 
 import * as configuration from '../../configuration';
 
@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 
 import type { TagDecorationOptions } from './common';
 
-export class PlainTextParser extends CommonParser {
+export class PlainTextHandler extends CommonHandler {
   protected async pickFromBlockComment() {
     return {
       blockRanges: [],

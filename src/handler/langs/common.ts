@@ -17,10 +17,8 @@ export interface TagDecorationOptions extends vscode.DecorationOptions {
   tag: string;
 }
 
-export class Parser {
+export abstract class Handler {
   protected editor: vscode.TextEditor;
-  protected text?: string;
-  protected blockPickers?: BlockPicker[] = undefined;
 
   constructor(activedEditor: vscode.TextEditor) {
     this.editor = activedEditor;
@@ -28,13 +26,25 @@ export class Parser {
 
   public setEditor(activedEditor: vscode.TextEditor) {
     this.editor = activedEditor;
-    this.text = undefined;
-    this.blockPickers = undefined;
     return this;
   }
 
   public getEditor() {
     return this.editor;
+  }
+
+  public abstract updateDecorations(): Promise<void>;
+}
+
+export class CommonHandler extends Handler {
+  protected text?: string;
+  protected blockPickers?: BlockPicker[] = undefined;
+
+  public setEditor(activedEditor: vscode.TextEditor) {
+    this.editor = activedEditor;
+    this.text = undefined;
+    this.blockPickers = undefined;
+    return this;
   }
 
   public async updateDecorations(): Promise<void> {
@@ -198,5 +208,3 @@ export class Parser {
     return new RegExp(`(^|[ \\t]+)(${escapedMarks})[ \\t](${escapedTags.join('|')})(.*)`, 'igm');
   }
 }
-
-export class CommonParser extends Parser {}

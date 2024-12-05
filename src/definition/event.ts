@@ -10,7 +10,7 @@ export function onDidChange(callback: OnDidChangeCallback) {
 }
 
 let disposable: vscode.Disposable | undefined;
-export function registerEvent() {
+export function activate(context: vscode.ExtensionContext) {
   const refresh = () => {
     definition.refresh();
 
@@ -21,13 +21,13 @@ export function registerEvent() {
   };
 
   // Refresh languages definitions after extensions changed
-  disposable = vscode.extensions.onDidChange(refresh);
+  disposable = vscode.extensions.onDidChange(refresh, null, context.subscriptions);
 
   // refresh once
   refresh();
 }
 
-export function unregisterEvent() {
+export function deactivate() {
   if (disposable) {
     disposable.dispose();
   }

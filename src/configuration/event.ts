@@ -12,23 +12,28 @@ export function onDidChange(callback: OnDidChangeCallback) {
 }
 
 let disposable: vscode.Disposable | undefined;
-export function registerEvent() {
+
+export function activate(context: vscode.ExtensionContext) {
   // Refresh configuration after configuration changed
-  disposable = vscode.workspace.onDidChangeConfiguration((event) => {
-    if (!event.affectsConfiguration('better-comments')) {
-      return;
-    }
+  disposable = vscode.workspace.onDidChangeConfiguration(
+    (event) => {
+      if (!event.affectsConfiguration('better-comments')) {
+        return;
+      }
 
-    const config = getConfigurationFlatten(true);
+      const config = getConfigurationFlatten(true);
 
-    // Run change callback
-    for (const callback of onDidChangeCallbacks) {
-      callback(config);
-    }
-  });
+      // Run change callback
+      for (const callback of onDidChangeCallbacks) {
+        callback(config);
+      }
+    },
+    null,
+    context.subscriptions,
+  );
 }
 
-export function unregisterEvent() {
+export function deactivate() {
   if (disposable) {
     disposable.dispose();
   }
