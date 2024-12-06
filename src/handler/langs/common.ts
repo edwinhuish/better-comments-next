@@ -2,56 +2,24 @@ import * as vscode from 'vscode';
 
 import * as configuration from '@/configuration';
 import * as definition from '@/definition';
+import * as log from '@/log';
 import { escapeRegexString } from '@/utils';
 
-export interface BlockPicker {
-  markStart: string;
-  markEnd: string;
-  blockpicker: RegExp;
-  linePicker: RegExp;
-  docLinePicker: RegExp;
-  docLinePrefix: string;
-}
-
 export abstract class Handler {
-  public readonly langId: string;
-  constructor(langId: string) {
-    this.langId = langId;
+  public readonly languageId: string;
+  protected triggerUpdateTimeout?: NodeJS.Timeout = undefined;
+
+  constructor(languageId: string) {
+    this.languageId = languageId;
   }
 
   public abstract updateDecorations(editor: vscode.TextEditor): Promise<void>;
-  public abstract triggerUpdateDecorations(editor: vscode.TextEditor, timeout?: number): Promise<void>;
-}
 
-export class CommonHandler extends Handler {
-  protected linePicker?: RegExp = undefined;
-  protected blockPickers?: BlockPicker[] = undefined;
-
-  protected triggerUpdateTimeout?: NodeJS.Timeout = undefined;
-
-  public async updateDecorations(editor: vscode.TextEditor): Promise<void> {
-    if (!editor || editor.document.languageId !== this.langId) {
-      return;
-    }
-
+  public async triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 100) {
     if (this.triggerUpdateTimeout) {
       clearTimeout(this.triggerUpdateTimeout);
     }
 
-    const blockPicked = await this.pickFromBlockComment(editor);
-    const linePicked = await this.pickFromLineComment(editor, blockPicked.blockRanges);
-
-    const tagDecorationTypes = configuration.getTagDecorationTypes();
-
-    tagDecorationTypes.forEach((t, tag) => {
-      const blockOpts = blockPicked.decorationOptions.get(tag) || [];
-      const lineOpts = linePicked.decorationOptions.get(tag) || [];
-      const ranges = [...blockOpts, ...lineOpts];
-      editor.setDecorations(t, ranges);
-    });
-  }
-
-  public async triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 100) {
     this.triggerUpdateTimeout = setTimeout(() => {
       if (vscode.window.activeTextEditor !== editor) {
         return;
@@ -59,152 +27,198 @@ export class CommonHandler extends Handler {
       this.updateDecorations(editor);
     }, timeout);
   }
+}
 
-  protected async getLinePicker() {
-    if (this.linePicker === undefined) {
-      this.linePicker = await this.parseLinePicker();
+export class CommonHandler extends Handler {
+  public async updateDecorations(editor: vscode.TextEditor): Promise<void> {
+    if (!editor) {
+      log.error(`editor undefined in handler languageId (${this.languageId})`);
+      return;
     }
 
-    return this.linePicker;
-  }
+    if (editor.document.languageId !== this.languageId) {
+      log.error(
+        `document languageId (${editor.document.languageId}) does not match handler languageId (${this.languageId}), file: ${editor.document.fileName}`,
+      );
 
-  protected async getBlockPickers() {
-    if (this.blockPickers === undefined) {
-      this.blockPickers = await this.parseBlockPickers();
+      return;
     }
 
-    return this.blockPickers;
+    if (this.triggerUpdateTimeout) {
+      clearTimeout(this.triggerUpdateTimeout);
+    }
+
+    const processed: [number, number][] = [];
+
+    const docPicked = await pickDocCommentDecorationOptions({ editor, processed });
+    const blockPicked = await pickBlockCommentDecorationOptions({ editor, processed });
+    const linePicked = await pickLineCommentDecorationOptions({ editor, processed });
+
+    configuration.getTagDecorationTypes().forEach((td, tag) => {
+      const docOpts = docPicked.get(tag) || [];
+      const blockOpts = blockPicked.get(tag) || [];
+      const lineOpts = linePicked.get(tag) || [];
+      const ranges = [...docOpts, ...blockOpts, ...lineOpts];
+      editor.setDecorations(td, ranges);
+    });
+  }
+}
+
+export interface PickDecorationOptionsParams {
+  editor: vscode.TextEditor;
+  processed: [number, number][];
+}
+
+export async function pickLineCommentDecorationOptions({ editor, processed = [] }: PickDecorationOptionsParams) {
+  const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
+
+  const configs = configuration.getConfigurationFlatten();
+
+  const escapedTags = configs.tags.map((tag) => tag.tagEscaped);
+
+  const comments = await definition.getAvailableComments(editor.document.languageId);
+
+  if (!comments.lineComments || !comments.lineComments.length) {
+    return decorationOptions;
   }
 
-  protected async pickFromBlockComment(editor: vscode.TextEditor) {
-    const pickers = await this.getBlockPickers();
+  const escapedMarks = comments.lineComments.map((s) => `${escapeRegexString(s)}+`).join('|');
 
-    const blockRanges: [number, number][] = [];
-    const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
+  const picker = new RegExp(`(^|[ \\t]+)(${escapedMarks})([ \\t])(${escapedTags.join('|')})(.*)`, 'igm');
 
-    for (const picker of pickers) {
-      // Find the multiline comment block
-      let block: RegExpExecArray | null;
+  let block: RegExpExecArray | null | undefined;
+  while ((block = picker.exec(editor.document.getText()))) {
+    const beginIndex = block.index;
+    const endIndex = block.index + block[0].length;
+    if (processed.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
+      // skip if already processed
+      continue;
+    }
+    // store processed range
+    processed.push([beginIndex, endIndex]);
 
-      while ((block = picker.blockpicker.exec(editor.document.getText()))) {
-        blockRanges.push([block.index, block.index + block[0].length]);
+    const startPos = editor.document.positionAt(block.index + block[1].length + block[2].length + block[3].length);
+    const endPos = editor.document.positionAt(block.index + block[0].length);
+    const range = new vscode.Range(startPos, endPos);
 
-        // if the regex of block as line comment
-        const isLineComment = block[1] !== undefined;
+    const tagName = block[4].toLowerCase();
 
-        const comment = isLineComment ? block[3] : block[7];
-        const space = isLineComment ? block[2] : block[6];
+    const opt = decorationOptions.get(tagName) || [];
+    opt.push({ range });
+    decorationOptions.set(tagName, opt);
+  }
 
-        if (!comment || !space) {
-          continue;
-        }
+  return decorationOptions;
+}
 
-        const markStart = isLineComment ? block[1] : block[5];
-        // const markEnd = isLineComment ? block[4] : block[8];
-        const isDocComment = !isLineComment && markStart === '/**';
-        const linePicker = isDocComment ? picker.docLinePicker : picker.linePicker;
+export async function pickBlockCommentDecorationOptions({ editor, processed = [] }: PickDecorationOptionsParams) {
+  const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
-        // Find the matched line
-        let line: RegExpExecArray | null;
+  const comments = await definition.getAvailableComments(editor.document.languageId);
 
-        while ((line = linePicker.exec(comment))) {
-          const startIdx = block.index + markStart.length + space.length + line.index + line[1].length;
-          const startPos = editor.document.positionAt(startIdx);
-          const endPos = editor.document.positionAt(startIdx + line[3].length);
-          const range = new vscode.Range(startPos, endPos);
+  if (!comments.blockComments || !comments.blockComments.length) {
+    return decorationOptions;
+  }
 
-          const tagName = line![4].toLowerCase();
+  const configs = configuration.getConfigurationFlatten();
 
-          const opt = decorationOptions.get(tagName) || [];
-          opt.push({ range });
-          decorationOptions.set(tagName, opt);
-        }
+  const escapedTags = configs.tags.map((tag) => tag.tagEscaped);
+
+  for (const marks of comments.blockComments) {
+    const start = escapeRegexString(marks[0]);
+    const end = escapeRegexString(marks[1]);
+
+    const blockpicker = new RegExp(`(${start}+)(\\s+)([\\s\\S]*?)(${end})`, 'g');
+    const linePicker = new RegExp(`(^|[ \\t])(${escapedTags.join('|')})([^\\n]*?)(\\n|$)`, 'ig');
+
+    // Find the multiline comment block
+    let block: RegExpExecArray | null;
+    while ((block = blockpicker.exec(editor.document.getText()))) {
+      const beginIndex = block.index;
+      const endIndex = block.index + block[0].length;
+      if (processed.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
+        // skip if already processed
+        continue;
       }
-    }
-    return {
-      blockRanges,
-      decorationOptions,
-    };
-  }
+      // store processed range
+      processed.push([beginIndex, endIndex]);
 
-  protected async pickFromLineComment(editor: vscode.TextEditor, skipRanges: [number, number][] = []) {
-    const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
+      const content = block[3];
 
-    const picker = await this.getLinePicker();
+      if (!content) {
+        continue;
+      }
 
-    if (picker) {
-      let match: RegExpExecArray | null | undefined;
+      const contentBeginIndex = block.index + block[1].length + block[2].length;
 
-      while ((match = picker.exec(editor.document.getText()))) {
-        const beginIndex = match.index;
-        const endIndex = match.index + match[0].length;
-        if (skipRanges.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
-          // skip if line mark inside block comments
-          continue;
-        }
-
-        const startPos = editor.document.positionAt(match.index + match[1].length);
-        const endPos = editor.document.positionAt(match.index + match[0].length);
+      // Find the matched line
+      let line: RegExpExecArray | null;
+      while ((line = linePicker.exec(content))) {
+        const lineBeginIndex = contentBeginIndex + line.index;
+        const startIdx = lineBeginIndex + line[1].length - line[4].length; // line[4] is the newline character (\n)
+        const endIdx = lineBeginIndex + line[0].length;
+        const startPos = editor.document.positionAt(startIdx);
+        const endPos = editor.document.positionAt(endIdx);
         const range = new vscode.Range(startPos, endPos);
 
-        const tagName = match![3].toLowerCase();
+        const tagName = line[2].toLowerCase();
 
         const opt = decorationOptions.get(tagName) || [];
         opt.push({ range });
         decorationOptions.set(tagName, opt);
       }
     }
-
-    return {
-      decorationOptions,
-    };
   }
+  return decorationOptions;
+}
 
-  private async parseBlockPickers() {
-    const comments = await definition.getAvailableComments(this.langId);
+export async function pickDocCommentDecorationOptions({ editor, processed = [] }: PickDecorationOptionsParams) {
+  const marks = ['/**', '*/'];
+  const start = escapeRegexString(marks[0]);
+  const end = escapeRegexString(marks[1]);
+  const prefix = escapeRegexString('*');
 
-    if (!comments.blockComments || !comments.blockComments.length) {
-      return [];
+  const configs = configuration.getConfigurationFlatten();
+
+  const escapedTags = configs.tags.map((tag) => tag.tagEscaped);
+
+  const blockPicker = new RegExp(`(${start})([ \\t]+|[ \\t]*\\n)([\\s\\S]*?)(${end})`, 'g');
+  const linePicker = new RegExp(`(^|[ \\t]*(${prefix})[ \\t])(${escapedTags.join('|')})([^\\n]*?)(\\n|$)`, 'ig');
+
+  const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
+
+  let block: RegExpExecArray | null;
+  while ((block = blockPicker.exec(editor.document.getText()))) {
+    const beginIndex = block.index;
+    const endIndex = block.index + block[0].length;
+    if (processed.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
+      // skip if already processed
+      continue;
     }
+    // store processed range
+    processed.push([beginIndex, endIndex]);
 
-    const configs = configuration.getConfigurationFlatten();
+    const content = block[3];
+    const contentBeginIndex = block.index + block[1].length + block[2].length;
 
-    const escapedTags = configs.tags.map((tag) => tag.tagEscaped);
+    // Find the matched line
+    let line: RegExpExecArray | null;
+    while ((line = linePicker.exec(content))) {
+      const lineBeginIndex = contentBeginIndex + line.index;
+      const startIdx = lineBeginIndex + line[1].length;
+      const endIdx = lineBeginIndex + line[0].length - line[5].length; // line[5] is the newline character (\n)
 
-    const pickers: BlockPicker[] = comments.blockComments.map((marks) => {
-      const start = escapeRegexString(marks[0]);
-      const end = escapeRegexString(marks[1]);
-      const linePrefix = marks[0].slice(-1);
-      const prefix = escapeRegexString(linePrefix);
-      return {
-        markStart: marks[0],
-        markEnd: marks[1],
-        blockpicker: new RegExp(
-          `(${start}+)([ \\t]?)(.*?)(${end})|(${start}+)([ \\t\\r\\n]?)([\\s\\S]*?)(${end})`,
-          'gm',
-        ),
-        linePicker: new RegExp(`(^([ \\t]*))((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
-        docLinePicker: new RegExp(`(^[ \\t]*${prefix}([ \\t]))((${escapedTags.join('|')})[^^\\r^\\n]*)`, 'igm'),
-        docLinePrefix: linePrefix,
-      };
-    });
+      const startPos = editor.document.positionAt(startIdx);
+      const endPos = editor.document.positionAt(endIdx);
+      const range = new vscode.Range(startPos, endPos);
 
-    return pickers;
-  }
+      const tagName = line[3].toLowerCase();
 
-  private async parseLinePicker() {
-    const configs = configuration.getConfigurationFlatten();
-
-    const escapedTags = configs.tags.map((tag) => tag.tagEscaped);
-
-    const comments = await definition.getAvailableComments(this.langId);
-
-    if (!comments.lineComments || !comments.lineComments.length) {
-      return;
+      const opt = decorationOptions.get(tagName) || [];
+      opt.push({ range });
+      decorationOptions.set(tagName, opt);
     }
-
-    const escapedMarks = comments.lineComments.map((s) => `${escapeRegexString(s)}+`).join('|');
-
-    return new RegExp(`(^|[ \\t]+)(${escapedMarks})[ \\t](${escapedTags.join('|')})(.*)`, 'igm');
   }
+
+  return decorationOptions;
 }

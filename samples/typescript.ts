@@ -11,6 +11,7 @@ export class TestClass {
    *     : false
    */
   public TestMethod(param: any): void {
+    /* # this is inline block comment */
     const testVar = 123;
 
     //* This should not be highlighted

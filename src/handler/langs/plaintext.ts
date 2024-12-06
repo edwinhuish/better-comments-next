@@ -1,18 +1,29 @@
-import { CommonHandler } from './common';
+import { Handler } from './common';
 
 import * as vscode from 'vscode';
 
 import * as configuration from '@/configuration';
 
-export class PlainTextHandler extends CommonHandler {
-  protected async pickFromBlockComment() {
-    return {
-      blockRanges: [],
-      decorationOptions: new Map<string, vscode.DecorationOptions[]>(),
-    };
+export class PlainTextHandler extends Handler {
+  public async updateDecorations(editor: vscode.TextEditor): Promise<void> {
+    if (!editor || editor.document.languageId !== this.languageId) {
+      return;
+    }
+
+    if (this.triggerUpdateTimeout) {
+      clearTimeout(this.triggerUpdateTimeout);
+    }
+
+    const linePicked = await this.pickFromLineComment(editor);
+
+    const tagDecorationTypes = configuration.getTagDecorationTypes();
+
+    tagDecorationTypes.forEach((t, tag) => {
+      editor.setDecorations(t, linePicked.get(tag) || []);
+    });
   }
 
-  protected async pickFromLineComment(editor: vscode.TextEditor, skipRanges: [number, number][] = []) {
+  protected async pickFromLineComment(editor: vscode.TextEditor, processed: [number, number][] = []) {
     const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
     const configs = configuration.getConfigurationFlatten();
@@ -28,7 +39,7 @@ export class PlainTextHandler extends CommonHandler {
         while ((match = picker.exec(editor.document.getText()))) {
           const beginIndex = match.index;
           const endIndex = match.index + match[0].length;
-          if (skipRanges.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
+          if (processed.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
             // skip if line mark inside block comments
             continue;
           }
@@ -45,8 +56,6 @@ export class PlainTextHandler extends CommonHandler {
         }
       }
     }
-    return {
-      decorationOptions,
-    };
+    return decorationOptions;
   }
 }
