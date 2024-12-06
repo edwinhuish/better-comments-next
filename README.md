@@ -34,8 +34,6 @@ Default setting as below:
 
 ```jsonc
 {
-  // Enable/disable block comment decoration.
-  "better-comments.multilineComments": true,
   // Enable/disable hightlight plain text.
   "better-comments.highlightPlainText": false,
   // Overwrite the specified tag styles of `"better-comments.tags"` for light themes.
