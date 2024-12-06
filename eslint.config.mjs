@@ -35,11 +35,6 @@ export default tseslint.config(
       parser: tsParser,
       ecmaVersion: 5,
       sourceType: 'module',
-
-      parserOptions: {
-        project: ['./tsconfig.json', './apps/*/tsconfig.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
     },
 
     rules: {
