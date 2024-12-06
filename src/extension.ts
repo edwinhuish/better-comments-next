@@ -4,11 +4,18 @@ import * as handler from './handler';
 
 import type * as vscode from 'vscode';
 
+import * as log from '@/log';
+
 // this method is called when vs code is activated
 export async function activate(context: vscode.ExtensionContext) {
-  configuration.activate(context);
-  definition.activate(context);
-  handler.activate(context);
+  try {
+    configuration.activate(context);
+    definition.activate(context);
+    handler.activate(context);
+    log.info('started successfully.');
+  } catch (e) {
+    log.error(e);
+  }
 }
 
 export function deactivate() {

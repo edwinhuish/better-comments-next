@@ -8,9 +8,13 @@ function log(...args: any[]) {
 }
 
 export function info(...args: any[]) {
-  log('[INFO] ', ...args);
+  log('[INFO]', ...args);
 }
 
 export function error(...args: any[]) {
-  log('[ERROR] ', ...args);
+  log('[ERROR]', ...args);
+}
+
+export function warn(...args: any[]) {
+  log('[WARNING]', ...args);
 }

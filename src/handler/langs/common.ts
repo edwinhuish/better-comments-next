@@ -11,6 +11,7 @@ export abstract class Handler {
 
   constructor(languageId: string) {
     this.languageId = languageId;
+    log.info(`handler created for languageId (${languageId})`);
   }
 
   public abstract updateDecorations(editor: vscode.TextEditor): Promise<void>;
@@ -32,13 +33,13 @@ export abstract class Handler {
 export class CommonHandler extends Handler {
   public async updateDecorations(editor: vscode.TextEditor): Promise<void> {
     if (!editor) {
-      log.error(`editor undefined in handler languageId [${this.languageId}]`);
+      log.error(`editor undefined in handler languageId (${this.languageId})`);
       return;
     }
 
     if (editor.document.languageId !== this.languageId) {
       log.error(
-        `document languageId [${editor.document.languageId}] does not match handler languageId [${this.languageId}], file: ${editor.document.fileName}`,
+        `document languageId (${editor.document.languageId}) does not match handler languageId (${this.languageId}), file: ${editor.document.fileName}`,
       );
 
       return;
@@ -69,6 +70,14 @@ export interface PickDecorationOptionsParams {
   processed: [number, number][];
 }
 
+const _missingLineComments = new Set<string>();
+function logMissingLineComments(languageId: string) {
+  if (_missingLineComments.has(languageId)) return;
+
+  _missingLineComments.add(languageId);
+  log.warn(`Missing line comments for language (${languageId})`);
+}
+
 export async function pickLineCommentDecorationOptions({ editor, processed = [] }: PickDecorationOptionsParams) {
   const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
@@ -77,7 +86,7 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
   const comments = await definition.getAvailableComments(editor.document.languageId);
 
   if (!comments.lineComments || !comments.lineComments.length) {
-    log.error(`no line comments for languageId [${editor.document.languageId}]`);
+    logMissingLineComments(editor.document.languageId);
     return decorationOptions;
   }
 
@@ -166,13 +175,21 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
   return decorationOptions;
 }
 
+const _missingBlockComments = new Set<string>();
+function logMissingBlockComments(languageId: string) {
+  if (_missingBlockComments.has(languageId)) return;
+
+  _missingBlockComments.add(languageId);
+  log.warn(`Missing block comments for language (${languageId})`);
+}
+
 export async function pickBlockCommentDecorationOptions({ editor, processed = [] }: PickDecorationOptionsParams) {
   const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
   const comments = await definition.getAvailableComments(editor.document.languageId);
 
   if (!comments.blockComments || !comments.blockComments.length) {
-    log.error(`no block comments for languageId [${editor.document.languageId}]`);
+    logMissingBlockComments(editor.document.languageId);
     return decorationOptions;
   }
 
