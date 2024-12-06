@@ -92,7 +92,7 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
 
   const escapedMarks = comments.lineComments.map((s) => `${escapeRegexString(s)}+`).join('|');
 
-  const blockExp = new RegExp(`(${escapedMarks}).*?(?:\\n[ \\t]*\\1.*?)*[\\n$]`, 'g');
+  const blockExp = new RegExp(`(${escapedMarks}).*?(?:\\n[ \\t]*\\1.*?)*(\\n|$)`, 'g');
 
   const multilineTags = configs.tags.filter((t) => t.multiline).map((tag) => tag.tagEscaped);
   const lineTags = configs.tags.filter((t) => !t.multiline).map((tag) => tag.tagEscaped);
