@@ -12,7 +12,9 @@ const myVar = 123;
 /**
  * My Function
  * ! Some Alert
- * TODO Some stuff
+ * TODO: multiline comment
+ *       will be break with empty line
+ * 
  * ?  Questions
  * * Highlights
  */

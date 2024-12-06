@@ -14,6 +14,7 @@ namespace BetterComments
         public IncreaseCount()
         {
             // TODO implement a method that adds to the count
+            //
             // ! single line comments are highlighted also
 
             /**

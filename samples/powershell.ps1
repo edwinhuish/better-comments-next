@@ -9,6 +9,7 @@ get-content -path $infile | out-file $outfile -encoding ascii
 # ! comment here
 # ? another comment
 # TODO: some other comment
+
 # * highlighted comment
 
 <# 

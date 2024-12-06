@@ -3,10 +3,20 @@ import { Handler } from './common';
 import * as vscode from 'vscode';
 
 import * as configuration from '@/configuration';
+import * as log from '@/log';
 
 export class PlainTextHandler extends Handler {
   public async updateDecorations(editor: vscode.TextEditor): Promise<void> {
-    if (!editor || editor.document.languageId !== this.languageId) {
+    if (!editor) {
+      log.error(`editor undefined in handler languageId (${this.languageId})`);
+      return;
+    }
+
+    if (editor.document.languageId !== this.languageId) {
+      log.error(
+        `document languageId (${editor.document.languageId}) does not match handler languageId (${this.languageId}), file: ${editor.document.fileName}`,
+      );
+
       return;
     }
 

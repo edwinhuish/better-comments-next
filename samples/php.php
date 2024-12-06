@@ -6,6 +6,7 @@
  * ? not so important
  * @me
  * TODO: some stuff
+ * 
  * info: not highlighted
  * @inject
  * next line without highlight
@@ -15,6 +16,7 @@
  */
 
 // TODO: test
+
 // info: not highlighted
 
 # ! shell style comment alert

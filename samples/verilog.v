@@ -4,6 +4,7 @@
  * ! ALERT
  * ? question
  * TODO: Some TODO
+ *
  * Behavioral Model of a  2 to 1 MUX (16-bit inputs) 
  **********************************************************************/
 
@@ -13,6 +14,7 @@
 // ! alert
 // ? question
 // TODO: Some TODO
+
 //// Commented out code
 
      output [15:0] Y;

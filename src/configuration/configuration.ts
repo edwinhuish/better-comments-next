@@ -12,6 +12,7 @@ export interface Tag {
   bold: boolean;
   italic: boolean;
   backgroundColor: string;
+  multiline: boolean;
 }
 
 export interface TagFlatten extends Tag {
@@ -20,7 +21,6 @@ export interface TagFlatten extends Tag {
 }
 
 interface Configuration {
-  multilineComments: boolean;
   useJSDocStyle: boolean;
   highlightPlainText: boolean;
   tags: Tag[];
@@ -75,7 +75,6 @@ export function getConfigurationFlatten() {
   const orig = getConfiguration();
 
   configFlatten = {
-    multilineComments: orig.multilineComments,
     useJSDocStyle: orig.useJSDocStyle,
     highlightPlainText: orig.highlightPlainText,
     tags: flattenTags(orig.tags),
