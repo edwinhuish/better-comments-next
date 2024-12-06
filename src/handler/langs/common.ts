@@ -295,7 +295,7 @@ export async function pickDocCommentDecorationOptions({
     processed.push([beginIndex, endIndex]);
 
     const content = block[3];
-    const contentBegin = block.index + block[1].length + block[1].length;
+    const contentBegin = block.index + block[1].length + block[2].length;
 
     const lineProcessed: [number, number][] = [];
 
