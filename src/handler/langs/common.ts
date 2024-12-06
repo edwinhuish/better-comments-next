@@ -32,13 +32,13 @@ export abstract class Handler {
 export class CommonHandler extends Handler {
   public async updateDecorations(editor: vscode.TextEditor): Promise<void> {
     if (!editor) {
-      log.error(`editor undefined in handler languageId (${this.languageId})`);
+      log.error(`editor undefined in handler languageId [${this.languageId}]`);
       return;
     }
 
     if (editor.document.languageId !== this.languageId) {
       log.error(
-        `document languageId (${editor.document.languageId}) does not match handler languageId (${this.languageId}), file: ${editor.document.fileName}`,
+        `document languageId [${editor.document.languageId}] does not match handler languageId [${this.languageId}], file: ${editor.document.fileName}`,
       );
 
       return;
@@ -77,6 +77,7 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
   const comments = await definition.getAvailableComments(editor.document.languageId);
 
   if (!comments.lineComments || !comments.lineComments.length) {
+    log.error(`no line comments for languageId [${editor.document.languageId}]`);
     return decorationOptions;
   }
 
@@ -171,6 +172,7 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
   const comments = await definition.getAvailableComments(editor.document.languageId);
 
   if (!comments.blockComments || !comments.blockComments.length) {
+    log.error(`no block comments for languageId [${editor.document.languageId}]`);
     return decorationOptions;
   }
 
