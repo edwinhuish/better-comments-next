@@ -1,5 +1,21 @@
 # Better Comments Next
 
+Forked from [aaron-bond/better-comments v3.0.2](https://github.com/aaron-bond/better-comments)
+
+## Features
+
+- [x] Fix matching errors.
+- [x] Most languages that your editor correctly recognizes. See [#11](https://github.com/edwinhuish/better-comments-next/issues/11)
+- [x] Embedded languages supported. Like SFC of Vue, markdown, HTML, etc. See [#388](https://github.com/aaron-bond/better-comments/issues/388#issuecomment-1527426462)
+- [x] Remote workspace supported. See [#507](https://github.com/aaron-bond/better-comments/issues/507)
+- [x] Web editor supported.
+- [x] Theme Switchable. Defferent tag config for light and dark themes. See [#506](https://github.com/aaron-bond/better-comments/issues/506)
+- [x] Allow multiple tags per item. See [#33](https://github.com/aaron-bond/better-comments/issues/33)
+- [x] Multi-line comment supported. See [#7](https://github.com/edwinhuish/better-comments-next/issues/7)
+- [ ] Custom comments for languages configurated by [`vscode.languages.setLanguageConfiguration`](https://code.visualstudio.com/api/references/vscode-api#languages)
+
+
+## Decription
 The Better Comments extension will help you create more human-friendly comments in your code.
 With this extension, you will be able to categorise your annotations into:
 
@@ -71,7 +87,8 @@ Default setting as below:
       "underline": false,
       "backgroundColor": "transparent",
       "bold": false,
-      "italic": false
+      "italic": false,
+      "multiline": true
     },
     {
       "tag": "*",

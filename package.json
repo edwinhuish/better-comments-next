@@ -2,10 +2,13 @@
     "publisher": "edwinhuish",
     "name": "better-comments-next",
     "displayName": "Better Comments Next",
-    "version": "3.3.3",
+    "version": "3.3.4",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
     "author": {
         "name": "Edwin Xu"
+    },
+    "sponsor": {
+        "url": "https://github.com/sponsors/edwinhuish"
     },
     "license": "MIT",
     "homepage": "https://github.com/edwinhuish/better-comments-next/blob/master/README.md",
@@ -17,11 +20,43 @@
     "categories": [
         "Formatters"
     ],
-    "main": "./dist/extension.js",
+    "keywords": [
+        "highlight",
+        "color",
+        "comment",
+        "comments",
+        "todo",
+        "todos",
+        "todo-list",
+        "todo-lists",
+        "todo-tree",
+        "vue",
+        "react",
+        "php",
+        "go",
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact",
+        "c",
+        "cpp",
+        "csharp",
+        "java",
+        "kotlin",
+        "python",
+        "ruby",
+        "rust",
+        "sql",
+        "swift",
+        "html",
+        "css",
+        "scss",
+        "less",
+        "json"
+    ],
     "icon": "static/icon.png",
-    "sponsor": {
-        "url": "https://github.com/sponsors/edwinhuish"
-    },
+    "main": "./dist/extension.js",
+    "browser": "./dist/extension.web.js",
     "engines": {
         "vscode": "^1.65.0"
     },
@@ -35,7 +70,6 @@
         "color": "#e3f4ff",
         "theme": "light"
     },
-    "browser": "./dist/extension.web.js",
     "contributes": {
         "configuration": {
             "title": "Better Comments Next",
