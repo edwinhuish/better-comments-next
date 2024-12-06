@@ -24,48 +24,73 @@ export class PlainTextHandler extends Handler {
       clearTimeout(this.triggerUpdateTimeout);
     }
 
-    const linePicked = await this.pickFromLineComment(editor);
+    const decorationOptions = await pickDecorationOptions({ editor });
 
     const tagDecorationTypes = configuration.getTagDecorationTypes();
 
     tagDecorationTypes.forEach((t, tag) => {
-      editor.setDecorations(t, linePicked.get(tag) || []);
+      editor.setDecorations(t, decorationOptions.get(tag) || []);
     });
   }
+}
 
-  protected async pickFromLineComment(editor: vscode.TextEditor, processed: [number, number][] = []) {
-    const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
+async function pickDecorationOptions({ editor }: { editor: vscode.TextEditor }) {
+  const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
-    const configs = configuration.getConfigurationFlatten();
+  const configs = configuration.getConfigurationFlatten();
 
-    if (configs.highlightPlainText) {
-      const escapedTags = configs.tags.map((tag) => tag.tagEscaped);
+  const multilineTags = configs.tags.filter((t) => t.multiline).map((tag) => tag.tagEscaped);
+  const lineTags = configs.tags.filter((t) => !t.multiline).map((tag) => tag.tagEscaped);
 
-      const picker = new RegExp(`(^)([ \\t]*)(${escapedTags.join('|')})+(.*)`, 'igm');
+  const lineProcessed: [number, number][] = [];
 
-      if (picker) {
-        let match: RegExpExecArray | null | undefined;
+  const m1Exp = new RegExp(`(^|\\n[ \\t]*)(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*\\n|$)`, 'ig');
 
-        while ((match = picker.exec(editor.document.getText()))) {
-          const beginIndex = match.index;
-          const endIndex = match.index + match[0].length;
-          if (processed.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
-            // skip if line mark inside block comments
-            continue;
-          }
+  const text = editor.document.getText();
 
-          const startPos = editor.document.positionAt(match.index + match[1].length);
-          const endPos = editor.document.positionAt(match.index + match[0].length);
-          const range = new vscode.Range(startPos, endPos);
+  // Find the matched multiline
+  let m1: RegExpExecArray | null;
+  while ((m1 = m1Exp.exec(text))) {
+    const startIdx = m1.index + m1[1].length;
+    const endIdx = m1.index + m1[0].length;
+    // store processed range
+    lineProcessed.push([startIdx, endIdx]);
 
-          const tagName = match![3].toLowerCase();
+    const startPos = editor.document.positionAt(startIdx);
+    const endPos = editor.document.positionAt(endIdx);
+    const range = new vscode.Range(startPos, endPos);
 
-          const opt = decorationOptions.get(tagName) || [];
-          opt.push({ range });
-          decorationOptions.set(tagName, opt);
-        }
-      }
-    }
-    return decorationOptions;
+    const tagName = m1[2].toLowerCase();
+
+    const opt = decorationOptions.get(tagName) || [];
+    opt.push({ range });
+    decorationOptions.set(tagName, opt);
   }
+
+  const lineExp = new RegExp(`(^|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*)(?=\\n)`, 'ig');
+
+  let line: RegExpExecArray | null | undefined;
+  while ((line = lineExp.exec(text))) {
+    const startIdx = line.index + line[1].length;
+    const endIdx = line.index + line[0].length;
+
+    if (lineProcessed.find((range) => range[0] <= startIdx && endIdx <= range[1])) {
+      // skip if already processed
+      continue;
+    }
+    // store processed range
+    lineProcessed.push([startIdx, endIdx]);
+
+    const startPos = editor.document.positionAt(startIdx);
+    const endPos = editor.document.positionAt(endIdx);
+    const range = new vscode.Range(startPos, endPos);
+
+    const tagName = line[2].toLowerCase();
+
+    const opt = decorationOptions.get(tagName) || [];
+    opt.push({ range });
+    decorationOptions.set(tagName, opt);
+  }
+
+  return decorationOptions;
 }
