@@ -97,8 +97,10 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
   const multilineTags = configs.tags.filter((t) => t.multiline).map((tag) => tag.tagEscaped);
   const lineTags = configs.tags.filter((t) => !t.multiline).map((tag) => tag.tagEscaped);
 
+  const text = editor.document.getText();
+
   let block: RegExpExecArray | null;
-  while ((block = blockExp.exec(editor.document.getText()))) {
+  while ((block = blockExp.exec(text))) {
     const beginIndex = block.index;
     const endIndex = block.index + block[0].length;
 
@@ -148,8 +150,10 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
 
     const lineExp = new RegExp(`((^|\\s)(${mark}))([ \\t])(${lineTags.join('|')})([^\\n]*)(?=\\n)`, 'ig');
 
+    const text = editor.document.getText();
+
     let line: RegExpExecArray | null | undefined;
-    while ((line = lineExp.exec(editor.document.getText()))) {
+    while ((line = lineExp.exec(text))) {
       const startIdx = line.index;
       const endIdx = line.index + line[0].length;
 
@@ -207,9 +211,11 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
 
     const blockExp = new RegExp(`(^|\\s)(${start}+)((\\s+)([\\s\\S]*?))(${end})`, 'g');
 
+    const text = editor.document.getText();
+
     // Find the multiline comment block
     let block: RegExpExecArray | null;
-    while ((block = blockExp.exec(editor.document.getText()))) {
+    while ((block = blockExp.exec(text))) {
       const beginIndex = block.index;
       const endIndex = block.index + block[0].length;
       if (processed.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
@@ -302,8 +308,10 @@ export async function pickDocCommentDecorationOptions({
 
   const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
+  const text = editor.document.getText();
+
   let block: RegExpExecArray | null;
-  while ((block = blockExp.exec(editor.document.getText()))) {
+  while ((block = blockExp.exec(text))) {
     const beginIndex = block.index;
     const endIndex = block.index + block[0].length;
     if (processed.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
