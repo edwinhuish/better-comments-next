@@ -23,6 +23,9 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   prettier,
   {
+    ignores: ['samples/**'],
+  },
+  {
     languageOptions: {
       globals: {
         ...globals.node,
