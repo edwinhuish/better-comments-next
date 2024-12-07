@@ -1,5 +1,7 @@
 import * as langs from './langs';
 
+import * as extConfig from '../configuration';
+
 import * as vscode from 'vscode';
 
 const cached = new Map<string, langs.Language>();
@@ -53,6 +55,21 @@ export function refresh() {
       lang.setEmbeddedLanguages(embeddedLanguages);
     }
   }
+
+  const extConf = extConfig.getConfigurationFlatten();
+  for (const language of extConf.languages) {
+    const lang = useLanguage(language.id);
+
+    if (language.lineComment || language.blockComment.length) {
+      lang.setComments({ lineComment: language.lineComment, blockComment: language.blockComment });
+    }
+
+    if (language.embeddedLanguages) {
+      for (const embeddedLanguageCode of language.embeddedLanguages) {
+        lang.addEmbeddedLanguage(embeddedLanguageCode);
+      }
+    }
+  }
 }
 
 /**
@@ -76,11 +93,11 @@ export async function getAvailableComments(langId: string): Promise<langs.Availa
 
     const comments = await lang.getComments();
 
-    if (comments.lineComment) {
+    if (comments?.lineComment) {
       lineComments.add(comments.lineComment);
     }
 
-    if (comments.blockComment) {
+    if (comments?.blockComment) {
       const key = `${comments.blockComment[0]}${comments.blockComment[1]}`;
       blockComments.set(key, comments.blockComment);
     }

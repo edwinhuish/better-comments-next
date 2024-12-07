@@ -2,7 +2,7 @@
     "publisher": "edwinhuish",
     "name": "better-comments-next",
     "displayName": "Better Comments Next",
-    "version": "3.3.7",
+    "version": "3.3.8",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
     "author": {
         "name": "Edwin Xu"
@@ -335,6 +335,53 @@
                         }
                     },
                     "default": []
+                },
+                "better-comments.languages": {
+                    "type": "array",
+                    "description": "List of languages that missing comments definition.",
+                    "items": {
+                        "type": "object",
+                        "title": "language item",
+                        "required": [
+                            "id"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "The language id"
+                            },
+                            "lineComment": {
+                                "type": "string",
+                                "description": "The line comment token, like `//`",
+                                "examples": [
+                                    "//"
+                                ]
+                            },
+                            "blockComment": {
+                                "type": "array",
+                                "maxItems": 2,
+                                "minItems": 2,
+                                "description": "The block comment character pair, like `/*` `*/`",
+                                "examples": [
+                                    "/*",
+                                    "*/"
+                                ]
+                            },
+                            "useDocComment": {
+                                "type": "boolean",
+                                "description": "Whether the language use doc comment",
+                                "default": true
+                            },
+                            "embeddedLanguages": {
+                                "type": "array",
+                                "description": "List of embedded language ids",
+                                "items": {
+                                    "type": "string",
+                                    "description": "The embedded language id"
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

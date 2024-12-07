@@ -5,14 +5,14 @@ Forked from [aaron-bond/better-comments v3.0.2](https://github.com/aaron-bond/be
 ## Features
 
 - [x] Fix matching errors.
-- [x] Most languages that your editor correctly recognizes. See [#11](https://github.com/edwinhuish/better-comments-next/issues/11)
+- [x] All languages supported. 
+- [x] Custom comments configuration for languages configurated by [`vscode.languages.setLanguageConfiguration`](https://code.visualstudio.com/api/references/vscode-api#languages)
 - [x] Embedded languages supported. Like SFC of Vue, markdown, HTML, etc. See [#388](https://github.com/aaron-bond/better-comments/issues/388#issuecomment-1527426462)
 - [x] Remote workspace supported. See [#507](https://github.com/aaron-bond/better-comments/issues/507)
 - [x] Web editor supported.
-- [x] Theme Switchable. Defferent tag config for light and dark themes. See [#506](https://github.com/aaron-bond/better-comments/issues/506)
+- [x] Theme switchable. Defferent tag config for light and dark themes. See [#506](https://github.com/aaron-bond/better-comments/issues/506)
 - [x] Allow multiple tags per item. See [#33](https://github.com/aaron-bond/better-comments/issues/33)
 - [x] Multi-line comment supported. See [#7](https://github.com/edwinhuish/better-comments-next/issues/7)
-- [ ] Custom comments for languages configurated by [`vscode.languages.setLanguageConfiguration`](https://code.visualstudio.com/api/references/vscode-api#languages)
 
 
 ## Decription
@@ -36,6 +36,8 @@ Default setting as below:
 {
   // Enable/disable hightlight plain text.
   "better-comments.highlightPlainText": false,
+  // Custom languages comments configuration
+  "better-comments.languages": [],
   // Overwrite the specified tag styles of `"better-comments.tags"` for light themes.
   "better-comments.tagsLight": [],
   // Overwrite the specified tag styles of `"better-comments.tags"` for dark themes.

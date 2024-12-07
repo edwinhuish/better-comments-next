@@ -283,11 +283,23 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
   return decorationOptions;
 }
 
-export async function pickDocCommentDecorationOptions({
-  editor,
-  processed = [],
-  marks = ['/**', '*/'],
-}: PickDecorationOptionsParams & { marks?: [string, string] }) {
+export async function pickDocCommentDecorationOptions({ editor, processed = [] }: PickDecorationOptionsParams) {
+  const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
+
+  let marks: vscode.CharacterPair = ['/**', '*/'];
+
+  const config = configuration.getConfigurationFlatten();
+  const lang = config.languages.find((l) => l.id === editor.document.languageId);
+  if (lang) {
+    if (!lang.useDocComment) {
+      return decorationOptions;
+    }
+
+    if (lang.blockComment?.length) {
+      marks = lang.blockComment;
+    }
+  }
+
   const start = escapeRegexString(marks[0]);
   const end = escapeRegexString(marks[1]);
   const prefix = escapeRegexString(marks[0].slice(-1));
@@ -305,8 +317,6 @@ export async function pickDocCommentDecorationOptions({
 
   const lineTags = configs.tags.filter((t) => !t.multiline).map((tag) => tag.tagEscaped);
   const lineExp = new RegExp(`(^|[ \\t]*(${prefix})[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'ig');
-
-  const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
   const text = editor.document.getText();
 

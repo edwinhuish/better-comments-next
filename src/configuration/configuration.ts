@@ -20,12 +20,39 @@ export interface TagFlatten extends Tag {
   tagEscaped: string;
 }
 
+export interface Language {
+  /**
+   * The language id
+   */
+  id: string;
+
+  /**
+   * The line comment token, like `//`
+   */
+  lineComment: string;
+
+  /**
+   * The block comment character pair
+   */
+  blockComment: vscode.CharacterPair;
+
+  /**
+   * Whether the language has doc comment
+   */
+  useDocComment: boolean;
+
+  /**
+   * The embedded languages ids
+   */
+  embeddedLanguages: string[];
+}
+
 interface Configuration {
-  useJSDocStyle: boolean;
   highlightPlainText: boolean;
   tags: Tag[];
   tagsLight: Tag[];
   tagsDark: Tag[];
+  languages: Language[];
 }
 
 export interface ConfigurationFlatten extends Configuration {
@@ -75,11 +102,11 @@ export function getConfigurationFlatten() {
   const orig = getConfiguration();
 
   configFlatten = {
-    useJSDocStyle: orig.useJSDocStyle,
     highlightPlainText: orig.highlightPlainText,
     tags: flattenTags(orig.tags),
     tagsLight: flattenTags(orig.tagsLight),
     tagsDark: flattenTags(orig.tagsDark),
+    languages: orig.languages,
   };
 
   return configFlatten;

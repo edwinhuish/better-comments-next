@@ -13,11 +13,14 @@ export class Language {
   protected configurationUri?: vscode.Uri;
   protected configuration?: vscode.LanguageConfiguration;
 
-  protected embeddedLanguages = new Set<string>();
-  protected availableComments: AvailableComments | undefined;
+  protected comments?: vscode.CommentRule;
+  protected embeddedLanguages: Set<string>;
+  protected availableComments?: AvailableComments;
 
   constructor(id: string) {
     this.id = id;
+
+    this.embeddedLanguages = new Set();
   }
 
   /**
@@ -37,10 +40,9 @@ export class Language {
 
   /**
    * Get language configuration
-   * @param forceRefresh force refresh configuration
    */
-  public async getConfiguration(forceRefresh = false) {
-    if (this.configuration && !forceRefresh) {
+  public async getConfiguration() {
+    if (this.configuration) {
       return this.configuration;
     }
 
@@ -64,18 +66,26 @@ export class Language {
     }
   }
 
+  public setComments(comments: vscode.CommentRule) {
+    this.comments = comments;
+    return this;
+  }
+
   /**
    * Get language comments rules
-   * @param forceRefresh force refresh configuration
    */
-  public async getComments(forceRefresh = false) {
-    const config = await this.getConfiguration(forceRefresh);
+  public async getComments(): Promise<vscode.CommentRule | undefined> {
+    if (!this.comments) {
+      const config = await this.getConfiguration();
 
-    if (config && config.comments) {
-      return config.comments;
+      if (config && config.comments) {
+        this.comments = config.comments;
+      } else {
+        this.comments = getDefaultComments(this.id);
+      }
     }
 
-    return getDefaultComments(this.id) || {};
+    return this.comments;
   }
 
   /**
