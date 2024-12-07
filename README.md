@@ -12,7 +12,7 @@ Forked from [aaron-bond/better-comments v3.0.2](https://github.com/aaron-bond/be
 - [x] Web editor supported.
 - [x] Theme switchable. Defferent tag config for light and dark themes. See [#506](https://github.com/aaron-bond/better-comments/issues/506)
 - [x] Allow multiple tags per item. See [#33](https://github.com/aaron-bond/better-comments/issues/33)
-- [x] Multi-line comment supported. See [#7](https://github.com/edwinhuish/better-comments-next/issues/7)
+- [x] Multi-line comment supported. See [#7](https://github.com/edwinhuish/better-comments-next/issues/7#issuecomment-2522526938)
 
 
 ## Decription
