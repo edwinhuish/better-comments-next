@@ -5,6 +5,7 @@
 ### Features
 
 * Multi line support See [#7](https://github.com/edwinhuish/better-comments-next/issues/7)
+* Custom languages comments configuration for languages configurated by [`vscode.languages.setLanguageConfiguration`](https://code.visualstudio.com/api/references/vscode-api#languages)
 
 ### Fix
 * Fix PHP hash comments [#14](https://github.com/edwinhuish/better-comments-next/issues/14)
