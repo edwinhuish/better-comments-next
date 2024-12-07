@@ -6,7 +6,7 @@ Forked from [aaron-bond/better-comments v3.0.2](https://github.com/aaron-bond/be
 
 - [x] Fix matching errors.
 - [x] All languages supported. 
-- [x] Custom comments configuration for languages configurated by [`vscode.languages.setLanguageConfiguration`](https://code.visualstudio.com/api/references/vscode-api#languages) See [#11](https://github.com/aaron-bond/better-comments/issues/11)
+- [x] Custom comments configuration for languages configurated by [`vscode.languages.setLanguageConfiguration`](https://code.visualstudio.com/api/references/vscode-api#languages) See [#11](https://github.com/edwinhuish/better-comments-next/issues/11)
 - [x] Embedded languages supported. Like SFC of Vue, markdown, HTML, etc. See [#388](https://github.com/aaron-bond/better-comments/issues/388#issuecomment-1527426462)
 - [x] Remote workspace supported. See [#507](https://github.com/aaron-bond/better-comments/issues/507)
 - [x] Web editor supported.
