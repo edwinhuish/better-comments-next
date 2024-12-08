@@ -2,7 +2,7 @@
     "publisher": "edwinhuish",
     "name": "better-comments-next",
     "displayName": "Better Comments Next",
-    "version": "3.3.9",
+    "version": "3.3.10",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
     "author": {
         "name": "Edwin Xu"
@@ -123,7 +123,7 @@
         "workspace"
     ],
     "activationEvents": [
-        "onStartupFinished"
+        "onLanguage"
     ],
     "galleryBanner": {
         "color": "#e3f4ff",
