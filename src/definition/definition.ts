@@ -1,8 +1,6 @@
-import * as langs from './langs';
-
-import * as extConfig from '../configuration';
-
 import * as vscode from 'vscode';
+import * as extConfig from '../configuration';
+import * as langs from './langs';
 
 const cached = new Map<string, langs.Language>();
 

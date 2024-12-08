@@ -1,7 +1,6 @@
+import type { Language } from './common';
 import { CommonLanguage } from './common';
 import { PHPLanguage } from './php';
-
-import type { Language } from './common';
 
 export * from './common';
 export * from './php';

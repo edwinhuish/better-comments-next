@@ -1,8 +1,6 @@
-import { escapeRegexString } from '../utils';
-
-import * as vscode from 'vscode';
-
 import type { WorkspaceConfiguration } from 'vscode';
+import * as vscode from 'vscode';
+import { escapeRegexString } from '../utils';
 
 export interface Tag {
   tag: string | string[];
@@ -64,7 +62,7 @@ export function refresh() {
   // if already set tagDecorationTypes, clear decoration for visible editors
   if (tagDecorationTypes) {
     for (const editor of vscode.window.visibleTextEditors) {
-      for (const [_, decorationType] of tagDecorationTypes) {
+      for (const [, decorationType] of tagDecorationTypes) {
         // clear decoration
         editor.setDecorations(decorationType, []);
       }
@@ -138,12 +136,12 @@ export function getTagDecorationTypes() {
     for (const tag of configs.tags) {
       const opt = parseDecorationRenderOption(tag);
 
-      const tagLight = configs.tagsLight.find((t) => t.tag === tag.tag);
+      const tagLight = configs.tagsLight.find(t => t.tag === tag.tag);
       if (tagLight) {
         opt.light = parseDecorationRenderOption(tagLight);
       }
 
-      const tagDark = configs.tagsDark.find((t) => t.tag === tag.tag);
+      const tagDark = configs.tagsDark.find(t => t.tag === tag.tag);
       if (tagDark) {
         opt.dark = parseDecorationRenderOption(tagDark);
       }

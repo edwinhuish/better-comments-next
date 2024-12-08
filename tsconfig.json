@@ -7,6 +7,11 @@
     ],
     "rootDir": ".",
     "module": "NodeNext",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ]
+    },
     "strict": true,
     "strictNullChecks": true, /* enable all strict type-checking options */
     "alwaysStrict": true,
@@ -14,12 +19,7 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "sourceMap": true, /* Report errors on unused locals. */
-    "skipLibCheck": true,
-    "paths": {
-      "@/*": [
-        "./src/*"
-      ]
-    }
+    "skipLibCheck": true
   },
   "exclude": [
     "samples",

@@ -17,9 +17,6 @@
         "url": "https://github.com/edwinhuish/better-comments-next"
     },
     "bugs": "https://github.com/edwinhuish/better-comments-next/issues",
-    "categories": [
-        "Formatters"
-    ],
     "keywords": [
         "highlight",
         "color",
@@ -113,8 +110,11 @@
         "shaderlab",
         "razor"
     ],
-    "icon": "static/icon.png",
+    "categories": [
+        "Formatters"
+    ],
     "main": "./dist/extension.js",
+    "icon": "static/icon.png",
     "browser": "./dist/extension.web.js",
     "engines": {
         "vscode": "^1.65.0"
@@ -402,21 +402,16 @@
         "watch-web": "tsup --config=build/tsup.web.js --watch",
         "lint": "npm run lint:type && npm run lint:eslint",
         "lint:type": "tsc -p . --noEmit",
-        "lint:eslint": "eslint --cache --max-warnings 0 \"{src,build}/**/*.{ts,js}\" --fix"
+        "lint:eslint": "eslint --cache --max-warnings 0 . --fix"
     },
     "dependencies": {
         "json5": "^2.2.3"
     },
     "devDependencies": {
-        "@eslint/compat": "^1.2.3",
-        "@eslint/js": "^9.16.0",
+        "@antfu/eslint-config": "^3.11.2",
         "@types/node": "^17.0.23",
         "@types/vscode": "^1.65.0",
-        "@typescript-eslint/parser": "^8.17.0",
         "eslint": "^9.16.0",
-        "eslint-config-prettier": "^9.1.0",
-        "eslint-plugin-import": "^2.31.0",
-        "eslint-plugin-prettier": "^5.2.1",
         "husky": "^8.0.3",
         "lint-staged": "^15.1.0",
         "path-browserify": "^1.0.1",

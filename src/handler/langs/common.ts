@@ -1,9 +1,8 @@
-import * as vscode from 'vscode';
-
 import * as configuration from '@/configuration';
 import * as definition from '@/definition';
 import * as log from '@/log';
 import { escapeRegexString } from '@/utils';
+import * as vscode from 'vscode';
 
 export abstract class Handler {
   public readonly languageId: string;
@@ -92,12 +91,12 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
     return decorationOptions;
   }
 
-  const escapedMarks = comments.lineComments.map((s) => `${escapeRegexString(s)}+`).join('|');
+  const escapedMarks = comments.lineComments.map(s => `${escapeRegexString(s)}+`).join('|');
 
   const blockExp = new RegExp(`(${escapedMarks}).*?(?:\\n[ \\t]*\\1.*?)*(\\n|$)`, 'g');
 
-  const multilineTags = configs.tags.filter((t) => t.multiline).map((tag) => tag.tagEscaped);
-  const lineTags = configs.tags.filter((t) => !t.multiline).map((tag) => tag.tagEscaped);
+  const multilineTags = configs.tags.filter(t => t.multiline).map(tag => tag.tagEscaped);
+  const lineTags = configs.tags.filter(t => !t.multiline).map(tag => tag.tagEscaped);
 
   const text = editor.document.getText();
 
@@ -106,7 +105,7 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
     const beginIndex = block.index;
     const endIndex = block.index + block[0].length;
 
-    if (processed.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
+    if (processed.find(range => range[0] <= beginIndex && endIndex <= range[1])) {
       // skip if already processed
       continue;
     }
@@ -159,7 +158,7 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
       const startIdx = line.index;
       const endIdx = line.index + line[0].length;
 
-      if (lineProcessed.find((range) => range[0] <= startIdx && endIdx <= range[1])) {
+      if (lineProcessed.find(range => range[0] <= startIdx && endIdx <= range[1])) {
         // skip if already processed
         continue;
       }
@@ -203,10 +202,10 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
 
   const configs = configuration.getConfigurationFlatten();
 
-  const multilineTags = configs.tags.filter((t) => t.multiline).map((tag) => tag.tagEscaped);
+  const multilineTags = configs.tags.filter(t => t.multiline).map(tag => tag.tagEscaped);
   const m1Exp = new RegExp(`([ \\t])(${multilineTags.join('|')})([\\s\\S]*?)(\\n\\s*\\n|$)`, 'gi');
 
-  const lineTags = configs.tags.filter((t) => !t.multiline).map((tag) => tag.tagEscaped);
+  const lineTags = configs.tags.filter(t => !t.multiline).map(tag => tag.tagEscaped);
   const lineExp = new RegExp(`(^|[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
 
   for (const marks of comments.blockComments) {
@@ -222,7 +221,7 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
     while ((block = blockExp.exec(text))) {
       const beginIndex = block.index;
       const endIndex = block.index + block[0].length;
-      if (processed.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
+      if (processed.find(range => range[0] <= beginIndex && endIndex <= range[1])) {
         // skip if already processed
         continue;
       }
@@ -265,7 +264,7 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
         const startIdx = lineBeginIndex + line[1].length - line[4].length; // line[4] is the newline character (\n)
         const endIdx = lineBeginIndex + line[0].length;
 
-        if (lineProcessed.find((range) => range[0] <= startIdx && endIdx <= range[1])) {
+        if (lineProcessed.find(range => range[0] <= startIdx && endIdx <= range[1])) {
           // skip if already processed
           continue;
         }
@@ -312,14 +311,14 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
 
   const blockExp = new RegExp(`(^|\\s)(${start})(([ \\t]+|[ \\t]*\\n)[\\s\\S]*?)(${end})`, 'g');
 
-  const multilineTags = configs.tags.filter((t) => t.multiline).map((tag) => tag.tagEscaped);
+  const multilineTags = configs.tags.filter(t => t.multiline).map(tag => tag.tagEscaped);
   const m1Exp = new RegExp(
     `([ \\t]*(${pre}?)[ \\t])((${multilineTags.join('|')})([\\s\\S]*?))(\\n(\\s*${pre}?\\s*)\\n|$)`,
     'gi',
   );
   const m2Exp = new RegExp(`(^|[ \\t]*(${pre}))([^\\n]*?)(\\n|$)`, 'gi');
 
-  const lineTags = configs.tags.filter((t) => !t.multiline).map((tag) => tag.tagEscaped);
+  const lineTags = configs.tags.filter(t => !t.multiline).map(tag => tag.tagEscaped);
   const lineExp = new RegExp(`(^|[ \\t]*(${pre})[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
 
   const text = editor.document.getText();
@@ -328,7 +327,7 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
   while ((block = blockExp.exec(text))) {
     const beginIndex = block.index;
     const endIndex = block.index + block[0].length;
-    if (processed.find((range) => range[0] <= beginIndex && endIndex <= range[1])) {
+    if (processed.find(range => range[0] <= beginIndex && endIndex <= range[1])) {
       // skip if already processed
       continue;
     }
@@ -372,7 +371,7 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
       const startIdx = lineBeginIndex + line[1].length;
       const endIdx = lineBeginIndex + line[0].length;
 
-      if (lineProcessed.find((range) => range[0] <= startIdx && endIdx <= range[1])) {
+      if (lineProcessed.find(range => range[0] <= startIdx && endIdx <= range[1])) {
         // skip if already processed
         continue;
       }

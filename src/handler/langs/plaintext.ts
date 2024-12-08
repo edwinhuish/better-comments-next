@@ -1,9 +1,7 @@
-import { Handler } from './common';
-
-import * as vscode from 'vscode';
-
 import * as configuration from '@/configuration';
 import * as log from '@/log';
+import * as vscode from 'vscode';
+import { Handler } from './common';
 
 export class PlainTextHandler extends Handler {
   public async updateDecorations(editor: vscode.TextEditor): Promise<void> {
@@ -39,12 +37,12 @@ async function pickDecorationOptions({ editor }: { editor: vscode.TextEditor }) 
 
   const configs = configuration.getConfigurationFlatten();
 
-  const multilineTags = configs.tags.filter((t) => t.multiline).map((tag) => tag.tagEscaped);
-  const lineTags = configs.tags.filter((t) => !t.multiline).map((tag) => tag.tagEscaped);
+  const multilineTags = configs.tags.filter(t => t.multiline).map(tag => tag.tagEscaped);
+  const lineTags = configs.tags.filter(t => !t.multiline).map(tag => tag.tagEscaped);
 
   const lineProcessed: [number, number][] = [];
 
-  const m1Exp = new RegExp(`(^|\\n[ \\t]*)(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*\\n|$)`, 'ig');
+  const m1Exp = new RegExp(`(^|\\n[ \\t]*)(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*\\n|$)`, 'gi');
 
   const text = editor.document.getText();
 
@@ -67,14 +65,14 @@ async function pickDecorationOptions({ editor }: { editor: vscode.TextEditor }) 
     decorationOptions.set(tagName, opt);
   }
 
-  const lineExp = new RegExp(`(^|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*)(?=\\n)`, 'ig');
+  const lineExp = new RegExp(`(^|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*)(?=\\n)`, 'gi');
 
   let line: RegExpExecArray | null | undefined;
   while ((line = lineExp.exec(text))) {
     const startIdx = line.index + line[1].length;
     const endIdx = line.index + line[0].length;
 
-    if (lineProcessed.find((range) => range[0] <= startIdx && endIdx <= range[1])) {
+    if (lineProcessed.find(range => range[0] <= startIdx && endIdx <= range[1])) {
       // skip if already processed
       continue;
     }

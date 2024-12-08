@@ -1,7 +1,6 @@
+import * as log from '@/log';
 import { parse as json5Parse } from 'json5';
 import * as vscode from 'vscode';
-
-import * as log from '@/log';
 
 export interface AvailableComments {
   lineComments: string[];
@@ -62,7 +61,8 @@ export class Language {
       this.configuration = json5Parse(content) as vscode.LanguageConfiguration;
 
       return this.configuration;
-    } catch (error: any) {
+    }
+    catch (error: any) {
       log.error(`Parse configuration file ${this.configurationUri.toString()} failed: ${error.message}`);
       return undefined;
     }
@@ -82,7 +82,8 @@ export class Language {
 
       if (config && config.comments) {
         this.comments = config.comments;
-      } else {
+      }
+      else {
         this.comments = getDefaultComments(this.id);
       }
     }
@@ -214,7 +215,7 @@ function getDefaultComments(languageCode: string): vscode.CommentRule | undefine
     case 'vb':
     case 'asp':
     case 'diagram': // ? PlantUML is recognized as Diagram (diagram)
-      return { lineComment: "'" };
+      return { lineComment: '\'' };
     case 'bibtex':
     case 'erlang':
     case 'latex':

@@ -1,8 +1,6 @@
-import * as definition from './definition';
-
-import * as configuration from '../configuration';
-
 import * as vscode from 'vscode';
+import * as configuration from '../configuration';
+import * as definition from './definition';
 
 export type OnDidChangeCallback = () => void;
 

@@ -1,84 +1,37 @@
-import { includeIgnoreFile } from '@eslint/compat';
-import eslint from '@eslint/js';
-import tsParser from '@typescript-eslint/parser';
-import importPlugin from 'eslint-plugin-import';
-import prettier from 'eslint-plugin-prettier/recommended';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+import antfu from '@antfu/eslint-config';
 
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const gitignorePath = path.resolve(__dirname, '.gitignore');
-
-const ignoresFileConfig = includeIgnoreFile(gitignorePath);
-ignoresFileConfig.ignores.push('**/.eslintrc.js', '**/.eslintrc.json');
-
-export default tseslint.config(
-  ignoresFileConfig,
-  eslint.configs.recommended, //
-  importPlugin.flatConfigs.recommended,
-  ...tseslint.configs.recommended,
-  prettier,
+export default antfu(
   {
-    ignores: ['samples/**'],
+    ignores: ['samples'],
   },
   {
-    languageOptions: {
-      globals: {
-        ...globals.node,
-        ...globals.jest,
-      },
-
-      parser: tsParser,
-      ecmaVersion: 5,
-      sourceType: 'module',
-    },
-
+    // style
     rules: {
-      '@typescript-eslint/interface-name-prefix': 'off',
-      '@typescript-eslint/explicit-function-return-type': 'off',
-      '@typescript-eslint/explicit-module-boundary-types': 'off',
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-expressions': 'off',
-
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          vars: 'all',
-          args: 'none',
-          argsIgnorePattern: '^_',
-          caughtErrors: 'all',
-          caughtErrorsIgnorePattern: '^_',
-          destructuredArrayIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-          ignoreRestSiblings: true,
-        },
-      ],
-      '@typescript-eslint/no-require-imports': 'off',
-      '@typescript-eslint/consistent-type-imports': [
-        'error',
-        {
-          prefer: 'type-imports',
-          disallowTypeAnnotations: false,
-          fixStyle: 'separate-type-imports',
-        },
-      ],
-
-      'import/no-unresolved': 'off',
-      'import/namespace': 'off',
-      'import/named': 'off',
-      'import/consistent-type-specifier-style': ['error', 'prefer-top-level'],
-      'import/order': [
+      'style/quote-props': ['warn', 'as-needed'],
+      'style/semi': ['warn', 'always'],
+      'style/max-statements-per-line': ['warn', { max: 1 }],
+      curly: ['warn', 'all'],
+      'style/member-delimiter-style': [
         'warn',
         {
-          groups: ['index', 'sibling', 'parent', 'internal', 'external', 'builtin', 'object', 'type'],
-          alphabetize: { order: 'asc', caseInsensitive: true },
-          'newlines-between': 'always',
+          multiline: { delimiter: 'semi', requireLast: true },
+          singleline: { delimiter: 'semi', requireLast: false },
+          multilineDetection: 'brackets',
         },
       ],
+      'unused-imports/no-unused-vars': ['error', { vars: 'all', args: 'none' }],
+      'no-cond-assign': 'off',
+    },
+  },
+  {
+    files: ['package.json'],
+    rules: {
+      'jsonc/indent': ['error', 4],
+    },
+  },
+  {
+    rules: {
+      'unicorn/prefer-node-protocol': 'off',
     },
   },
 );

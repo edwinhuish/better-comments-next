@@ -1,6 +1,5 @@
-import * as handler from './handler';
-
 import * as vscode from 'vscode';
+import * as handler from './handler';
 
 export type OnDidChangeCallback = (event: vscode.TextDocumentChangeEvent, editor?: vscode.TextEditor) => void;
 
@@ -32,7 +31,7 @@ export function activate(context: vscode.ExtensionContext) {
   disposable = vscode.workspace.onDidChangeTextDocument(
     (event) => {
       // Trigger updates if the text was changed in the visible editor
-      const editor = vscode.window.visibleTextEditors.find((e) => e.document === event.document);
+      const editor = vscode.window.visibleTextEditors.find(e => e.document === event.document);
       if (editor) {
         handler.triggerUpdateDecorations(editor);
       }

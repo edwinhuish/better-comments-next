@@ -1,8 +1,7 @@
+import type * as vscode from 'vscode';
+import type { Handler } from './langs/common';
 import { CommonHandler } from './langs/common';
 import { PlainTextHandler } from './langs/plaintext';
-
-import type { Handler } from './langs/common';
-import type * as vscode from 'vscode';
 
 const cached = new Map<string, Handler>();
 

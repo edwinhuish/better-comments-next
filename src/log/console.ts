@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 const channel = vscode.window.createOutputChannel('Better Comments');
 
 function log(...args: any[]) {
-  const line = args.map((obj) => (typeof obj === 'object' ? JSON.stringify(obj) : obj)).join(' ');
+  const line = args.map(obj => (typeof obj === 'object' ? JSON.stringify(obj) : obj)).join(' ');
   channel.appendLine(line);
 }
 
