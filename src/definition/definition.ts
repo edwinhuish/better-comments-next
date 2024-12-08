@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 
 const cached = new Map<string, langs.Language>();
 
-function useLanguage(langId: string): langs.Language {
+export function useLanguage(langId: string): langs.Language {
   let lang = cached.get(langId);
 
   if (!lang) {
@@ -60,8 +60,8 @@ export function refresh() {
   for (const language of extConf.languages) {
     const lang = useLanguage(language.id);
 
-    if (language.lineComment || language.blockComment.length) {
-      lang.setComments({ lineComment: language.lineComment, blockComment: language.blockComment });
+    if (language?.comments?.lineComment || language?.comments?.blockComment?.length) {
+      lang.setComments(language.comments);
     }
 
     if (language.embeddedLanguages) {
@@ -69,6 +69,8 @@ export function refresh() {
         lang.addEmbeddedLanguage(embeddedLanguageCode);
       }
     }
+
+    lang.setUseDocComment(language.useDocComment);
   }
 }
 

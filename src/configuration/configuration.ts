@@ -27,14 +27,9 @@ export interface Language {
   id: string;
 
   /**
-   * The line comment token, like `//`
+   * The language's comment settings.
    */
-  lineComment: string;
-
-  /**
-   * The block comment character pair
-   */
-  blockComment: vscode.CharacterPair;
+  comments: vscode.CommentRule;
 
   /**
    * Whether the language has doc comment

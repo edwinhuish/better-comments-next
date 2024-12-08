@@ -1,5 +1,7 @@
 import * as definition from './definition';
 
+import * as configuration from '../configuration';
+
 import * as vscode from 'vscode';
 
 export type OnDidChangeCallback = () => void;
@@ -22,6 +24,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Refresh languages definitions after extensions changed
   disposable = vscode.extensions.onDidChange(refresh, null, context.subscriptions);
+
+  configuration.onDidChange(refresh);
 
   // refresh once
   refresh();

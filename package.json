@@ -350,22 +350,28 @@
                                 "type": "string",
                                 "description": "The language id"
                             },
-                            "lineComment": {
-                                "type": "string",
-                                "description": "The line comment token, like `//`",
-                                "examples": [
-                                    "//"
-                                ]
-                            },
-                            "blockComment": {
-                                "type": "array",
-                                "maxItems": 2,
-                                "minItems": 2,
-                                "description": "The block comment character pair, like `/*` `*/`",
-                                "examples": [
-                                    "/*",
-                                    "*/"
-                                ]
+                            "comments": {
+                                "type": "object",
+                                "description": "The comment definition",
+                                "properties": {
+                                    "lineComment": {
+                                        "type": "string",
+                                        "description": "The line comment token, like `//`",
+                                        "examples": [
+                                            "//"
+                                        ]
+                                    },
+                                    "blockComment": {
+                                        "type": "array",
+                                        "maxItems": 2,
+                                        "minItems": 2,
+                                        "description": "The block comment character pair, like `/*` `*/`",
+                                        "examples": [
+                                            "/*",
+                                            "*/"
+                                        ]
+                                    }
+                                }
                             },
                             "useDocComment": {
                                 "type": "boolean",

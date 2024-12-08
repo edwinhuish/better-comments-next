@@ -72,7 +72,9 @@ export interface PickDecorationOptionsParams {
 
 const _missingLineComments = new Set<string>();
 function logMissingLineComments(languageId: string) {
-  if (_missingLineComments.has(languageId)) return;
+  if (_missingLineComments.has(languageId)) {
+    return;
+  }
 
   _missingLineComments.add(languageId);
   log.warn(`Missing line comments for language (${languageId})`);
@@ -119,9 +121,9 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
 
     const m1Exp = new RegExp(
       `([ \\t]*(${mark})[ \\t])((${multilineTags.join('|')})([\\s\\S]*?))(?=\\n(\\s*${mark}\\s*)\\n|$)`,
-      'ig',
+      'gi',
     );
-    const m2Exp = new RegExp(`(^|[ \\t]*(${mark}))([^\\n]*?)(?=\\n|$)`, 'ig');
+    const m2Exp = new RegExp(`(^|[ \\t]*(${mark}))([^\\n]*?)(?=\\n|$)`, 'gi');
 
     // Find the matched multiline
     let m1: RegExpExecArray | null;
@@ -148,7 +150,7 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
       }
     }
 
-    const lineExp = new RegExp(`((^|\\s)(${mark}))([ \\t])(${lineTags.join('|')})([^\\n]*)(?=\\n)`, 'ig');
+    const lineExp = new RegExp(`((^|\\s)(${mark}))([ \\t])(${lineTags.join('|')})([^\\n]*)(?=\\n)`, 'gi');
 
     const text = editor.document.getText();
 
@@ -181,7 +183,9 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
 
 const _missingBlockComments = new Set<string>();
 function logMissingBlockComments(languageId: string) {
-  if (_missingBlockComments.has(languageId)) return;
+  if (_missingBlockComments.has(languageId)) {
+    return;
+  }
 
   _missingBlockComments.add(languageId);
   log.warn(`Missing block comments for language (${languageId})`);
@@ -200,10 +204,10 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
   const configs = configuration.getConfigurationFlatten();
 
   const multilineTags = configs.tags.filter((t) => t.multiline).map((tag) => tag.tagEscaped);
-  const m1Exp = new RegExp(`([ \\t])(${multilineTags.join('|')})([\\s\\S]*?)(\\n\\s*\\n|$)`, 'ig');
+  const m1Exp = new RegExp(`([ \\t])(${multilineTags.join('|')})([\\s\\S]*?)(\\n\\s*\\n|$)`, 'gi');
 
   const lineTags = configs.tags.filter((t) => !t.multiline).map((tag) => tag.tagEscaped);
-  const lineExp = new RegExp(`(^|[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'ig');
+  const lineExp = new RegExp(`(^|[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
 
   for (const marks of comments.blockComments) {
     const start = escapeRegexString(marks[0]);
@@ -286,23 +290,23 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
 export async function pickDocCommentDecorationOptions({ editor, processed = [] }: PickDecorationOptionsParams) {
   const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
-  let marks: vscode.CharacterPair = ['/**', '*/'];
+  const marks: vscode.CharacterPair = ['/**', '*/'];
+  const prefix = '*';
 
-  const config = configuration.getConfigurationFlatten();
-  const lang = config.languages.find((l) => l.id === editor.document.languageId);
-  if (lang) {
-    if (!lang.useDocComment) {
-      return decorationOptions;
-    }
-
-    if (lang.blockComment?.length) {
-      marks = lang.blockComment;
-    }
+  const lang = definition.useLanguage(editor.document.languageId);
+  if (!lang.isUseDocComment()) {
+    return decorationOptions;
   }
+
+  // const comments = await lang.getComments();
+  // if (comments?.blockComment?.length) {
+  //   prefix = comments.blockComment[0].slice(-1);
+  //   marks = [comments.blockComment[0] + prefix, comments.blockComment[1]];
+  // }
 
   const start = escapeRegexString(marks[0]);
   const end = escapeRegexString(marks[1]);
-  const prefix = escapeRegexString(marks[0].slice(-1));
+  const pre = escapeRegexString(prefix);
 
   const configs = configuration.getConfigurationFlatten();
 
@@ -310,13 +314,13 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
 
   const multilineTags = configs.tags.filter((t) => t.multiline).map((tag) => tag.tagEscaped);
   const m1Exp = new RegExp(
-    `([ \\t]*(${prefix}?)[ \\t])((${multilineTags.join('|')})([\\s\\S]*?))(\\n(\\s*${prefix}?\\s*)\\n|$)`,
-    'ig',
+    `([ \\t]*(${pre}?)[ \\t])((${multilineTags.join('|')})([\\s\\S]*?))(\\n(\\s*${pre}?\\s*)\\n|$)`,
+    'gi',
   );
-  const m2Exp = new RegExp(`(^|[ \\t]*(${prefix}))([^\\n]*?)(\\n|$)`, 'ig');
+  const m2Exp = new RegExp(`(^|[ \\t]*(${pre}))([^\\n]*?)(\\n|$)`, 'gi');
 
   const lineTags = configs.tags.filter((t) => !t.multiline).map((tag) => tag.tagEscaped);
-  const lineExp = new RegExp(`(^|[ \\t]*(${prefix})[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'ig');
+  const lineExp = new RegExp(`(^|[ \\t]*(${pre})[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
 
   const text = editor.document.getText();
 

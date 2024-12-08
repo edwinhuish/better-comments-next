@@ -17,6 +17,8 @@ export class Language {
   protected embeddedLanguages: Set<string>;
   protected availableComments?: AvailableComments;
 
+  protected useDocComment: boolean = true;
+
   constructor(id: string) {
     this.id = id;
 
@@ -124,6 +126,15 @@ export class Language {
   public setAvailableComments(comments: AvailableComments) {
     this.availableComments = comments;
     return this;
+  }
+
+  public setUseDocComment(useDocComment: boolean) {
+    this.useDocComment = useDocComment;
+    return this;
+  }
+
+  public isUseDocComment() {
+    return this.useDocComment;
   }
 }
 
