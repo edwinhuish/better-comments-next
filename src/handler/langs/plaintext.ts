@@ -37,6 +37,11 @@ async function pickDecorationOptions({ editor }: { editor: vscode.TextEditor }) 
 
   const configs = configuration.getConfigurationFlatten();
 
+  // skip if disabled highlight plain text
+  if (!configs.highlightPlainText) {
+    return decorationOptions;
+  }
+
   const multilineTags = configs.tags.filter(t => t.multiline).map(tag => tag.tagEscaped);
   const lineTags = configs.tags.filter(t => !t.multiline).map(tag => tag.tagEscaped);
 
