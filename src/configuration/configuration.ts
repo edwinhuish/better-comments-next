@@ -112,11 +112,18 @@ function flattenTags(tags: Tag[]) {
   const flatTags: TagFlatten[] = [];
   for (const tag of tags) {
     if (!Array.isArray(tag.tag)) {
-      flatTags.push({ ...tag, tagEscaped: escapeRegexString(tag.tag) } as TagFlatten);
+      // ! add tag only tag name not empty
+      if (tag.tag) {
+        flatTags.push({ ...tag, tagEscaped: escapeRegexString(tag.tag) } as TagFlatten);
+      }
       continue;
     }
 
     for (const tagName of tag.tag) {
+      // ! add tag only tag name not empty
+      if (!tagName) {
+        continue;
+      }
       flatTags.push({
         ...tag,
         tag: tagName,
