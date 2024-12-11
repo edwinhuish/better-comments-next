@@ -80,7 +80,7 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
 
   const escapedMarks = comments.lineComments.map(s => `${escapeRegexString(s)}+`).join('|');
 
-  const blockExp = new RegExp(`(${escapedMarks}).*?(?:\\n[ \\t]*\\1.*?)*(\\n|$)`, 'g');
+  const blockExp = new RegExp(`(${escapedMarks}).*?(?:\\r?\\n[ \\t]*\\1.*?)*(\\r?\\n|$)`, 'g');
 
   const multilineTags = configuration.getMultilineTagsEscaped();
   const lineTags = configuration.getLineTagsEscaped();
@@ -107,10 +107,10 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
 
     if (multilineTags.length) {
       const m1Exp = new RegExp(
-        `([ \\t]*(${mark})[ \\t])((${multilineTags.join('|')})([\\s\\S]*?))(?=\\n(\\s*${mark}\\s*)\\n|$)`,
+        `([ \\t]*(${mark})[ \\t])((${multilineTags.join('|')})([\\s\\S]*?\\n(\\s*${mark}\\s*)\\r?\\n|$))`,
         'gi',
       );
-      const m2Exp = new RegExp(`(^|[ \\t]*(${mark}))([^\\n]*?)(?=\\n|$)`, 'gi');
+      const m2Exp = new RegExp(`(^|[ \\t]*(${mark}))([^\\n]*?\\r?\\n|$)`, 'gi');
 
       // Find the matched multiline
       let m1: RegExpExecArray | null;
@@ -288,7 +288,7 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
   const end = escapeRegexString(marks[1]);
   const pre = escapeRegexString(prefix);
 
-  const blockExp = new RegExp(`(^|\\s)(${start})(([ \\t]+|[ \\t]*\\n)[\\s\\S]*?)(${end})`, 'g');
+  const blockExp = new RegExp(`(^|\\s)(${start})(([ \\t]+|[ \\t]*[\\r\\n])[\\s\\S]*?)(${end})`, 'g');
 
   const multilineTags = configuration.getMultilineTagsEscaped();
   const m1Exp = new RegExp(
