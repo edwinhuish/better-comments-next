@@ -154,12 +154,11 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
     if (lineTags.length) {
       const lineExp = new RegExp(`((^|\\s)(${mark}))([ \\t])(${lineTags.join('|')})([^\\n]*)`, 'gi');
 
-      const text = editor.document.getText();
-
       let line: RegExpExecArray | null | undefined;
-      while ((line = lineExp.exec(text))) {
-        const startIdx = line.index;
-        const endIdx = line.index + line[0].length;
+      while ((line = lineExp.exec(content))) {
+        const lineBegin = contentBegin + line.index;
+        const startIdx = lineBegin + line[1].length + line[4].length;
+        const endIdx = lineBegin + line[0].length;
 
         if (lineProcessed.find(range => range[0] <= startIdx && endIdx <= range[1])) {
           // skip if already processed
@@ -168,8 +167,8 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
         // store processed range
         lineProcessed.push([startIdx, endIdx]);
 
-        const startPos = editor.document.positionAt(line.index + line[1].length + line[4].length);
-        const endPos = editor.document.positionAt(line.index + line[0].length);
+        const startPos = editor.document.positionAt(startIdx);
+        const endPos = editor.document.positionAt(endIdx);
         const range = new vscode.Range(startPos, endPos);
 
         const tagName = line[5].toLowerCase();
