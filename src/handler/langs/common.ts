@@ -10,7 +10,7 @@ export abstract class Handler {
 
   constructor(languageId: string) {
     this.languageId = languageId;
-    log.info(`handler created for languageId (${languageId})`);
+    log.info(`(${languageId}) decoration handler created`);
   }
 
   public abstract updateDecorations(editor: vscode.TextEditor): Promise<void>;
@@ -69,23 +69,12 @@ export interface PickDecorationOptionsParams {
   processed: [number, number][];
 }
 
-const _missingLineComments = new Set<string>();
-function logMissingLineComments(languageId: string) {
-  if (_missingLineComments.has(languageId)) {
-    return;
-  }
-
-  _missingLineComments.add(languageId);
-  log.warn(`Missing line comments for language (${languageId})`);
-}
-
 export async function pickLineCommentDecorationOptions({ editor, processed = [] }: PickDecorationOptionsParams) {
   const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
   const comments = await definition.getAvailableComments(editor.document.languageId);
 
   if (!comments.lineComments || !comments.lineComments.length) {
-    logMissingLineComments(editor.document.languageId);
     return decorationOptions;
   }
 
@@ -181,23 +170,12 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
   return decorationOptions;
 }
 
-const _missingBlockComments = new Set<string>();
-function logMissingBlockComments(languageId: string) {
-  if (_missingBlockComments.has(languageId)) {
-    return;
-  }
-
-  _missingBlockComments.add(languageId);
-  log.warn(`Missing block comments for language (${languageId})`);
-}
-
 export async function pickBlockCommentDecorationOptions({ editor, processed = [] }: PickDecorationOptionsParams) {
   const decorationOptions = new Map<string, vscode.DecorationOptions[]>();
 
   const comments = await definition.getAvailableComments(editor.document.languageId);
 
   if (!comments.blockComments || !comments.blockComments.length) {
-    logMissingBlockComments(editor.document.languageId);
     return decorationOptions;
   }
 
