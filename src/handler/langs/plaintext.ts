@@ -42,8 +42,8 @@ async function pickDecorationOptions({ editor }: { editor: vscode.TextEditor }) 
     return decorationOptions;
   }
 
-  const multilineTags = configs.tags.filter(t => t.multiline).map(tag => tag.tagEscaped);
-  const lineTags = configs.tags.filter(t => !t.multiline).map(tag => tag.tagEscaped);
+  const multilineTags = configuration.getMultilineTagsEscaped();
+  const lineTags = configuration.getLineTagsEscaped();
 
   const lineProcessed: [number, number][] = [];
 

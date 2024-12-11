@@ -57,6 +57,8 @@ export interface ConfigurationFlatten extends Configuration {
 let config: (Configuration & WorkspaceConfiguration) | undefined;
 let configFlatten: ConfigurationFlatten | undefined;
 let tagDecorationTypes: Map<string, vscode.TextEditorDecorationType> | undefined;
+let multilineTagsEscaped: string[] | undefined;
+let lineTagsEscaped: string[] | undefined;
 
 export function refresh() {
   // if already set tagDecorationTypes, clear decoration for visible editors
@@ -72,6 +74,8 @@ export function refresh() {
   config = undefined;
   configFlatten = undefined;
   tagDecorationTypes = undefined;
+  multilineTagsEscaped = undefined;
+  lineTagsEscaped = undefined;
 }
 
 /**
@@ -181,4 +185,20 @@ function parseDecorationRenderOption(tag: TagFlatten) {
   }
 
   return options;
+}
+
+export function getMultilineTagsEscaped() {
+  if (!multilineTagsEscaped) {
+    multilineTagsEscaped = getConfigurationFlatten().tags.filter(t => t.multiline).map(tag => tag.tagEscaped);
+  }
+
+  return multilineTagsEscaped;
+}
+
+export function getLineTagsEscaped() {
+  if (!lineTagsEscaped) {
+    lineTagsEscaped = getConfigurationFlatten().tags.filter(t => !t.multiline).map(tag => tag.tagEscaped);
+  }
+
+  return lineTagsEscaped;
 }
