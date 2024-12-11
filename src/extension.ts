@@ -10,7 +10,7 @@ export async function activate(context: vscode.ExtensionContext) {
     configuration.activate(context);
     definition.activate(context);
     handler.activate(context);
-    log.info('started successfully.');
+    log.info('started successfully with configuration:', configuration.getConfigurationFlatten());
   }
   catch (e) {
     log.error(e);
