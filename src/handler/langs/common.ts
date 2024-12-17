@@ -107,7 +107,7 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
 
     if (multilineTags.length) {
       const m1Exp = new RegExp(
-        `([ \\t]*(${mark})[ \\t])((${multilineTags.join('|')})([\\s\\S]*?\\n(\\s*${mark}\\s*)\\r?\\n|$))`,
+        `([ \\t]*(${mark})[ \\t])((${multilineTags.join('|')})([\\s\\S]*?(\\n(\\s*${mark}\\s*)\\r?\\n|$)))`,
         'gi',
       );
       const m2Exp = new RegExp(`(^|[ \\t]*(${mark}))([^\\n]*?\\r?\\n|$)`, 'gi');
