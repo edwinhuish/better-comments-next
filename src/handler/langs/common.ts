@@ -84,6 +84,7 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
 
   const multilineTags = configuration.getMultilineTagsEscaped();
   const lineTags = configuration.getLineTagsEscaped();
+  const allTags = configuration.getAllTagsEscaped();
 
   const text = editor.document.getText();
 
@@ -107,10 +108,10 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
 
     if (multilineTags.length) {
       const m1Exp = new RegExp(
-        `([ \\t]*(${mark})[ \\t])((${multilineTags.join('|')})([\\s\\S]*?(\\n(\\s*${mark}\\s*)\\r?\\n|$)))`,
+        `([ \\t]*(${mark})[ \\t])((${multilineTags.join('|')})([\\s\\S]*?(?=\\n\\s*${mark}[ \\t](${allTags.join('|')})|\\n\\s*${mark}\\s*\\r?\\n|$)))`,
         'gi',
       );
-      const m2Exp = new RegExp(`(^|[ \\t]*(${mark}))([^\\n]*?\\r?\\n|$)`, 'gi');
+      const m2Exp = new RegExp(`(^|[ \\t]*(${mark}))([^\\n]*?(?=\\r?\\n|$))`, 'gi');
 
       // Find the matched multiline
       let m1: RegExpExecArray | null;
@@ -180,9 +181,11 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
   }
 
   const multilineTags = configuration.getMultilineTagsEscaped();
-  const m1Exp = new RegExp(`(^[ \\t]|\\n[ \\t]*)(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*\\n|$)`, 'gi');
-
   const lineTags = configuration.getLineTagsEscaped();
+  const allTags = configuration.getAllTagsEscaped();
+
+  const m1Exp = new RegExp(`(^[ \\t]|\\n[ \\t]*)(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*(${allTags.join('|')})|\\n\\s*\\n|$)`, 'gi');
+
   const lineExp = new RegExp(`(^[ \\t]|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*?)(?=\\n|$)`, 'gi');
 
   for (const marks of comments.blockComments) {
@@ -288,16 +291,18 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
   const end = escapeRegexString(marks[1]);
   const pre = escapeRegexString(prefix);
 
-  const blockExp = new RegExp(`(${start})(([ \\t]+|[ \\t]*[\\r\\n])[\\s\\S]*?)(${end})`, 'g');
+  const blockExp = new RegExp(`(${start})([\\s\\S]*?)(${end})`, 'g');
 
   const multilineTags = configuration.getMultilineTagsEscaped();
+  const lineTags = configuration.getLineTagsEscaped();
+  const allTags = [...multilineTags, ...lineTags];
+
   const m1Exp = new RegExp(
-    `(^[ \\t]|([ \\t]*(${pre}?)[ \\t]))((${multilineTags.join('|')})([\\s\\S]*?))(?=\\n(\\s*${pre}?\\s*)\\n|$)`,
+    `(^[ \\t]|([ \\t]*(${pre})[ \\t]))((${multilineTags.join('|')})([\\s\\S]*?))(?=\\n\\s*${pre}[ \\t](${allTags.join('|')})|\\n\\s*${pre}\\s*\\n|$)`,
     'gi',
   );
   const m2Exp = new RegExp(`(^|[ \\t]*(${pre}))([^\\n]*?)(\\n|$)`, 'gi');
 
-  const lineTags = configuration.getLineTagsEscaped();
   const lineExp = new RegExp(`(^|[ \\t]*(${pre})[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
 
   const text = editor.document.getText();

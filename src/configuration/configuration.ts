@@ -59,6 +59,7 @@ let configFlatten: ConfigurationFlatten | undefined;
 let tagDecorationTypes: Map<string, vscode.TextEditorDecorationType> | undefined;
 let multilineTagsEscaped: string[] | undefined;
 let lineTagsEscaped: string[] | undefined;
+let allTagsEscaped: string[] | undefined;
 
 export function refresh() {
   // if already set tagDecorationTypes, clear decoration for visible editors
@@ -76,6 +77,7 @@ export function refresh() {
   tagDecorationTypes = undefined;
   multilineTagsEscaped = undefined;
   lineTagsEscaped = undefined;
+  allTagsEscaped = undefined;
 }
 
 /**
@@ -201,4 +203,12 @@ export function getLineTagsEscaped() {
   }
 
   return lineTagsEscaped;
+}
+
+export function getAllTagsEscaped() {
+  if (!allTagsEscaped) {
+    allTagsEscaped = getConfigurationFlatten().tags.map(tag => tag.tagEscaped);
+  }
+
+  return allTagsEscaped;
 }
