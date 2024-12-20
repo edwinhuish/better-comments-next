@@ -180,16 +180,16 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
   }
 
   const multilineTags = configuration.getMultilineTagsEscaped();
-  const m1Exp = new RegExp(`([ \\t])(${multilineTags.join('|')})([\\s\\S]*?)(\\n\\s*\\n|$)`, 'gi');
+  const m1Exp = new RegExp(`(^[ \\t]|\\n[ \\t]*)(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*\\n|$)`, 'gi');
 
   const lineTags = configuration.getLineTagsEscaped();
-  const lineExp = new RegExp(`(^|[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
+  const lineExp = new RegExp(`(^[ \\t]|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*?)(?=\\n|$)`, 'gi');
 
   for (const marks of comments.blockComments) {
     const start = escapeRegexString(marks[0]);
     const end = escapeRegexString(marks[1]);
 
-    const blockExp = new RegExp(`(^|\\s)(${start}+)((\\s+)([\\s\\S]*?))(${end})`, 'g');
+    const blockExp = new RegExp(`(${start}+)([\\s\\S]*?)(${end})`, 'g');
 
     const text = editor.document.getText();
 
@@ -205,12 +205,12 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
       // store processed range
       processed.push([beginIndex, endIndex]);
 
-      if (!block[5].length) {
+      if (!block[2].length) {
         continue;
       }
 
-      const content = block[3];
-      const contentBegin = block.index + block[1].length + block[2].length;
+      const content = block[2];
+      const contentBegin = block.index + block[1].length;
 
       const lineProcessed: [number, number][] = [];
 
@@ -241,7 +241,7 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
         let line: RegExpExecArray | null;
         while ((line = lineExp.exec(content))) {
           const lineBeginIndex = contentBegin + line.index;
-          const startIdx = lineBeginIndex + line[1].length - line[4].length; // line[4] is the newline character (\n)
+          const startIdx = lineBeginIndex + line[1].length;
           const endIdx = lineBeginIndex + line[0].length;
 
           if (lineProcessed.find(range => range[0] <= startIdx && endIdx <= range[1])) {
@@ -288,11 +288,11 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
   const end = escapeRegexString(marks[1]);
   const pre = escapeRegexString(prefix);
 
-  const blockExp = new RegExp(`(^|\\s)(${start})(([ \\t]+|[ \\t]*[\\r\\n])[\\s\\S]*?)(${end})`, 'g');
+  const blockExp = new RegExp(`(${start})(([ \\t]+|[ \\t]*[\\r\\n])[\\s\\S]*?)(${end})`, 'g');
 
   const multilineTags = configuration.getMultilineTagsEscaped();
   const m1Exp = new RegExp(
-    `([ \\t]*(${pre}?)[ \\t])((${multilineTags.join('|')})([\\s\\S]*?))(\\n(\\s*${pre}?\\s*)\\n|$)`,
+    `(^[ \\t]|([ \\t]*(${pre}?)[ \\t]))((${multilineTags.join('|')})([\\s\\S]*?))(?=\\n(\\s*${pre}?\\s*)\\n|$)`,
     'gi',
   );
   const m2Exp = new RegExp(`(^|[ \\t]*(${pre}))([^\\n]*?)(\\n|$)`, 'gi');
@@ -313,8 +313,8 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
     // store processed range
     processed.push([beginIndex, endIndex]);
 
-    const content = block[3];
-    const contentBegin = block.index + block[1].length + block[2].length;
+    const content = block[2];
+    const contentBegin = block.index + block[1].length;
 
     const lineProcessed: [number, number][] = [];
 
@@ -323,11 +323,11 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
       let m1: RegExpExecArray | null;
       while ((m1 = m1Exp.exec(content))) {
         const m1Begin = contentBegin + m1.index;
-        const tagName = m1[4].toLowerCase();
+        const tagName = m1[5].toLowerCase();
 
         // Find decoration range
         let m2: RegExpExecArray | null;
-        while ((m2 = m2Exp.exec(m1[3]))) {
+        while ((m2 = m2Exp.exec(m1[4]))) {
           const m2Begin = m1Begin + m1[1].length + m2.index;
           const startIdx = m2Begin + m2[1].length;
           const endIdx = m2Begin + m2[0].length;
