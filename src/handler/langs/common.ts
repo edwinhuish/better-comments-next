@@ -192,7 +192,11 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
     const start = escapeRegexString(marks[0]);
     const end = escapeRegexString(marks[1]);
 
-    const blockExp = new RegExp(`(${start}+)([\\s\\S]*?)(${end})`, 'g');
+    /**
+     * ! 去除前置 (^|\\n)\\s* 判断会导致错误匹配字符串内的字符
+     * ! 如：const mather = '/*'
+     */
+    const blockExp = new RegExp(`((^|\\n)\\s*(${start}+))([\\s\\S]*?)(${end})`, 'g');
 
     const text = editor.document.getText();
 
@@ -208,11 +212,11 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
       // store processed range
       processed.push([beginIndex, endIndex]);
 
-      if (!block[2].length) {
+      if (!block[4].length) {
         continue;
       }
 
-      const content = block[2];
+      const content = block[4];
       const contentBegin = block.index + block[1].length;
 
       const lineProcessed: [number, number][] = [];
@@ -291,7 +295,11 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
   const end = escapeRegexString(marks[1]);
   const pre = escapeRegexString(prefix);
 
-  const blockExp = new RegExp(`(${start})([\\s\\S]*?)(${end})`, 'g');
+  /**
+   * ! 去除前置 (^|\\n)\\s* 判断会导致错误匹配字符串内的字符
+   * ! 如：const mather = '/*'
+   */
+  const blockExp = new RegExp(`((^|\\n)\\s*(${start}))([\\s\\S]*?)(${end})`, 'g');
 
   const multilineTags = configuration.getMultilineTagsEscaped();
   const lineTags = configuration.getLineTagsEscaped();
@@ -318,7 +326,7 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
     // store processed range
     processed.push([beginIndex, endIndex]);
 
-    const content = block[2];
+    const content = block[4];
     const contentBegin = block.index + block[1].length;
 
     const lineProcessed: [number, number][] = [];
