@@ -29,6 +29,6 @@ export function updateDecorations(editor: vscode.TextEditor) {
   return useHandler(editor.document.languageId).updateDecorations(editor);
 }
 
-export function triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 100) {
+export function triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 0) {
   return useHandler(editor.document.languageId).triggerUpdateDecorations(editor, timeout);
 }

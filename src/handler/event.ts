@@ -8,7 +8,6 @@ export function onDidChange(callback: OnDidChangeCallback) {
   onDidChangeCallbacks.push(callback);
 }
 
-let disposable: vscode.Disposable | undefined;
 export function activate(context: vscode.ExtensionContext) {
   // Loop all visible editor for the first time and initialise the regex
   for (const editor of vscode.window.visibleTextEditors) {
@@ -27,8 +26,13 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions,
   );
 
+  // * Handle visible range changed
+  vscode.window.onDidChangeTextEditorVisibleRanges((event) => {
+    handler.triggerUpdateDecorations(event.textEditor);
+  }, null, context.subscriptions);
+
   // * Handle file contents changed
-  disposable = vscode.workspace.onDidChangeTextDocument(
+  vscode.workspace.onDidChangeTextDocument(
     (event) => {
       // Trigger updates if the text was changed in the visible editor
       const editor = vscode.window.visibleTextEditors.find(e => e.document === event.document);
@@ -47,7 +51,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-  if (disposable) {
-    disposable.dispose();
-  }
+
 }
