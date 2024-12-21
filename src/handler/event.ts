@@ -20,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
     async (editor) => {
       if (editor) {
         // Update decorations for newly active file
-        handler.updateDecorations(editor);
+        handler.triggerUpdateDecorations(editor);
       }
     },
     null,

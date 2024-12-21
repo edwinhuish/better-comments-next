@@ -1,19 +1,21 @@
 # Change Log
 
-## [3.3.x] (2024-12-04)
+## [3.3.x]
 
 ### Features
 
 * Multi line support See [#7](https://github.com/edwinhuish/better-comments-next/issues/7)
 * Custom languages comments configuration for languages configurated by [`vscode.languages.setLanguageConfiguration`](https://code.visualstudio.com/api/references/vscode-api#languages)
+* Matching only visible lines See [#28](https://github.com/edwinhuish/better-comments-next/issues/28)
 
 ### Fix
 * Fix PHP hash comments [#14](https://github.com/edwinhuish/better-comments-next/issues/14)
+* More optimize performances...
 
 ### House Keeping
 * Refactoring code for split different programming languages
 
-## [3.2.x] (2024-02-03)
+## [3.2.x]
 
 ### Features
 
@@ -25,7 +27,7 @@
 * Fix python decoration. [#4](https://github.com/edwinhuish/better-comments-next/issues/4)
 * Wrong matching for block comments. [#9](https://github.com/edwinhuish/better-comments-next/issues/9)
 
-## [3.1.x] (2023-12-03)
+## [3.1.x]
 
 ### Features
 

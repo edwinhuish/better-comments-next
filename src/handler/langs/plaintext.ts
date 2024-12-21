@@ -49,50 +49,55 @@ async function pickDecorationOptions({ editor }: { editor: vscode.TextEditor }) 
 
   const m1Exp = new RegExp(`(^|\\n[ \\t]*)(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*\\n|$)`, 'gi');
 
-  const text = editor.document.getText();
+  for (const visibleRange of editor.visibleRanges) {
+    const visibleText = editor.document.getText(visibleRange);
+    const rangeStart = editor.document.offsetAt(visibleRange.start);
 
-  // Find the matched multiline
-  let m1: RegExpExecArray | null;
-  while ((m1 = m1Exp.exec(text))) {
-    const startIdx = m1.index + m1[1].length;
-    const endIdx = m1.index + m1[0].length;
-    // store processed range
-    lineProcessed.push([startIdx, endIdx]);
+    // Find the matched multiline
+    let m1: RegExpExecArray | null;
+    while ((m1 = m1Exp.exec(visibleText))) {
+      const m1StartSince = rangeStart + m1.index;
+      const m1Start = m1StartSince + m1[1].length;
+      const m1End = m1StartSince + m1[0].length;
+      // store processed range
+      lineProcessed.push([m1Start, m1End]);
 
-    const startPos = editor.document.positionAt(startIdx);
-    const endPos = editor.document.positionAt(endIdx);
-    const range = new vscode.Range(startPos, endPos);
+      const startPos = editor.document.positionAt(m1Start);
+      const endPos = editor.document.positionAt(m1End);
+      const range = new vscode.Range(startPos, endPos);
 
-    const tagName = m1[2].toLowerCase();
+      const tagName = m1[2].toLowerCase();
 
-    const opt = decorationOptions.get(tagName) || [];
-    opt.push({ range });
-    decorationOptions.set(tagName, opt);
-  }
-
-  const lineExp = new RegExp(`(^|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*)(?=\\n)`, 'gi');
-
-  let line: RegExpExecArray | null | undefined;
-  while ((line = lineExp.exec(text))) {
-    const startIdx = line.index + line[1].length;
-    const endIdx = line.index + line[0].length;
-
-    if (lineProcessed.find(range => range[0] <= startIdx && endIdx <= range[1])) {
-      // skip if already processed
-      continue;
+      const opt = decorationOptions.get(tagName) || [];
+      opt.push({ range });
+      decorationOptions.set(tagName, opt);
     }
-    // store processed range
-    lineProcessed.push([startIdx, endIdx]);
 
-    const startPos = editor.document.positionAt(startIdx);
-    const endPos = editor.document.positionAt(endIdx);
-    const range = new vscode.Range(startPos, endPos);
+    const lineExp = new RegExp(`(^|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*)(?=\\n)`, 'gi');
 
-    const tagName = line[2].toLowerCase();
+    let line: RegExpExecArray | null | undefined;
+    while ((line = lineExp.exec(visibleText))) {
+      const lineStartSince = rangeStart + line.index;
+      const lineStart = lineStartSince + line[1].length;
+      const lineEnd = lineStartSince + line[0].length;
 
-    const opt = decorationOptions.get(tagName) || [];
-    opt.push({ range });
-    decorationOptions.set(tagName, opt);
+      if (lineProcessed.find(range => range[0] <= lineStart && lineEnd <= range[1])) {
+        // skip if already processed
+        continue;
+      }
+      // store processed range
+      lineProcessed.push([lineStart, lineEnd]);
+
+      const startPos = editor.document.positionAt(lineStart);
+      const endPos = editor.document.positionAt(lineEnd);
+      const range = new vscode.Range(startPos, endPos);
+
+      const tagName = line[2].toLowerCase();
+
+      const opt = decorationOptions.get(tagName) || [];
+      opt.push({ range });
+      decorationOptions.set(tagName, opt);
+    }
   }
 
   return decorationOptions;
