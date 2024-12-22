@@ -47,6 +47,7 @@ interface Configuration {
   tagsDark: Tag[];
   languages: Language[];
   updateDelay: number;
+  preloadLines: number;
 }
 
 export interface ConfigurationFlatten extends Configuration {
@@ -108,6 +109,7 @@ export function getConfigurationFlatten() {
     tagsDark: flattenTags(orig.tagsDark),
     languages: orig.languages,
     updateDelay: orig.updateDelay,
+    preloadLines: orig.preloadLines,
   };
 
   return configFlatten;

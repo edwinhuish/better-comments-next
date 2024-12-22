@@ -82,9 +82,18 @@ export async function pickLineCommentDecorationOptions({ editor, processed = [] 
   const lineTags = configuration.getLineTagsEscaped();
   const allTags = configuration.getAllTagsEscaped();
 
+  const preloadLines = configuration.getConfigurationFlatten().preloadLines;
+
   for (const visibleRange of editor.visibleRanges) {
-    const visibleText = editor.document.getText(visibleRange);
-    const rangeStart = editor.document.offsetAt(visibleRange.start);
+    const expandedRange = new vscode.Range(
+      Math.max(0, visibleRange.start.line - preloadLines),
+      0,
+      Math.min(editor.document.lineCount - 1, visibleRange.end.line + preloadLines),
+      0,
+    );
+
+    const visibleText = editor.document.getText(expandedRange);
+    const rangeStart = editor.document.offsetAt(expandedRange.start);
 
     let block: RegExpExecArray | null;
     while ((block = blockExp.exec(visibleText))) {
@@ -187,9 +196,18 @@ export async function pickBlockCommentDecorationOptions({ editor, processed = []
 
   const lineExp = new RegExp(`(^[ \\t]|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*?)(?=\\n|$)`, 'gi');
 
+  const preloadLines = configuration.getConfigurationFlatten().preloadLines;
+
   for (const visibleRange of editor.visibleRanges) {
-    const visibleText = editor.document.getText(visibleRange);
-    const rangeStart = editor.document.offsetAt(visibleRange.start);
+    const expandedRange = new vscode.Range(
+      Math.max(0, visibleRange.start.line - preloadLines),
+      0,
+      Math.min(editor.document.lineCount - 1, visibleRange.end.line + preloadLines),
+      0,
+    );
+
+    const visibleText = editor.document.getText(expandedRange);
+    const rangeStart = editor.document.offsetAt(expandedRange.start);
 
     for (const marks of comments.blockComments) {
       const markStart = escapeRegexString(marks[0]);
@@ -314,9 +332,18 @@ export async function pickDocCommentDecorationOptions({ editor, processed = [] }
   const m2Exp = new RegExp(`(^|[ \\t]*(${pre}))([^\\n]*?)(\\n|$)`, 'gi');
   const lineExp = new RegExp(`(^|[ \\t]*(${pre})[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
 
+  const preloadLines = configuration.getConfigurationFlatten().preloadLines;
+
   for (const visibleRange of editor.visibleRanges) {
-    const visibleText = editor.document.getText(visibleRange);
-    const rangeStart = editor.document.offsetAt(visibleRange.start);
+    const expandedRange = new vscode.Range(
+      Math.max(0, visibleRange.start.line - preloadLines),
+      0,
+      Math.min(editor.document.lineCount - 1, visibleRange.end.line + preloadLines),
+      0,
+    );
+
+    const visibleText = editor.document.getText(expandedRange);
+    const rangeStart = editor.document.offsetAt(expandedRange.start);
 
     let block: RegExpExecArray | null;
     while ((block = blockExp.exec(visibleText))) {
