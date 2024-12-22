@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import { Handler } from './common';
 
 export class PlainTextHandler extends Handler {
-  public async updateDecorations(editor: vscode.TextEditor): Promise<void> {
+  protected async updateDecorations(editor: vscode.TextEditor): Promise<void> {
     if (!editor) {
       log.error(`editor undefined in handler languageId (${this.languageId})`);
       return;

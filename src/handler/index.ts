@@ -7,6 +7,6 @@ export * from './handler';
 
 configuration.onDidChange((config) => {
   for (const editor of vscode.window.visibleTextEditors) {
-    handler.triggerUpdateDecorations(editor, 100);
+    handler.triggerUpdateDecorations(editor);
   }
 });

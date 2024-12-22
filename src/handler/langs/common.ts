@@ -13,9 +13,9 @@ export abstract class Handler {
     log.info(`(${languageId}) decoration handler created`);
   }
 
-  public abstract updateDecorations(editor: vscode.TextEditor): Promise<void>;
+  protected abstract updateDecorations(editor: vscode.TextEditor): Promise<void>;
 
-  public async triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 100) {
+  public async triggerUpdateDecorations(editor: vscode.TextEditor, timeout: number) {
     if (this.triggerUpdateTimeout) {
       clearTimeout(this.triggerUpdateTimeout);
     }
@@ -42,10 +42,6 @@ export class CommonHandler extends Handler {
       );
 
       return;
-    }
-
-    if (this.triggerUpdateTimeout) {
-      clearTimeout(this.triggerUpdateTimeout);
     }
 
     const processed: [number, number][] = [];

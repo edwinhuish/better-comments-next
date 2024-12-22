@@ -1,5 +1,6 @@
 import type * as vscode from 'vscode';
 import type { Handler } from './langs/common';
+import * as configuration from '../configuration';
 import { CommonHandler } from './langs/common';
 import { PlainTextHandler } from './langs/plaintext';
 
@@ -25,10 +26,7 @@ function useHandler(languageId: string): Handler {
   return handler;
 }
 
-export function updateDecorations(editor: vscode.TextEditor) {
-  return useHandler(editor.document.languageId).updateDecorations(editor);
-}
-
-export function triggerUpdateDecorations(editor: vscode.TextEditor, timeout = 0) {
-  return useHandler(editor.document.languageId).triggerUpdateDecorations(editor, timeout);
+export function triggerUpdateDecorations(editor: vscode.TextEditor) {
+  const configuratgion = configuration.getConfigurationFlatten();
+  return useHandler(editor.document.languageId).triggerUpdateDecorations(editor, configuratgion.updateDelay);
 }
