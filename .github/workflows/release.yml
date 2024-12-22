@@ -10,56 +10,79 @@ on:
 
 jobs:
   check:
+    name: 检查并创建版本号
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.info.outputs.version }}
-      exists: ${{ steps.checkTag.outputs.exists }}
+      created: ${{ steps.create_tag.outputs.created }}
     steps:
-      - name: Checkout repository
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: Read package.json INFO
-        id: info
-        uses: jaywcjlove/github-action-package@main
+      - name: 配置 Node.js
+        uses: actions/setup-node@v4
 
-      - run: echo "version - ${{ steps.info.outputs.version }}"
+      - name: 获取所有标签
+        run: |
+          git fetch --prune --unshallow
 
-      - name: Check if tag exist
-        id: checkTag
-        uses: mukunku/tag-exists-action@v1.6.0
-        if: steps.info.outputs.version != ''
-        with:
-          tag: 'v${{steps.info.outputs.version}}'
+      - name: 读取 package.json 版本号
+        id: package_json
+        run: |
+          version=$(node -p "require('./package.json').version")
+          echo "Package version is: $version"
+          echo "version=$version" >> $GITHUB_OUTPUT
 
-      - run: echo "exists - ${{ steps.checkTag.outputs.exists }}"
+      - name: 检查是否有重复的版本 tag
+        id: check_version
+        run: |
+          package_version=v${{ steps.package_json.outputs.version }}
+          if git tag -l "$package_version" | grep -q "$package_version"; then
+            echo "::notice::版本 Tag '$package_version' 已存在。"
+            echo "exists=true" >> $GITHUB_OUTPUT
+          fi
 
-  work:
+      - name: 创建版本tag
+        id: create_tag
+        if: steps.check_version.outputs.exists != 'true'
+        run: |
+          set -e
+          version_tag=v${{ steps.package_json.outputs.version }}
+          echo "Creating new tag: $version_tag"
+          git tag "$version_tag"
+          git push origin "$version_tag"
+          echo "created=true" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  publish:
+    name: 构建并发版
     runs-on: ubuntu-latest
     needs: check
-    if: needs.check.outputs.exists == 'false'
+    if: needs.check.outputs.created == 'true'
     permissions:
       contents: write
     steps:
-      - name: Checkout repository
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: Install Node.js
+      - name: 配置 Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install pnpm
+      - name: 安装 PNPM
         uses: pnpm/action-setup@v4
         with:
-          version: 9
+          version: latest
           run_install: false
 
-      - name: Get pnpm store directory
+      - name: 配置 pnpm store 目录
         shell: bash
         run: |
           echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Setup pnpm cache
+      - name: 配置 pnpm 缓存
         uses: actions/cache@v4
         with:
           path: ${{ env.STORE_PATH }}
@@ -67,24 +90,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - name: Install dependencies
-        run: pnpm install
+      - name: 安装依赖
+        run: pnpm i --frozen-lockfile
 
-      - name: Generate extension package
+      - name: 打包扩展
         run: npx vsce package
 
-      - name: Publish extension to vscode
-        run: npx vsce publish
-        env:
-          VSCE_PAT: ${{ secrets.VSCE_PAT }}
-
-      - name: Publish extension to Open VSX
-        run: npx ovsx publish
-        env:
-          OVSX_PAT: ${{ secrets.OVSX_PAT }}
-
-      - name: Release
+      - name: 构建发版
         uses: softprops/action-gh-release@v2
         with:
           tag_name: 'v${{needs.check.outputs.version}}'
           files: '*.vsix'
+
+      - name: 发布扩展到 VSCODE
+        run: npx vsce publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+
+      - name: 发布扩展到 Open VSX
+        run: npx ovsx publish
+        env:
+          OVSX_PAT: ${{ secrets.OVSX_PAT }}
