@@ -55,7 +55,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-
   publish:
     name: 构建并发版
     runs-on: ubuntu-latest
