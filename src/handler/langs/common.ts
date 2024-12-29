@@ -199,7 +199,7 @@ export async function pickBlockCommentDecorationOptions({ editor, text, offset, 
      * ! 去除前置 (^|\\n)\\s* 判断会导致错误匹配字符串内的字符
      * ! 如：const mather = '/*'
      */
-    const blockExp = new RegExp(`((^|\\n)\\s*(${markStart}+))([\\s\\S]*?)(${markEnd})`, 'g');
+    const blockExp = new RegExp(`((^|\\n)\\s*(${markStart}))([\\s\\S]*?)(${markEnd})`, 'g');
 
     // Find the multiline comment block
     let block: RegExpExecArray | null;
@@ -213,11 +213,15 @@ export async function pickBlockCommentDecorationOptions({ editor, text, offset, 
       // store processed range
       processed.push([blocStart, blockEnd]);
 
-      if (!block[4].length) {
+      let content = block[4];
+      const prefix = marks[0].slice(-1);
+      const suffix = marks[1].slice(0, 1);
+      content = content.replace(new RegExp(`^${escapeRegexString(prefix)}*`), '').replace(new RegExp(`${escapeRegexString(suffix)}*$`), '');
+
+      if (!content.length) {
         continue;
       }
 
-      const content = block[4];
       const contentStart = blocStart + block[1].length;
 
       const lineProcessed: [number, number][] = [];
@@ -302,8 +306,10 @@ export async function pickDocCommentDecorationOptions({ editor, text, offset, ta
   /**
    * ! 去除前置 (^|\\n)\\s* 判断会导致错误匹配字符串内的字符
    * ! 如：const mather = '/*'
+   *
+   * ! doc comment 第一个标识符后必须加空格或换行，否则被识别为 block comment
    */
-  const blockExp = new RegExp(`((^|\\n)\\s*(${start}))([\\s\\S]*?)(${end})`, 'g');
+  const blockExp = new RegExp(`((^|\\n)\\s*(${start}))\\s([\\s\\S]*?)(${end})`, 'g');
   const m1Exp = new RegExp(
     `(^[ \\t]|([ \\t]*(${pre})[ \\t]))((${multilineTags.join('|')})([\\s\\S]*?))(?=\\n\\s*${pre}[ \\t](${allTags.join('|')})|\\n\\s*${pre}\\s*\\n|$)`,
     'gi',
