@@ -195,6 +195,10 @@ export async function pickBlockCommentDecorationOptions({ editor, text, offset, 
     const markStart = escapeRegexString(marks[0]);
     const markEnd = escapeRegexString(marks[1]);
 
+    const pre = escapeRegexString(marks[0].slice(-1));
+    const suf = escapeRegexString(marks[1].slice(0, 1));
+    const trimExp = new RegExp(`^(${pre}*)([\\s\\S]*)${suf}*$`, 'i');
+
     /**
      * ! 去除前置 (^|\\n)\\s* 判断会导致错误匹配字符串内的字符
      * ! 如：const mather = '/*'
@@ -213,16 +217,17 @@ export async function pickBlockCommentDecorationOptions({ editor, text, offset, 
       // store processed range
       processed.push([blocStart, blockEnd]);
 
-      let content = block[4];
-      const prefix = marks[0].slice(-1);
-      const suffix = marks[1].slice(0, 1);
-      content = content.replace(new RegExp(`^${escapeRegexString(prefix)}*`), '').replace(new RegExp(`${escapeRegexString(suffix)}*$`), '');
+      const trimed = trimExp.exec(block[4]);
+      if (!trimed) {
+        continue;
+      }
 
+      const content = trimed[2];
       if (!content.length) {
         continue;
       }
 
-      const contentStart = blocStart + block[1].length;
+      const contentStart = blocStart + block[1].length + trimed[1].length;
 
       const lineProcessed: [number, number][] = [];
 
