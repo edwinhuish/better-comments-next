@@ -1,7 +1,7 @@
-import type { Handler, UpdateOptions } from './langs/common';
+import type { Handler, UpdateOptions } from './modules/common';
 import * as configuration from '../configuration';
-import { CommonHandler } from './langs/common';
-import { PlainTextHandler } from './langs/plaintext';
+import { CommonHandler } from './modules/common';
+import { PlainTextHandler } from './modules/plaintext';
 
 const cached = new Map<string, Handler>();
 
