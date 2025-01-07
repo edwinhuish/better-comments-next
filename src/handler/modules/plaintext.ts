@@ -8,6 +8,8 @@ export class PlainTextHandler extends Handler {
     const tagRanges = new Map<string, vscode.Range[]>();
 
     const preloadLines = configuration.getConfigurationFlatten().preloadLines;
+
+    // # update for visible ranges
     for (const visibleRange of editor.visibleRanges) {
       this.verifyTaskID(taskID);
 
@@ -22,21 +24,12 @@ export class PlainTextHandler extends Handler {
 
       await this.pickDecorationOptions({ editor, text, offset, tagRanges, taskID });
     }
-
-    // # update for visible ranges
-    configuration.getTagDecorationTypes().forEach((td, tag) => {
-      const ranges = tagRanges.get(tag) || [];
-      editor.setDecorations(td, ranges);
-    });
-
-    const text = editor.document.getText();
-    await this.pickDecorationOptions({ editor, text, offset: 0, tagRanges, taskID });
+    this.setDecorations(editor, tagRanges);
 
     // # update for full text
-    configuration.getTagDecorationTypes().forEach((td, tag) => {
-      const ranges = tagRanges.get(tag) || [];
-      editor.setDecorations(td, ranges);
-    });
+    const text = editor.document.getText();
+    await this.pickDecorationOptions({ editor, text, offset: 0, tagRanges, taskID });
+    this.setDecorations(editor, tagRanges);
   }
 
   private async pickDecorationOptions({ editor, text, offset, tagRanges, taskID, processed = [] }: PickDecorationOptionsParams) {

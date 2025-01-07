@@ -47,6 +47,26 @@ export abstract class Handler {
     }, timeout);
   }
 
+  protected setDecorations(editor: vscode.TextEditor, tagRanges: Map<string, vscode.Range[]>) {
+    configuration.getTagDecorationTypes().forEach((td, tag) => {
+      const ranges = tagRanges.get(tag) || [];
+
+      editor.setDecorations(td, ranges);
+      const documentUri = editor.document.uri.toString();
+      for (const visibleEditor of vscode.window.visibleTextEditors) {
+        if (visibleEditor === editor) {
+          continue;
+        }
+
+        if (visibleEditor.document.uri.toString() !== documentUri) {
+          continue;
+        }
+
+        visibleEditor.setDecorations(td, ranges);
+      }
+    });
+  }
+
   // verify taskID is current task
   protected verifyTaskID(taskID: string) {
     if (taskID !== this.taskID) {
@@ -62,6 +82,8 @@ export class CommonHandler extends Handler {
     const tagRanges = new Map<string, vscode.Range[]>();
 
     const preloadLines = configuration.getConfigurationFlatten().preloadLines;
+
+    // # update for visible ranges
     for (const visibleRange of editor.visibleRanges) {
       this.verifyTaskID(taskID);
 
@@ -79,24 +101,17 @@ export class CommonHandler extends Handler {
       await this.pickLineCommentDecorationOptions({ editor, text, offset, tagRanges, processed, taskID });
     }
 
-    // # update for visible ranges
-    configuration.getTagDecorationTypes().forEach((td, tag) => {
-      const ranges = tagRanges.get(tag) || [];
-      editor.setDecorations(td, ranges);
-    });
+    this.setDecorations(editor, tagRanges);
 
     this.verifyTaskID(taskID);
 
+    // # update for full text
     const text = editor.document.getText();
     await this.pickDocCommentDecorationOptions({ editor, text, offset: 0, tagRanges, processed, taskID });
     await this.pickBlockCommentDecorationOptions({ editor, text, offset: 0, tagRanges, processed, taskID });
     await this.pickLineCommentDecorationOptions({ editor, text, offset: 0, tagRanges, processed, taskID });
 
-    // # update for full text
-    configuration.getTagDecorationTypes().forEach((td, tag) => {
-      const ranges = tagRanges.get(tag) || [];
-      editor.setDecorations(td, ranges);
-    });
+    this.setDecorations(editor, tagRanges);
   }
 
   private async pickLineCommentDecorationOptions({ editor, text, offset, tagRanges, taskID, processed = [] }: PickDecorationOptionsParams) {
