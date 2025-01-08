@@ -2,7 +2,7 @@
     "publisher": "edwinhuish",
     "name": "better-comments-next",
     "displayName": "Better Comments Next",
-    "version": "3.3.27",
+    "version": "3.3.28",
     "description": "Improve your code commenting by annotating with alert, informational, TODOs, and more!",
     "author": {
         "name": "Edwin Xu"
@@ -391,8 +391,8 @@
                 },
                 "better-comments.updateDelay": {
                     "type": "number",
-                    "description": "Millisecond delay for update decorations, default 100",
-                    "default": 100
+                    "description": "Millisecond delay for update decorations, default 0",
+                    "default": 0
                 },
                 "better-comments.preloadLines": {
                     "type": "number",

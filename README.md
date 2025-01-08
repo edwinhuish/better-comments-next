@@ -33,6 +33,10 @@ Default setting as below:
 
 ```jsonc
 {
+  // Millisecond delay for update decorations, default 0
+  "better-comments.updateDelay": 0,
+  // Preload lines outside the visible window for better performance, default 100
+  "better-comments.preloadLines": 100,
   // Enable/disable hightlight plain text.
   "better-comments.highlightPlainText": false,
   // Custom languages comments configuration
