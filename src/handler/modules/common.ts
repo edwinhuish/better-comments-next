@@ -393,7 +393,7 @@ export class CommonHandler extends Handler {
       processed.push([blockStart, blockEnd]);
 
       const content = block[4];
-      const contentStart = blockStart + block[1].length;
+      const contentStart = blockStart + block[1].length + 1;
 
       const lineProcessed: [number, number][] = [];
 
