@@ -156,7 +156,7 @@ export class CommonHandler extends Handler {
           `([ \\t]*(${mark})[ \\t])((${multilineTags.join('|')})([\\s\\S]*?(?=\\n\\s*${mark}[ \\t](${allTags.join('|')})|\\n\\s*${mark}\\s*\\r?\\n|$)))`,
           'gi',
         );
-        const m2Exp = new RegExp(`(^|[ \\t]*(${mark}))([^\\n]*?(?=\\r?\\n|$))`, 'gi');
+        const m2Exp = new RegExp(`(^|[ \\t]*(${mark})([ \\t]*))([^\\n]*?(?=\\r?\\n|$))`, 'gi');
 
         // Find the matched multiline
         let m1: RegExpExecArray | null;
@@ -170,6 +170,11 @@ export class CommonHandler extends Handler {
           let m2: RegExpExecArray | null;
           while ((m2 = m2Exp.exec(m1[3]))) {
             this.verifyTaskID(taskID);
+
+            const m2Space = m2[3];
+            if (m2.index !== 0 && m2Space.length <= 1) {
+              break;
+            }
 
             const m2StartSince = m1Start + m1[1].length + m2.index;
             const m2Start = m2StartSince + m2[1].length;
@@ -235,7 +240,9 @@ export class CommonHandler extends Handler {
     const lineTags = configuration.getLineTagsEscaped();
     const allTags = configuration.getAllTagsEscaped();
 
-    const m1Exp = new RegExp(`(^[ \\t]|\\n[ \\t]*)(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*(${allTags.join('|')})|\\n\\s*\\n|$)`, 'gi');
+    const m1Exp = new RegExp(`(^([ \\t])|\\n([ \\t]*))(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*(${allTags.join('|')})|\\n\\s*\\n|$)`, 'gi');
+    // eslint-disable-next-line regexp/no-unused-capturing-group, regexp/no-super-linear-backtracking
+    const m2Exp = /((\n|^)([ \t]*))([^\n]*)(?=\n|$)/g;
 
     const lineExp = new RegExp(`(^[ \\t]|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*?)(?=\\n|$)`, 'gi');
 
@@ -290,20 +297,32 @@ export class CommonHandler extends Handler {
             this.verifyTaskID(taskID);
 
             const m1Start = contentStart + m1.index;
-            const tagName = m1[2].toLowerCase();
+            const tagName = m1[4].toLowerCase();
+            const m1Space = m1[2] || m1[3] || '';
 
-            const m2Start = m1Start + m1[1].length;
-            const m2End = m1Start + m1[0].length;
-            // store processed range
-            lineProcessed.push([m2Start, m2End]);
+            // Find decoration range
+            let m2: RegExpExecArray | null;
+            while ((m2 = m2Exp.exec(m1[0]))) {
+              this.verifyTaskID(taskID);
+              const m2Space = m2[3] || '';
+              if (m2.index !== 0 && m2Space.length <= m1Space.length) {
+                break;
+              }
 
-            const startPos = editor.document.positionAt(m2Start);
-            const endPos = editor.document.positionAt(m2End);
-            const range = new vscode.Range(startPos, endPos);
+              const m2StartSince = m1Start + m2.index;
+              const m2Start = m2StartSince + m2[1].length;
+              const m2End = m2StartSince + m2[0].length;
+              // store processed range
+              lineProcessed.push([m2Start, m2End]);
 
-            const opt = tagRanges.get(tagName) || [];
-            opt.push(range);
-            tagRanges.set(tagName, opt);
+              const startPos = editor.document.positionAt(m2Start);
+              const endPos = editor.document.positionAt(m2End);
+              const range = new vscode.Range(startPos, endPos);
+
+              const opt = tagRanges.get(tagName) || [];
+              opt.push(range);
+              tagRanges.set(tagName, opt);
+            }
           }
         }
 
@@ -373,10 +392,10 @@ export class CommonHandler extends Handler {
      */
     const blockExp = new RegExp(`((^|\\n)\\s*(${start}))\\s([\\s\\S]*?)(${end})`, 'g');
     const m1Exp = new RegExp(
-      `(^[ \\t]|([ \\t]*(${pre})[ \\t]))((${multilineTags.join('|')})([\\s\\S]*?))(?=\\n\\s*${pre}[ \\t](${allTags.join('|')})|\\n\\s*${pre}\\s*\\n|$)`,
+      `(^[ \\t]|([ \\t]*(${pre})([ \\t])))((${multilineTags.join('|')})([\\s\\S]*?))(?=\\n\\s*${pre}[ \\t](${allTags.join('|')})|\\n\\s*${pre}\\s*\\n|$)`,
       'gi',
     );
-    const m2Exp = new RegExp(`(^|[ \\t]*(${pre}))([^\\n]*?)(\\n|$)`, 'gi');
+    const m2Exp = new RegExp(`(^|[ \\t]*(${pre})([ \\t]*))([^\\n]*?)(\\n|$)`, 'gi');
     const lineExp = new RegExp(`(^|[ \\t]*(${pre})[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
 
     let block: RegExpExecArray | null;
@@ -404,12 +423,18 @@ export class CommonHandler extends Handler {
           this.verifyTaskID(taskID);
 
           const m1Start = contentStart + m1.index;
-          const tagName = m1[5].toLowerCase();
+          const tagName = m1[6].toLowerCase();
+          const m1Space = m1[4] || '';
 
           // Find decoration range
           let m2: RegExpExecArray | null;
-          while ((m2 = m2Exp.exec(m1[4]))) {
+          while ((m2 = m2Exp.exec(m1[5]))) {
             this.verifyTaskID(taskID);
+
+            const m2Space = m2[3] || '';
+            if (m2.index !== 0 && m2Space.length <= m1Space.length) {
+              break;
+            }
 
             const m2StartSince = m1Start + m1[1].length + m2.index;
             const m2Start = m2StartSince + m2[1].length;
