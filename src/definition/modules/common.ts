@@ -179,6 +179,7 @@ function getDefaultComments(languageCode: string): vscode.CommentRule | undefine
     case 'verilog':
       return { lineComment: '//', blockComment: ['/*', '*/'] };
     case 'css':
+    case 'tailwindcss':
       return { blockComment: ['/*', '*/'] };
     case 'coffeescript':
     case 'dockerfile':
