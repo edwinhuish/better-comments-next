@@ -156,7 +156,6 @@ export class CommonHandler extends Handler {
           `([ \\t]*(${mark})[ \\t])((${multilineTags.join('|')})([\\s\\S]*?(?=\\n\\s*${mark}[ \\t](${allTags.join('|')})|\\n\\s*${mark}\\s*\\r?\\n|$)))`,
           'gi',
         );
-        const m2Exp = new RegExp(`(^|[ \\t]*(${mark})([ \\t]*))([^\\n]*?(?=\\r?\\n|$))`, 'gi');
 
         // Find the matched multiline
         let m1: RegExpExecArray | null;
@@ -165,6 +164,9 @@ export class CommonHandler extends Handler {
 
           const m1Start = contentStart + m1.index;
           const tagName = m1[4].toLowerCase();
+
+          // exec with remember last reg index, reset m2Exp avoid reg cache
+          const m2Exp = new RegExp(`(^|[ \\t]*(${mark})([ \\t]*))([^\\n]*?(?=\\r?\\n|$))`, 'gi');
 
           // Find decoration range
           let m2: RegExpExecArray | null;
@@ -240,9 +242,8 @@ export class CommonHandler extends Handler {
     const lineTags = configuration.getLineTagsEscaped();
     const allTags = configuration.getAllTagsEscaped();
 
+    // exec with remember last reg index, reset m2Exp avoid reg cache
     const m1Exp = new RegExp(`(^([ \\t])|\\n([ \\t]*))(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*(${allTags.join('|')})|\\n\\s*\\n|$)`, 'gi');
-    // eslint-disable-next-line regexp/no-unused-capturing-group, regexp/no-super-linear-backtracking
-    const m2Exp = /((\n|^)([ \t]*))([^\n]*)(?=\n|$)/g;
 
     const lineExp = new RegExp(`(^[ \\t]|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*?)(?=\\n|$)`, 'gi');
 
@@ -299,6 +300,9 @@ export class CommonHandler extends Handler {
             const m1Start = contentStart + m1.index;
             const tagName = m1[4].toLowerCase();
             const m1Space = m1[2] || m1[3] || '';
+
+            // eslint-disable-next-line regexp/no-unused-capturing-group, regexp/no-super-linear-backtracking
+            const m2Exp = /((\n|^)([ \t]*))([^\n]*)(?=\n|$)/g;
 
             // Find decoration range
             let m2: RegExpExecArray | null;
@@ -395,7 +399,6 @@ export class CommonHandler extends Handler {
       `(^[ \\t]|([ \\t]*(${pre})([ \\t])))((${multilineTags.join('|')})([\\s\\S]*?))(?=\\n\\s*${pre}[ \\t](${allTags.join('|')})|\\n\\s*${pre}\\s*\\n|$)`,
       'gi',
     );
-    const m2Exp = new RegExp(`(^|[ \\t]*(${pre})([ \\t]*))([^\\n]*?)(\\n|$)`, 'gi');
     const lineExp = new RegExp(`(^|[ \\t]*(${pre})[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
 
     let block: RegExpExecArray | null;
@@ -425,6 +428,9 @@ export class CommonHandler extends Handler {
           const m1Start = contentStart + m1.index;
           const tagName = m1[6].toLowerCase();
           const m1Space = m1[4] || '';
+
+          // exec with remember last reg index, reset m2Exp avoid reg cache
+          const m2Exp = new RegExp(`(^|[ \\t]*(${pre})([ \\t]*))([^\\n]*?)(\\n|$)`, 'gi');
 
           // Find decoration range
           let m2: RegExpExecArray | null;
