@@ -120,7 +120,7 @@ export class CommonHandler extends Handler {
     const comments = await definition.getAvailableComments(editor.document.languageId);
 
     if (!comments.lineComments || !comments.lineComments.length) {
-      throw new CancelError();
+      return tagRanges;
     }
 
     const escapedMarks = comments.lineComments.map(s => `${escapeRegexString(s)}+`).join('|');
