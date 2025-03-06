@@ -394,12 +394,12 @@ export class CommonHandler extends Handler {
      *
      * ! doc comment 第一个标识符后必须加空格或换行，否则被识别为 block comment
      */
-    const blockExp = new RegExp(`((^|\\n)\\s*(${start}))\\s([\\s\\S]*?)(${end})`, 'g');
+    const blockExp = new RegExp(`((^|\\n)\\s*(${start}))(\\s[\\s\\S]*?)(${end})`, 'g');
     const m1Exp = new RegExp(
       `(^[ \\t]|([ \\t]*(${pre})([ \\t])))((${multilineTags.join('|')})([\\s\\S]*?))(?=\\n\\s*${pre}[ \\t](${allTags.join('|')})|\\n\\s*${pre}\\s*\\n|$)`,
       'gi',
     );
-    const lineExp = new RegExp(`(^|[ \\t]*(${pre})[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
+    const lineExp = new RegExp(`(^(?:[ \\t]*\\n[ \\t]*(${pre}))?[ \\t])(${lineTags.join('|')})([^\\n]*?)(\\n|$)`, 'gi');
 
     let block: RegExpExecArray | null;
     while ((block = blockExp.exec(text))) {
@@ -415,7 +415,7 @@ export class CommonHandler extends Handler {
       processed.push([blockStart, blockEnd]);
 
       const content = block[4];
-      const contentStart = blockStart + block[1].length + 1;
+      const contentStart = blockStart + block[1].length;
 
       const lineProcessed: [number, number][] = [];
 
