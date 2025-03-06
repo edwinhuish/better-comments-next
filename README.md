@@ -40,7 +40,14 @@ Default setting as below:
   // Enable/disable hightlight plain text.
   "better-comments.highlightPlainText": false,
   // Custom languages comments configuration
-  "better-comments.languages": [],
+  "better-comments.languages": [
+    {
+      "id": "proto3", // (Required) Language ID
+      "comments": { "lineComment": "//", "blockComment": ["/*", "*/"] }, // (Optional) Comment Syntax
+      "embeddedLanguages": [], // (Optional) Embedded Languages. Example for HTML: ["css", "javascript"]
+      "useDocComment": false // (Optional) Use Doc Comments
+    }
+  ],
   // Overwrite the specified tag styles of `"better-comments.tags"` for light themes.
   "better-comments.tagsLight": [],
   // Overwrite the specified tag styles of `"better-comments.tags"` for dark themes.
@@ -108,6 +115,7 @@ Default setting as below:
 
 ## Supported Languages
 
-Most languages that your editor correctly recognizes.
+**All languages supported:**
 
-`better-comments-next` reads the language configuration JSON in [contributes.languages](https://code.visualstudio.com/api/references/contribution-points#contributes.languages) to know what comments look like in a language. Some language extensions provide that information dynamically via the [`vscode.languages.setLanguageConfiguration`](https://code.visualstudio.com/api/references/vscode-api#languages) API method. This extension is unable to support those languages.
+- Auto detected languages comments rules from extension configuration.
+- Manual configured languages comments rules by `"better-comments.languages"`.
