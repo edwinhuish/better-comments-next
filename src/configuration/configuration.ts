@@ -1,6 +1,6 @@
 import type { WorkspaceConfiguration } from 'vscode';
+import { escape } from '@/utils/regex';
 import * as vscode from 'vscode';
-import { escapeRegexString } from '../utils';
 
 export interface Tag {
   tag: string | string[];
@@ -124,7 +124,7 @@ function flattenTags(tags: Tag[]) {
     if (!Array.isArray(tag.tag)) {
       // ! add tag only tag name not empty
       if (tag.tag) {
-        flatTags.push({ ...tag, tagEscaped: escapeRegexString(tag.tag) } as TagFlatten);
+        flatTags.push({ ...tag, tagEscaped: escape(tag.tag) } as TagFlatten);
       }
       continue;
     }
@@ -137,7 +137,7 @@ function flattenTags(tags: Tag[]) {
       flatTags.push({
         ...tag,
         tag: tagName,
-        tagEscaped: escapeRegexString(tagName),
+        tagEscaped: escape(tagName),
       });
     }
   }
