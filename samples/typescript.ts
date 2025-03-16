@@ -5,9 +5,10 @@ export class TestClass {
    * ! Deprecated method, do not use
    * ? Should this method be exposed through API?
    * TODO: refactor this method to conform to API
-   *       todo is the multi-line comment
-   *       will break until empty line
-   * 
+   *       Ensure continuous lines with indentation.
+   *       This is a multi-line TODO comment that
+   *       should be highlighted properly.
+   *
    * @param param === condition
    *     ? true          This line should not be highlighted
    *     : false
@@ -30,20 +31,18 @@ export class TestClass {
 
     /*
       todo: multi-line in block comment example
-            it will break until empty line
-            or final line of the comment
+            Ensure continuous lines with indentation.
+            This is a multi-line TODO comment
+            that should be highlighted properly.
     */
 
 
     // ! line comment multi-line mode
-    // TODO: refactor this method to conform to API
-    //       todo is the multi-line comment
-    //       will break until empty line
-    
     //
-    // todo: multi-line in block comment example
-    // it will break until empty line
-    // or final line of the comment
+    // TODO: multi-line in block comment example
+    //       Ensure continuous lines with indentation.
+    //       This is a multi-line TODO comment
+    //       that should be highlighted properly.
     //
   }
 }

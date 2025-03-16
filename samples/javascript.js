@@ -12,9 +12,9 @@ const myVar = 123;
 /**
  * My Function
  * ! Some Alert
- * TODO: multiline comment
- *       will be break with empty line
- * 
+ * TODO: multiline comment example
+ *       ensure continuous lines with indentation.
+ *
  * ?  Questions
  * * Highlights
  */

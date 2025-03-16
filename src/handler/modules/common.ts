@@ -131,7 +131,6 @@ export class CommonHandler extends Handler {
 
     const multilineTags = configuration.getMultilineTagsEscaped();
     const lineTags = configuration.getLineTagsEscaped();
-    const allTags = configuration.getAllTagsEscaped();
 
     let block: RegExpExecArray | null;
     while ((block = blockExp.exec(text))) {
@@ -156,9 +155,7 @@ export class CommonHandler extends Handler {
       if (multilineTags.length) {
         const m1Exp = (() => {
           const tag = multilineTags.join('|');
-          const untilTag = `${BR}${SP}*${mark}${SP}(?:${allTags.join('|')})`;
-          const untilEmptyBreak = `${BR}${SP}*${mark}${SP}*${BR}`;
-          return new RegExp(`(?<PRE>${SP}*${mark}${SP})(?<TAG>${tag})(?<CONTENT>${ANY}*?)(?=${untilTag}|${untilEmptyBreak}|$)`, 'gi');
+          return new RegExp(`(?<PRE>${SP}*${mark}${SP})(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
         })();
 
         // Find the matched multiline
@@ -177,7 +174,12 @@ export class CommonHandler extends Handler {
           while ((m2 = m2Exp.exec(m1[0]))) {
             this.verifyTaskID(taskID);
 
+            if (!m2.groups!.CONTENT) {
+              continue; // 空行
+            }
+
             if (m2.index !== 0 && m2.groups!.SPACE.length <= 1) {
+              m1Exp.lastIndex = m1.index + m2.index - 1;
               break;
             }
 
@@ -243,15 +245,12 @@ export class CommonHandler extends Handler {
 
     const multilineTags = configuration.getMultilineTagsEscaped();
     const lineTags = configuration.getLineTagsEscaped();
-    const allTags = configuration.getAllTagsEscaped();
 
     // exec with remember last reg index, reset m2Exp avoid reg cache
     const m1Exp = (() => {
       const tag = multilineTags.join('|');
       const pre = `^(?<SPACE1>${SP})|${BR}(?<SPACE2>${SP}*)`;
-      const untilTag = `${BR}${SP}*(?:${allTags.join('|')})`;
-      const untilEmptyBreak = `${BR}${SP}*${BR}`;
-      return new RegExp(`(?<PRE>${pre})(?<TAG>${tag})(?<CONTENT>${ANY}*?)(?=${untilTag}|${untilEmptyBreak}|$)`, 'gi');
+      return new RegExp(`(?<PRE>${pre})(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
     })();
 
     const lineExp = new RegExp(`(?<PRE>^${SP}|${BR}${SP}*)(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim');
@@ -306,15 +305,20 @@ export class CommonHandler extends Handler {
             const tagName = m1.groups!.TAG.toLowerCase();
             const m1Space = m1.groups!.SPACE1 || m1.groups!.SPACE2 || '';
 
-            // eslint-disable-next-line regexp/optimal-quantifier-concatenation
-            const m2Exp = /(?<PRE>(?:\n|^)(?<SPACE>[ \t]*)).*/gm;
+            const m2Exp = /(?<PRE>(?:\n|^)(?<SPACE>[ \t]*))(?<CONTENT>.*)/gm;
 
             // Find decoration range
             let m2: RegExpExecArray | null;
             while ((m2 = m2Exp.exec(m1[0]))) {
               this.verifyTaskID(taskID);
+
+              if (!m2.groups!.CONTENT) {
+                continue; // 空行
+              }
+
               const m2Space = m2.groups!.SPACE || '';
               if (m2.index !== 0 && m2Space.length <= m1Space.length) {
+                m1Exp.lastIndex = m1.index + m2.index - 1;
                 break;
               }
 
@@ -391,16 +395,13 @@ export class CommonHandler extends Handler {
 
     const multilineTags = configuration.getMultilineTagsEscaped();
     const lineTags = configuration.getLineTagsEscaped();
-    const allTags = configuration.getAllTagsEscaped();
 
     const blockExp = new RegExp(`(?<PRE>(?:^|${BR})${SP}*)(?<START>${start})(?<CONTENT>${SP_BR}${ANY}*?)(?<END>${end})`, 'g');
 
     const m1Exp = (() => {
       const tag = multilineTags.join('|');
       const preTag = `^${SP}|${SP}*${pre}${SP}`;
-      const untilTag = `${BR}${SP}*${pre}${SP}(${allTags.join('|')})`;
-      const untilEmptyBreak = `${BR}${SP}*${pre}${SP}*${BR}`;
-      return new RegExp(`(?<PRE>${preTag})(?<TAG>${tag})(?<CONTENT>${ANY}*?)(?=${untilTag}|${untilEmptyBreak})`, 'gi');
+      return new RegExp(`(?<PRE>${preTag})(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
     })();
 
     const tags = lineTags.join('|');
@@ -434,20 +435,25 @@ export class CommonHandler extends Handler {
           const tagName = m1.groups!.TAG.toLowerCase();
 
           // exec with remember last reg index, reset m2Exp avoid reg cache
-          const m2Exp = new RegExp(`(^|${SP}*${pre})(${SP}*)([^\\n]*?)(\\n|$)`, 'gi');
+          const m2Exp = new RegExp(`(?<PRE>${SP}*${pre}|^)(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gim');
 
           // Find decoration range
           let m2: RegExpExecArray | null;
           while ((m2 = m2Exp.exec(m1.groups!.TAG + m1.groups!.CONTENT))) {
             this.verifyTaskID(taskID);
 
-            const m2Space = m2[2] || '';
+            if (!m2.groups!.CONTENT) {
+              continue; // 空行
+            }
+
+            const m2Space = m2.groups!.SPACE || '';
             if (m2.index !== 0 && m2Space.length <= 1) { // 必须大于1个空格缩进
+              m1Exp.lastIndex = m1.index + m2.index - 1;
               break;
             }
 
             const m2StartSince = m1Start + m1.groups!.PRE.length + m2.index;
-            const m2Start = m2StartSince + m2[1].length;
+            const m2Start = m2StartSince + m2.groups!.PRE.length;
             const m2End = m2StartSince + m2[0].length;
             // store processed range
             lineProcessed.push([m2Start, m2End]);

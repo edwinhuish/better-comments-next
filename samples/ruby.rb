@@ -6,9 +6,8 @@ end
 
 # # call function
 say_hello
-  
+
 #
 # todo: multi-line in block comment example
-#       it will break until empty line
-#       or final line of the comment
+#       ensure continuous lines with indentation.
 #

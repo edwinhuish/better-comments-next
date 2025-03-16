@@ -3,7 +3,7 @@
     ! This class is not for public use
 
     TODO is multiline comment
-    will be break with empty line
+         ensure continuous lines with indentation.
 
     * Highlight to draw attention
     ? Maybe I should indent less
@@ -204,7 +204,7 @@ public class MyClass
  This is my class
     ! This class is not for public use
     TODO Create some copyright notices
-    
+
     * Highlight to draw attention
     ? Maybe I should indent less
  */
