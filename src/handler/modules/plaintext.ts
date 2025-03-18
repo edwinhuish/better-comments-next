@@ -1,5 +1,6 @@
 import type { PickDecorationOptionsParams, UpdateOptions } from './common';
 import * as configuration from '@/configuration';
+import { replaceWithSpace } from '@/utils/str';
 import * as vscode from 'vscode';
 import { Handler } from './common';
 
@@ -7,7 +8,7 @@ export class PlainTextHandler extends Handler {
   protected async updateDecorations({ editor, taskID }: UpdateOptions & { taskID: string }): Promise<void> {
     const tagRanges = new Map<string, vscode.Range[]>();
 
-    const preloadLines = configuration.getConfigurationFlatten().preloadLines;
+    const { preloadLines, updateDelay } = configuration.getConfigurationFlatten();
 
     // # update for visible ranges
     for (const visibleRange of editor.visibleRanges) {
@@ -22,17 +23,24 @@ export class PlainTextHandler extends Handler {
       const text = editor.document.getText(range);
       const offset = editor.document.offsetAt(range.start);
 
-      await this.pickDecorationOptions({ editor, text, offset, tagRanges, taskID });
+      const opt = { editor, text, offset, tagRanges, taskID };
+      await this.pickDecorationOptions(opt);
     }
     this.setDecorations(editor, tagRanges);
 
-    // # update for full text
-    const text = editor.document.getText();
-    await this.pickDecorationOptions({ editor, text, offset: 0, tagRanges, taskID });
-    this.setDecorations(editor, tagRanges);
+    setTimeout(async () => {
+      this.verifyTaskID(taskID);
+      // # update for full text
+      const text = editor.document.getText();
+      const opt = { editor, text, offset: 0, tagRanges, taskID };
+      await this.pickDecorationOptions(opt);
+      this.setDecorations(editor, tagRanges);
+    }, updateDelay);
   }
 
-  private async pickDecorationOptions({ editor, text, offset, tagRanges, taskID, processed = [] }: PickDecorationOptionsParams) {
+  private async pickDecorationOptions(opt: PickDecorationOptionsParams) {
+    const { editor, offset, tagRanges, taskID } = opt;
+
     this.verifyTaskID(taskID);
 
     const configs = configuration.getConfigurationFlatten();
@@ -45,20 +53,17 @@ export class PlainTextHandler extends Handler {
     const multilineTags = configuration.getMultilineTagsEscaped();
     const lineTags = configuration.getLineTagsEscaped();
 
-    const lineProcessed: [number, number][] = [];
-
     const m1Exp = new RegExp(`(^|\\n[ \\t]*)(${multilineTags.join('|')})([\\s\\S]*?)(?=\\n\\s*\\n|$)`, 'gi');
 
     // Find the matched multiline
     let m1: RegExpExecArray | null;
-    while ((m1 = m1Exp.exec(text))) {
+    while ((m1 = m1Exp.exec(opt.text))) {
       this.verifyTaskID(taskID);
 
       const m1StartSince = offset + m1.index;
       const m1Start = m1StartSince + m1[1].length;
       const m1End = m1StartSince + m1[0].length;
-      // store processed range
-      lineProcessed.push([m1Start, m1End]);
+      opt.text = replaceWithSpace(opt.text, m1Start, m1End);
 
       const startPos = editor.document.positionAt(m1Start);
       const endPos = editor.document.positionAt(m1End);
@@ -66,27 +71,21 @@ export class PlainTextHandler extends Handler {
 
       const tagName = m1[2].toLowerCase();
 
-      const opt = tagRanges.get(tagName) || [];
-      opt.push(range);
-      tagRanges.set(tagName, opt);
+      const ranges = tagRanges.get(tagName) || [];
+      ranges.push(range);
+      tagRanges.set(tagName, ranges);
     }
 
     const lineExp = new RegExp(`(^|\\n[ \\t]*)(${lineTags.join('|')})([^\\n]*)(?=\\n)`, 'gi');
 
     let line: RegExpExecArray | null | undefined;
-    while ((line = lineExp.exec(text))) {
+    while ((line = lineExp.exec(opt.text))) {
       this.verifyTaskID(taskID);
 
       const lineStartSince = offset + line.index;
       const lineStart = lineStartSince + line[1].length;
       const lineEnd = lineStartSince + line[0].length;
-
-      if (lineProcessed.find(range => range[0] <= lineStart && lineEnd <= range[1])) {
-      // skip if already processed
-        continue;
-      }
-      // store processed range
-      lineProcessed.push([lineStart, lineEnd]);
+      opt.text = replaceWithSpace(opt.text, lineStart, lineEnd);
 
       const startPos = editor.document.positionAt(lineStart);
       const endPos = editor.document.positionAt(lineEnd);
@@ -94,9 +93,9 @@ export class PlainTextHandler extends Handler {
 
       const tagName = line[2].toLowerCase();
 
-      const opt = tagRanges.get(tagName) || [];
-      opt.push(range);
-      tagRanges.set(tagName, opt);
+      const ranges = tagRanges.get(tagName) || [];
+      ranges.push(range);
+      tagRanges.set(tagName, ranges);
     }
 
     return tagRanges;
