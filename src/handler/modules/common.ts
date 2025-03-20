@@ -2,7 +2,6 @@ import * as configuration from '@/configuration';
 import * as definition from '@/definition';
 import * as log from '@/log';
 import { ANY, BR, escape, SP, SP_BR } from '@/utils/regex';
-import { replaceWithSpace } from '@/utils/str';
 import { CancelError, generateUUID } from '@/utils/utils';
 import * as vscode from 'vscode';
 
@@ -15,6 +14,7 @@ export interface PickDecorationOptionsParams {
   text: string;
   offset: number;
   tagRanges: Map<string, vscode.Range[]>;
+  processed?: [number, number][];
   taskID: string;
 }
 
@@ -79,6 +79,7 @@ export abstract class Handler {
 export class CommonHandler extends Handler {
   public async updateDecorations({ editor, taskID }: UpdateOptions & { taskID: string }): Promise<void> {
     this.verifyTaskID(taskID);
+    const processed: [number, number][] = [];
     const tagRanges = new Map<string, vscode.Range[]>();
 
     const { preloadLines, updateDelay } = configuration.getConfigurationFlatten();
@@ -96,10 +97,9 @@ export class CommonHandler extends Handler {
       const text = editor.document.getText(range);
       const offset = editor.document.offsetAt(range.start);
 
-      const opt = { editor, text, offset, tagRanges, taskID };
-      await this.pickDocCommentDecorationOptions(opt);
-      await this.pickBlockCommentDecorationOptions(opt);
-      await this.pickLineCommentDecorationOptions(opt);
+      await this.pickDocCommentDecorationOptions({ editor, text, offset, tagRanges, processed, taskID });
+      await this.pickBlockCommentDecorationOptions({ editor, text, offset, tagRanges, processed, taskID });
+      await this.pickLineCommentDecorationOptions({ editor, text, offset, tagRanges, processed, taskID });
     }
 
     this.setDecorations(editor, tagRanges);
@@ -108,17 +108,15 @@ export class CommonHandler extends Handler {
       // # update for full text
       this.verifyTaskID(taskID);
       const text = editor.document.getText();
-      const opt = { editor, text, offset: 0, tagRanges, taskID };
-      await this.pickDocCommentDecorationOptions(opt);
-      await this.pickBlockCommentDecorationOptions(opt);
-      await this.pickLineCommentDecorationOptions(opt);
+      await this.pickDocCommentDecorationOptions({ editor, text, offset: 0, tagRanges, processed, taskID });
+      await this.pickBlockCommentDecorationOptions({ editor, text, offset: 0, tagRanges, processed, taskID });
+      await this.pickLineCommentDecorationOptions({ editor, text, offset: 0, tagRanges, processed, taskID });
 
       this.setDecorations(editor, tagRanges);
     }, updateDelay);
   }
 
-  private async pickLineCommentDecorationOptions(opt: PickDecorationOptionsParams) {
-    const { editor, offset, tagRanges, taskID } = opt;
+  private async pickLineCommentDecorationOptions({ editor, text, offset, tagRanges, taskID, processed = [] }: PickDecorationOptionsParams) {
     this.verifyTaskID(taskID);
 
     const comments = await definition.getAvailableComments(editor.document.languageId);
@@ -135,16 +133,24 @@ export class CommonHandler extends Handler {
     const lineTags = configuration.getLineTagsEscaped();
 
     let block: RegExpExecArray | null;
-    while ((block = blockExp.exec(opt.text))) {
+    while ((block = blockExp.exec(text))) {
       this.verifyTaskID(taskID);
 
       const blockStart = offset + block.index;
       const blockEnd = blockStart + block[0].length;
-      opt.text = replaceWithSpace(opt.text, blockStart, blockEnd);
+
+      if (processed.find(range => range[0] <= blockStart && blockEnd <= range[1])) {
+        // skip if already processed
+        continue;
+      }
+      // store processed range
+      processed.push([blockStart, blockEnd]);
 
       const content = block[0];
       const contentStart = blockStart;
       const mark = escape(block.groups!.MARK);
+
+      const lineProcessed: [number, number][] = [];
 
       if (multilineTags.length) {
         const m1Exp = (() => {
@@ -180,15 +186,16 @@ export class CommonHandler extends Handler {
             const m2StartSince = m1Start + m2.index;
             const m2Start = m2StartSince + m2.groups!.PRE.length + m2.groups!.MARK.length;
             const m2End = m2StartSince + m2[0].length;
-            opt.text = replaceWithSpace(opt.text, m2Start, m2End);
+            // store processed range
+            lineProcessed.push([m2Start, m2End]);
 
             const startPos = editor.document.positionAt(m2Start);
             const endPos = editor.document.positionAt(m2End);
             const range = new vscode.Range(startPos, endPos);
 
-            const ranges = tagRanges.get(tagName) || [];
-            ranges.push(range);
-            tagRanges.set(tagName, ranges);
+            const opt = tagRanges.get(tagName) || [];
+            opt.push(range);
+            tagRanges.set(tagName, opt);
           }
         }
       }
@@ -203,7 +210,13 @@ export class CommonHandler extends Handler {
           const lineStartSince = contentStart + line.index;
           const lineStart = lineStartSince + line[1].length + line[4].length;
           const lineEnd = lineStartSince + line[0].length;
-          opt.text = replaceWithSpace(opt.text, lineStart, lineEnd);
+
+          if (lineProcessed.find(range => range[0] <= lineStart && lineEnd <= range[1])) {
+            // skip if already processed
+            continue;
+          }
+          // store processed range
+          lineProcessed.push([lineStart, lineEnd]);
 
           const startPos = editor.document.positionAt(lineStart);
           const endPos = editor.document.positionAt(lineEnd);
@@ -211,9 +224,9 @@ export class CommonHandler extends Handler {
 
           const tagName = line[5].toLowerCase();
 
-          const ranges = tagRanges.get(tagName) || [];
-          ranges.push(range);
-          tagRanges.set(tagName, ranges);
+          const opt = tagRanges.get(tagName) || [];
+          opt.push(range);
+          tagRanges.set(tagName, opt);
         }
       }
     }
@@ -221,9 +234,7 @@ export class CommonHandler extends Handler {
     return tagRanges;
   }
 
-  private async pickBlockCommentDecorationOptions(opt: PickDecorationOptionsParams) {
-    const { editor, offset, tagRanges, taskID } = opt;
-
+  private async pickBlockCommentDecorationOptions({ editor, text, offset, tagRanges, taskID, processed = [] }: PickDecorationOptionsParams) {
     this.verifyTaskID(taskID);
 
     const comments = await definition.getAvailableComments(editor.document.languageId);
@@ -258,12 +269,17 @@ export class CommonHandler extends Handler {
 
       // Find the multiline comment block
       let block: RegExpExecArray | null;
-      while ((block = blockExp.exec(opt.text))) {
+      while ((block = blockExp.exec(text))) {
         this.verifyTaskID(taskID);
 
-        const blockStart = offset + block.index + block.groups!.PRE.length;
+        const blocStart = offset + block.index + block.groups!.PRE.length;
         const blockEnd = offset + block.index + block[0].length;
-        opt.text = replaceWithSpace(opt.text, blockStart, blockEnd);
+        if (processed.find(range => range[0] <= blocStart && blockEnd <= range[1])) {
+          // skip if already processed
+          continue;
+        }
+        // store processed range
+        processed.push([blocStart, blockEnd]);
 
         const trimed = trimExp.exec(block.groups!.CONTENT);
         if (!trimed) {
@@ -275,7 +291,7 @@ export class CommonHandler extends Handler {
           continue;
         }
 
-        const contentStart = blockStart + block.groups!.START.length + trimed[1].length;
+        const contentStart = blocStart + block.groups!.START.length + trimed[1].length;
 
         const lineProcessed: [number, number][] = [];
 
@@ -356,9 +372,7 @@ export class CommonHandler extends Handler {
     return tagRanges;
   }
 
-  private async pickDocCommentDecorationOptions(opt: PickDecorationOptionsParams) {
-    const { editor, offset, tagRanges, taskID } = opt;
-
+  private async pickDocCommentDecorationOptions({ editor, text, offset, tagRanges, taskID, processed = [] }: PickDecorationOptionsParams) {
     this.verifyTaskID(taskID);
 
     const lang = definition.useLanguage(editor.document.languageId);
@@ -395,12 +409,17 @@ export class CommonHandler extends Handler {
     const lineExp = new RegExp(`(?<PRE>${linePreTag}${SP})(?<TAG>${tags})(?<CONTENT>.*)`, 'gim');
 
     let block: RegExpExecArray | null;
-    while ((block = blockExp.exec(opt.text))) {
+    while ((block = blockExp.exec(text))) {
       this.verifyTaskID(taskID);
 
       const blockStart = offset + block.index + block.groups!.PRE.length;
       const blockEnd = offset + block.index + block[0].length;
-      opt.text = replaceWithSpace(opt.text, blockStart, blockEnd);
+      if (processed.find(range => range[0] <= blockStart && blockEnd <= range[1])) {
+        // skip if already processed
+        continue;
+      }
+      // store processed range
+      processed.push([blockStart, blockEnd]);
 
       const contentStart = blockStart + block.groups!.START.length;
 
