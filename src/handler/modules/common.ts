@@ -201,14 +201,14 @@ export class CommonHandler extends Handler {
       }
 
       if (lineTags.length) {
-        const lineExp = new RegExp(`((^|${SP})(${mark}))(${SP})(${lineTags.join('|')})([^\\n]*)`, 'gi');
+        const lineExp = new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP})(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim');
 
         let line: RegExpExecArray | null | undefined;
         while ((line = lineExp.exec(content))) {
           this.verifyTaskID(taskID);
 
           const lineStartSince = contentStart + line.index;
-          const lineStart = lineStartSince + line[1].length + line[4].length;
+          const lineStart = lineStartSince + line.groups!.PRE.length;
           const lineEnd = lineStartSince + line[0].length;
 
           if (lineProcessed.find(range => range[0] <= lineStart && lineEnd <= range[1])) {
@@ -222,7 +222,7 @@ export class CommonHandler extends Handler {
           const endPos = editor.document.positionAt(lineEnd);
           const range = new vscode.Range(startPos, endPos);
 
-          const tagName = line[5].toLowerCase();
+          const tagName = line.groups!.TAG.toLowerCase();
 
           const opt = tagRanges.get(tagName) || [];
           opt.push(range);
