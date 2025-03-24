@@ -305,7 +305,7 @@ export class CommonHandler extends Handler {
             const tagName = m1.groups!.TAG.toLowerCase();
             const m1Space = m1.groups!.SPACE1 || m1.groups!.SPACE2 || '';
 
-            const m2Exp = /(?<PRE>(?:\n|^)(?<SPACE>[ \t]*))(?<CONTENT>.*)/gm;
+            const m2Exp = /(?<PRE>(?:\r?\n|^)(?<SPACE>[ \t]*))(?<CONTENT>.*)/gm;
 
             // Find decoration range
             let m2: RegExpExecArray | null;

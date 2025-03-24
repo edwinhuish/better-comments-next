@@ -16,6 +16,6 @@ export function escape(input: string): string {
 }
 
 export const SP = '[ \\t]' as const;
-export const BR = '\\r?\\n' as const;
-export const SP_BR = '[ \\t\\n]' as const;
+export const BR = '(?:\\r?\\n)' as const;
+export const SP_BR = '[ \\t\\r\\n]' as const;
 export const ANY = '[\\s\\S]' as const;
