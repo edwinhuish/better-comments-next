@@ -108,6 +108,37 @@ Default setting as below:
       "backgroundColor": "transparent",
       "bold": false,
       "italic": false
+    },
+    {
+      "tag": "bug",
+      "color": "#E84393",
+      "strikethrough": false,
+      "underline": true,
+      "backgroundColor": "#FDA7DF20",
+      "bold": true,
+      "italic": false
+    },
+    {
+      "tag": "hack",
+      "color": "#9B59B6",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "#9B59B620",
+      "bold": true,
+      "italic": true
+    },
+    {
+      "tag": [
+        "fixme",
+        "fix-me",
+        "fix"
+      ],
+      "color": "#FD79A8",
+      "strikethrough": false,
+      "underline": false,
+      "backgroundColor": "#FD79A820",
+      "bold": true,
+      "italic": false
     }
   ]
 }
