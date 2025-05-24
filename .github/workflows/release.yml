@@ -96,7 +96,6 @@ jobs:
       - name: 打包扩展
         run: npx vsce package
 
-
       - name: 获取当前和上一个标签
         id: get_tags
         run: |
@@ -217,7 +216,7 @@ jobs:
         uses: ncipollo/release-action@v1.14.0
         with:
           bodyFile: changelog.md
-          artifacts: "*.vsix"
+          artifacts: '*.vsix'
           tag: ${{ steps.get_tags.outputs.current_tag }}
 
       - name: 发布扩展到 VSCODE
