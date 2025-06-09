@@ -318,18 +318,25 @@ export class CommonHandler extends Handler {
     for (const slice of slices) {
       this.verifyTaskID(params.taskID);
 
-      const pre = escape(slice.marks[0].slice(-1)) || ' ';
-      const suf = escape(slice.marks[1].slice(0, 1)) || ' ';
-      const trimExp = new RegExp(`^(${pre}*)(${ANY}*)${suf}*$`, 'i');
-      const trimed = trimExp.exec(slice.content);
-      if (!trimed) {
-        continue;
+      let content = slice.content;
+      let contentStart = slice.start + slice.marks[0].length;
+
+      const pre = escape(slice.marks[0].slice(-1));
+      const suf = escape(slice.marks[1].slice(0, 1));
+      if (!!pre && !!suf) {
+        const trimExp = new RegExp(`^(${pre}*)(${ANY}*)${suf}*$`, 'i');
+        const trimed = trimExp.exec(slice.content);
+        if (!trimed) {
+          continue;
+        }
+
+        if (!trimed[2].length) {
+          continue;
+        }
+
+        content = trimed[2];
+        contentStart += trimed[1].length;
       }
-      if (!trimed[2].length) {
-        continue;
-      }
-      const content = trimed[2];
-      const contentStart = slice.start + slice.marks[0].length + trimed[1].length;
 
       const lineProcessed: [number, number][] = [];
 

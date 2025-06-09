@@ -9,10 +9,10 @@ export class PlainTextHandler extends CommonHandler {
     }
 
     return [{
-      start: params.offset,
+      start: params.offset - 1,
       end: params.offset + params.text.length,
-      comment: params.text,
-      content: params.text,
+      comment: `\n${params.text}`,
+      content: `\n${params.text}`,
       marks: ['', ''],
     }];
   }
