@@ -126,7 +126,12 @@ export class Language {
    */
   public setAvailableComments(comments: AvailableComments) {
     this.availableComments = comments;
-    log.info(`(${this.id}) set available comments, line: ${comments.lineComments.join('、')}; block: ${comments.blockComments.map(c => `${c[0]} ${c[1]}`).join('、')};`);
+    if (comments.lineComments.length) {
+      log.info(`(${this.id}) LINE COMMENTS: ${comments.lineComments.join('、')}`);
+    }
+    if (comments.blockComments.length) {
+      log.info(`(${this.id}) BLOCK COMMENTS: ${comments.blockComments.map(c => `${c[0]} ${c[1]}`).join('、')}`);
+    }
     return this;
   }
 

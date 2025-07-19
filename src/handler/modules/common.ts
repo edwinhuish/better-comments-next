@@ -1,6 +1,5 @@
 import * as configuration from '@/configuration';
 import * as definition from '@/definition';
-import * as log from '@/log';
 import { ANY, BR, escape, SP, SP_BR } from '@/utils/regex';
 import { CancelError, generateUUID } from '@/utils/utils';
 import * as vscode from 'vscode';
@@ -44,7 +43,6 @@ export abstract class Handler {
 
   constructor(languageId: string) {
     this.languageId = languageId;
-    log.info(`(${languageId}) decoration handler created`);
   }
 
   protected abstract updateDecorations(params: UpdateParams): Promise<void>;
