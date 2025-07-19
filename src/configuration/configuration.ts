@@ -48,6 +48,7 @@ interface Configuration {
   languages: Language[];
   updateDelay: number;
   preloadLines: number;
+  fullHighlight: boolean; // Highlight entire line of line comment
 }
 
 export interface ConfigurationFlatten extends Configuration {
@@ -110,6 +111,7 @@ export function getConfigurationFlatten() {
     languages: orig.languages,
     updateDelay: orig.updateDelay,
     preloadLines: orig.preloadLines,
+    fullHighlight: orig.fullHighlight,
   };
 
   return configFlatten;

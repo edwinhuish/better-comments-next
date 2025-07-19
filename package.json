@@ -429,6 +429,11 @@
                     "type": "number",
                     "description": "Preload lines outside the visible window for better performance, default 100",
                     "default": 100
+                },
+                "better-comments.fullHighlight": {
+                    "type": "boolean",
+                    "description": "Highlight entire line of line comment",
+                    "default": false
                 }
             }
         }

@@ -182,6 +182,7 @@ export class CommonHandler extends Handler {
 
     const multilineTags = configuration.getMultilineTagsEscaped();
     const lineTags = configuration.getLineTagsEscaped();
+    const fullHighlight = configuration.getConfigurationFlatten().fullHighlight;
 
     for (const slice of slices) {
       this.verifyTaskID(params.taskID);
@@ -221,7 +222,9 @@ export class CommonHandler extends Handler {
             }
 
             const m2StartSince = m1Start + m2.index;
-            const m2Start = m2StartSince + m2.groups!.PRE.length + m2.groups!.MARK.length;
+            const m2Start = fullHighlight
+              ? m2StartSince + m2.groups!.PRE.length
+              : m2StartSince + m2.groups!.PRE.length + m2.groups!.MARK.length;
             const m2End = m2StartSince + m2[0].length;
             // store processed range
             lineProcessed.push([m2Start, m2End]);
@@ -245,7 +248,9 @@ export class CommonHandler extends Handler {
           this.verifyTaskID(params.taskID);
 
           const lineStartSince = slice.start + line.index;
-          const lineStart = lineStartSince + line.groups!.PRE.length;
+          const lineStart = fullHighlight
+            ? lineStartSince
+            : lineStartSince + line.groups!.PRE.length;
           const lineEnd = lineStartSince + line[0].length;
 
           if (lineProcessed.find(([pStart, pEnd]) => pStart <= lineStart && lineEnd <= pEnd)) {

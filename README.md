@@ -39,6 +39,8 @@ Default setting as below:
   "better-comments.preloadLines": 100,
   // Enable/disable hightlight plain text.
   "better-comments.highlightPlainText": false,
+  // Highlight entire line of line comment
+  "better-comments.fullHighlight": false,
   // Custom languages comments configuration
   "better-comments.languages": [
     {
