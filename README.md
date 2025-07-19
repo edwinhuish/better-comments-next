@@ -43,12 +43,12 @@ Default setting as below:
   "better-comments.fullHighlight": false,
   // Custom languages comments configuration
   "better-comments.languages": [
-    {
-      "id": "proto3", // (Required) Language ID
-      "comments": { "lineComment": "//", "blockComment": ["/*", "*/"] }, // (Optional) Comment Syntax
-      "embeddedLanguages": [], // (Optional) Embedded Languages. Example for HTML: ["css", "javascript"]
-      "useDocComment": false // (Optional) Use Doc Comments
-    }
+    // {
+    //   "id": "proto3", // (Required) Language ID
+    //   "comments": { "lineComment": "//", "blockComment": ["/*", "*/"] }, // (Optional) Comment Syntax
+    //   "embeddedLanguages": [], // (Optional) Embedded Languages. Example for HTML: ["css", "javascript"]
+    //   "useDocComment": false // (Optional) Use Doc Comments
+    // }
   ],
   // Overwrite the specified tag styles of `"better-comments.tags"` for light themes.
   "better-comments.tagsLight": [],
