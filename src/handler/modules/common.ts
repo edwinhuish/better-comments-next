@@ -210,11 +210,10 @@ export class CommonHandler extends Handler {
           while ((m2 = m2Exp.exec(m1[0]))) {
             this.verifyTaskID(params.taskID);
 
-            if (m2.index >= m1[0].length) {
-              break; // index 已经移动到最后的位置，跳出循环
-            }
-
             if (!m2.groups!.CONTENT) {
+              if (m2.index >= m1[0].length) {
+                break; // index 已经移动到最后的位置，跳出循环
+              }
               continue; // 空行
             }
 
@@ -372,11 +371,11 @@ export class CommonHandler extends Handler {
           while ((m2 = m2Exp.exec(m1[0]))) {
             this.verifyTaskID(params.taskID);
 
-            if (m2.index >= m1[0].length) {
-              break; // index 已经移动到最后的位置，跳出循环
-            }
-
             if (!m2.groups!.CONTENT) {
+              if (m2.index >= m1[0].length) {
+                break; // index 已经移动到最后的位置，跳出循环
+              }
+
               continue; // 空行，继续下次匹配
             }
 
@@ -514,11 +513,11 @@ export class CommonHandler extends Handler {
           while ((m2 = m2Exp.exec(m1.groups!.TAG + m1.groups!.CONTENT))) {
             this.verifyTaskID(params.taskID);
 
-            if (m2.index >= m1[0].length) {
-              break; // index 已经移动到最后的位置，跳出循环
-            }
-
             if (!m2.groups!.CONTENT) {
+              if (m2.index >= m1[0].length) {
+                break; // index 已经移动到最后的位置，跳出循环
+              }
+
               continue; // 空行
             }
 
