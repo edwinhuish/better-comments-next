@@ -210,6 +210,10 @@ export class CommonHandler extends Handler {
           while ((m2 = m2Exp.exec(m1[0]))) {
             this.verifyTaskID(params.taskID);
 
+            if (m2.index >= m1[0].length) {
+              break; // index 已经移动到最后的位置，跳出循环
+            }
+
             if (!m2.groups!.CONTENT) {
               continue; // 空行
             }
@@ -361,20 +365,24 @@ export class CommonHandler extends Handler {
           const tagName = m1.groups!.TAG.toLowerCase();
           const m1Space = m1.groups!.SPACE1 || m1.groups!.SPACE2 || '';
 
-          const m2Exp = /(?<PRE>(?:\r?\n|^)(?<SPACE>[ \t]*))(?<CONTENT>.*)/gm;
+          const m2Exp = /(?<PRE>(?:\r?\n|^)(?<SPACE>[ \t]*))(?<CONTENT>.*)/g;
 
           // Find decoration range
           let m2: RegExpExecArray | null;
           while ((m2 = m2Exp.exec(m1[0]))) {
             this.verifyTaskID(params.taskID);
 
+            if (m2.index >= m1[0].length) {
+              break; // index 已经移动到最后的位置，跳出循环
+            }
+
             if (!m2.groups!.CONTENT) {
-              continue; // 空行
+              continue; // 空行，继续下次匹配
             }
 
             const m2Space = m2.groups!.SPACE || '';
             if (m2.index !== 0 && m2Space.length <= m1Space.length) {
-              m1Exp.lastIndex = m1.index + m2.index - 1;
+              m1Exp.lastIndex = m1.index + m2.index - 1; // 行的缩进比tag的缩进少，跳出遍历，并修改 m1 的 lastIndex
               break;
             }
 
@@ -505,6 +513,10 @@ export class CommonHandler extends Handler {
           let m2: RegExpExecArray | null;
           while ((m2 = m2Exp.exec(m1.groups!.TAG + m1.groups!.CONTENT))) {
             this.verifyTaskID(params.taskID);
+
+            if (m2.index >= m1[0].length) {
+              break; // index 已经移动到最后的位置，跳出循环
+            }
 
             if (!m2.groups!.CONTENT) {
               continue; // 空行
