@@ -1,4 +1,5 @@
 import * as log from '@/log';
+import { isString } from '@/utils/str';
 import { parse as json5Parse } from 'json5';
 import * as vscode from 'vscode';
 
@@ -80,8 +81,16 @@ export class Language {
     if (!this.comments) {
       const config = await this.getConfiguration();
 
+      this.comments = {};
+
       if (config && config.comments) {
-        this.comments = config.comments;
+        const { lineComment, blockComment } = config.comments;
+        if (isString(lineComment)) {
+          this.comments.lineComment = lineComment;
+        }
+        if (Array.isArray(blockComment) && blockComment.length === 2 && isString(blockComment[0]) && isString(blockComment[1])) {
+          this.comments.blockComment = blockComment;
+        }
       }
       else {
         this.comments = getDefaultComments(this.id);
