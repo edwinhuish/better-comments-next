@@ -10,13 +10,13 @@ Forked from [aaron-bond/better-comments v3.0.2](https://github.com/aaron-bond/be
 - [x] Embedded languages supported. Like SFC of Vue, markdown, HTML, etc. See [#388](https://github.com/aaron-bond/better-comments/issues/388#issuecomment-1527426462)
 - [x] Remote workspace supported. See [#507](https://github.com/aaron-bond/better-comments/issues/507)
 - [x] Web editor supported.
-- [x] Theme switchable. Defferent tag config for light and dark themes. See [#506](https://github.com/aaron-bond/better-comments/issues/506)
+- [x] Theme switchable. Different tag config for light and dark themes. See [#506](https://github.com/aaron-bond/better-comments/issues/506)
 - [x] Allow multiple tags per item. See [#33](https://github.com/aaron-bond/better-comments/issues/33)
 - [x] Multi-line comment supported. See [#7](https://github.com/edwinhuish/better-comments-next/issues/7#issuecomment-2522526938)
 
-## Decription
+## Description
 The Better Comments extension will help you create more human-friendly comments in your code.
-With this extension, you will be able to categorise your annotations into:
+With this extension, you will be able to categorize your annotations into:
 
 * Alerts
 * Queries
@@ -37,7 +37,7 @@ Default setting as below:
   "better-comments.updateDelay": 0,
   // Preload lines outside the visible window for better performance, default 100
   "better-comments.preloadLines": 100,
-  // Enable/disable hightlight plain text.
+  // Enable/disable highlight plain text.
   "better-comments.highlightPlainText": false,
   // Highlight entire line of line comment
   "better-comments.fullHighlight": false,
