@@ -15,7 +15,7 @@ Forked from [aaron-bond/better-comments v3.0.2](https://github.com/aaron-bond/be
 - [x] Multi-line comment supported. See [#7](https://github.com/edwinhuish/better-comments-next/issues/7#issuecomment-2522526938)
 
 ## Description
-The Better Comments extension will help you create more human-friendly comments in your code.
+The Better Comments Next extension will help you create more human-friendly comments in your code.
 With this extension, you will be able to categorize your annotations into:
 
 * Alerts
