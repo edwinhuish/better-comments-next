@@ -434,6 +434,11 @@
                     "type": "boolean",
                     "description": "Highlight entire line of line comment",
                     "default": false
+                },
+                "better-comments.onlyHighlightTag": {
+                    "type": "boolean",
+                    "description": "Only highlight tag",
+                    "default": false
                 }
             }
         }
@@ -448,16 +453,18 @@
         "watch-web": "tsup --config=build/tsup.web.js --watch",
         "lint": "npm run lint:type && npm run lint:eslint",
         "lint:type": "tsc -p . --noEmit",
-        "lint:eslint": "eslint --cache --max-warnings 0 . --fix"
+        "lint:eslint": "eslint --cache . --fix"
     },
     "dependencies": {
+        "@vscode/vsce": "^3.6.0",
         "json5": "^2.2.3"
     },
     "devDependencies": {
         "@antfu/eslint-config": "^3.11.2",
         "@types/node": "^17.0.23",
         "@types/vscode": "^1.65.0",
-        "eslint": "^9.16.0",
+        "esbuild": "^0.25.8",
+        "eslint": "^9.33.0",
         "husky": "^8.0.3",
         "lint-staged": "^15.1.0",
         "path-browserify": "^1.0.1",

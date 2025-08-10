@@ -1,5 +1,5 @@
-import * as configuration from '@/configuration';
 import * as vscode from 'vscode';
+import * as configuration from '@/configuration';
 import * as handler from './handler';
 
 export * from './event';

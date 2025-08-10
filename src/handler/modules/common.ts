@@ -1,8 +1,8 @@
+import * as vscode from 'vscode';
 import * as configuration from '@/configuration';
 import * as definition from '@/definition';
 import { ANY, BR, escape, SP, SP_BR } from '@/utils/regex';
 import { CancelError, generateUUID } from '@/utils/utils';
-import * as vscode from 'vscode';
 
 export interface UpdateParams {
   editor: vscode.TextEditor;
@@ -181,6 +181,7 @@ export class CommonHandler extends Handler {
     const multilineTags = configuration.getMultilineTagsEscaped();
     const lineTags = configuration.getLineTagsEscaped();
     const fullHighlight = configuration.getConfigurationFlatten().fullHighlight;
+    const onlyHighlightTag = configuration.getConfigurationFlatten().onlyHighlightTag;
 
     for (const slice of slices) {
       this.verifyTaskID(params.taskID);
@@ -191,7 +192,12 @@ export class CommonHandler extends Handler {
       if (multilineTags.length) {
         const m1Exp = (() => {
           const tag = multilineTags.join('|');
-          return new RegExp(`(?<PRE>${SP}*${mark}${SP})(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
+          if (!onlyHighlightTag) {
+            return new RegExp(`(?<PRE>${SP}*${mark}${SP})(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
+          }
+          else {
+            return new RegExp(`(?<PRE>${SP}*${mark}${SP})(?<TAG>${tag})(?<CONTENT>)`, 'gi');
+          }
         })();
 
         // Find the matched multiline
@@ -203,7 +209,13 @@ export class CommonHandler extends Handler {
           const tagName = m1.groups!.TAG.toLowerCase();
 
           // exec with remember last reg index, reset m2Exp avoid reg cache
-          const m2Exp = new RegExp(`(?<PRE>^|${SP}*)(?<MARK>${mark})(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gim');
+          let m2Exp;
+          if (!onlyHighlightTag) {
+            m2Exp = new RegExp(`(?<PRE>^|${SP}*)(?<MARK>${mark})(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gim');
+          }
+          else {
+            m2Exp = new RegExp(`(?<PRE>^|${SP}*)(?<MARK>${mark})(?<SPACE>${SP}*)(?<CONTENT>)`, 'gim');
+          }
 
           // Find decoration range
           let m2: RegExpExecArray | null;
@@ -242,8 +254,13 @@ export class CommonHandler extends Handler {
       }
 
       if (lineTags.length) {
-        const lineExp = new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP})(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim');
-
+        let lineExp;
+        if (!onlyHighlightTag) {
+          lineExp = new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP})(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim');
+        }
+        else {
+          lineExp = new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP})(?<TAG>${lineTags.join('|')})(?<CONTENT>)`, 'gim');
+        }
         let line: RegExpExecArray | null | undefined;
         while ((line = lineExp.exec(slice.comment))) {
           this.verifyTaskID(params.taskID);
@@ -276,6 +293,7 @@ export class CommonHandler extends Handler {
   }
 
   protected async pickBlockCommentSlices(params: PickParams): Promise<Array<BlockCommentSlice>> {
+    const onlyHighlightTag = configuration.getConfigurationFlatten().onlyHighlightTag;
     this.verifyTaskID(params.taskID);
 
     const { blockComments } = await definition.getAvailableComments(params.editor.document.languageId);
@@ -290,8 +308,13 @@ export class CommonHandler extends Handler {
 
       const markStart = escape(marks[0]);
       const markEnd = escape(marks[1]);
-      const exp = new RegExp(`(?<PRE>(?:^|${BR})\\s*)(?<START>${markStart})(?<CONTENT>${ANY}*?)(?<END>${markEnd})`, 'g');
-
+      let exp;
+      if (!onlyHighlightTag) {
+        exp = new RegExp(`(?<PRE>(?:^|${BR})\\s*)(?<START>${markStart})(?<CONTENT>${ANY}*?)(?<END>${markEnd})`, 'g');
+      }
+      else {
+        exp = new RegExp(`(?<PRE>(?:^|${BR})\\s*)(?<START>${markStart})(?<CONTENT>)(?<END>${markEnd})`, 'g');
+      }
       let block: RegExpExecArray | null;
       while ((block = exp.exec(params.text))) {
         this.verifyTaskID(params.taskID);

@@ -1,6 +1,6 @@
 import type { WorkspaceConfiguration } from 'vscode';
-import { escape } from '@/utils/regex';
 import * as vscode from 'vscode';
+import { escape } from '@/utils/regex';
 
 export interface Tag {
   tag: string | string[];
@@ -49,6 +49,7 @@ interface Configuration {
   updateDelay: number;
   preloadLines: number;
   fullHighlight: boolean; // Highlight entire line of line comment
+  onlyHighlightTag: boolean;
 }
 
 export interface ConfigurationFlatten extends Configuration {
@@ -112,6 +113,7 @@ export function getConfigurationFlatten() {
     updateDelay: orig.updateDelay,
     preloadLines: orig.preloadLines,
     fullHighlight: orig.fullHighlight,
+    onlyHighlightTag: orig.onlyHighlightTag,
   };
 
   return configFlatten;

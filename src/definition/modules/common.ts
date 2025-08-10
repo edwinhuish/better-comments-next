@@ -1,7 +1,7 @@
-import * as log from '@/log';
-import { isString } from '@/utils/str';
 import { parse as json5Parse } from 'json5';
 import * as vscode from 'vscode';
+import * as log from '@/log';
+import { isString } from '@/utils/str';
 
 export interface AvailableComments {
   lineComments: string[];
