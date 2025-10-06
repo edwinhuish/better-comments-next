@@ -19,3 +19,4 @@ export const SP = '[ \\t]' as const;
 export const BR = '(?:\\r?\\n)' as const;
 export const SP_BR = '[ \\t\\r\\n]' as const;
 export const ANY = '[\\s\\S]' as const;
+export const TAG_SUFFIX = '[ \\t:：]' as const;

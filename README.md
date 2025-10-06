@@ -41,6 +41,8 @@ Default setting as below:
   "better-comments.highlightPlainText": false,
   // Highlight entire line of line comment
   "better-comments.fullHighlight": false,
+  // Strict mode of tag matching. Default true
+  "better-comments.strict": true,
   // Custom languages comments configuration
   "better-comments.languages": [
     // {

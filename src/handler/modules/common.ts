@@ -1,6 +1,6 @@
 import * as configuration from '@/configuration';
 import * as definition from '@/definition';
-import { ANY, BR, escape, SP, SP_BR } from '@/utils/regex';
+import { ANY, BR, escape, SP, SP_BR, TAG_SUFFIX } from '@/utils/regex';
 import { CancelError, generateUUID } from '@/utils/utils';
 import * as vscode from 'vscode';
 
@@ -180,7 +180,7 @@ export class CommonHandler extends Handler {
 
     const multilineTags = configuration.getMultilineTagsEscaped();
     const lineTags = configuration.getLineTagsEscaped();
-    const fullHighlight = configuration.getConfigurationFlatten().fullHighlight;
+    const { fullHighlight, strict } = configuration.getConfigurationFlatten();
 
     for (const slice of slices) {
       this.verifyTaskID(params.taskID);
@@ -191,7 +191,9 @@ export class CommonHandler extends Handler {
       if (multilineTags.length) {
         const m1Exp = (() => {
           const tag = multilineTags.join('|');
-          return new RegExp(`(?<PRE>${SP}*${mark}${SP})(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
+          return strict
+            ? new RegExp(`(?<PRE>${SP}*${mark}${SP})(?<TAG>${tag})(?<CONTENT>${TAG_SUFFIX}${ANY}*)`, 'gi')
+            : new RegExp(`(?<PRE>${SP}*${mark}${SP}?)(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
         })();
 
         // Find the matched multiline
@@ -242,7 +244,9 @@ export class CommonHandler extends Handler {
       }
 
       if (lineTags.length) {
-        const lineExp = new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP})(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim');
+        const lineExp = strict
+          ? new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP})(?<TAG>${lineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}.*)`, 'gim')
+          : new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP}?)(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim');
 
         let line: RegExpExecArray | null | undefined;
         while ((line = lineExp.exec(slice.comment))) {
@@ -321,6 +325,8 @@ export class CommonHandler extends Handler {
 
   private async pickBlockCommentDecorationOptions(params: PickParams): Promise<void> {
     const slices = await this.pickBlockCommentSlices(params);
+    const multilineTags = configuration.getMultilineTagsEscaped();
+    const { strict } = configuration.getConfigurationFlatten();
     for (const slice of slices) {
       this.verifyTaskID(params.taskID);
 
@@ -346,13 +352,13 @@ export class CommonHandler extends Handler {
 
       const lineProcessed: [number, number][] = [];
 
-      const multilineTags = configuration.getMultilineTagsEscaped();
       if (multilineTags.length) {
         // exec with remember last reg index, reset m2Exp avoid reg cache
         const m1Exp = (() => {
           const tag = multilineTags.join('|');
-          const pre = `^(?<SPACE1>${SP})|${BR}(?<SPACE2>${SP}*)`;
-          return new RegExp(`(?<PRE>${pre})(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
+          return strict
+            ? new RegExp(`(?<PRE>^(?<SPACE1>${SP})|${BR}(?<SPACE2>${SP}*))(?<TAG>${tag})(?<CONTENT>${TAG_SUFFIX}${ANY}*)`, 'gi')
+            : new RegExp(`(?<PRE>^(?<SPACE1>${SP}?)|${BR}(?<SPACE2>${SP}*))(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
         })();
 
         // Find the matched multiline
@@ -404,7 +410,9 @@ export class CommonHandler extends Handler {
 
       const lineTags = configuration.getLineTagsEscaped();
       if (lineTags.length) {
-        const lineExp = new RegExp(`(?<PRE>^${SP}|${BR}${SP}*)(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim');
+        const lineExp = strict
+          ? new RegExp(`(?<PRE>^${SP}|${BR}${SP}*)(?<TAG>${lineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}.*)`, 'gim')
+          : new RegExp(`(?<PRE>^${SP}?|${BR}${SP}*)(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim');
         // Find the matched line
         let line: RegExpExecArray | null;
         while ((line = lineExp.exec(content))) {
@@ -486,16 +494,19 @@ export class CommonHandler extends Handler {
   private async pickDocCommentDecorationOptions(params: PickParams): Promise<void> {
     const slices = await this.pickDocCommentSlices(params);
     const lineProcessed: [number, number][] = [];
+    const multilineTags = configuration.getMultilineTagsEscaped();
+    const lineTags = configuration.getLineTagsEscaped();
+    const { strict } = configuration.getConfigurationFlatten();
     for (const slice of slices) {
       this.verifyTaskID(params.taskID);
       const pre = escape(slice.prefix);
 
-      const multilineTags = configuration.getMultilineTagsEscaped();
       if (multilineTags.length) {
         const m1Exp = (() => {
           const tag = multilineTags.join('|');
-          const preTag = `^${SP}|${SP}*${pre}${SP}`;
-          return new RegExp(`(?<PRE>${preTag})(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
+          return strict
+            ? new RegExp(`(?<PRE>^${SP}|${SP}*${pre}${SP})(?<TAG>${tag})(?<CONTENT>${TAG_SUFFIX}${ANY}*)`, 'gi')
+            : new RegExp(`(?<PRE>^${SP}?|${SP}*${pre}${SP}?)(?<TAG>${tag})(?<CONTENT>${ANY}*)`, 'gi');
         })();
         // Find the matched multiline
         let m1: RegExpExecArray | null;
@@ -544,11 +555,12 @@ export class CommonHandler extends Handler {
         }
       }
 
-      const lineTags = configuration.getLineTagsEscaped();
       if (lineTags.length) {
         const tags = lineTags.join('|');
         const linePreTag = `(?:(?:${SP}*${BR}${SP}*${pre})|(?:${SP}*${pre}))`;
-        const lineExp = new RegExp(`(?<PRE>${linePreTag}${SP})(?<TAG>${tags})(?<CONTENT>.*)`, 'gim');
+        const lineExp = strict
+          ? new RegExp(`(?<PRE>${linePreTag}${SP})(?<TAG>${tags})(?<CONTENT>${TAG_SUFFIX}.*)`, 'gim')
+          : new RegExp(`(?<PRE>${linePreTag}${SP}?)(?<TAG>${tags})(?<CONTENT>.*)`, 'gim');
 
         // Find the matched line
         let line: RegExpExecArray | null;
