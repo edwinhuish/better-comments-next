@@ -148,6 +148,16 @@ Default setting as below:
 }
 ```
 
+### About `strict` mode
+
+**"better-comments.strict": true**
+
+![Config strict: true](static/strict_true.png)
+
+**"better-comments.strict": false**
+
+![Config strict: false](static/strict_false.png)
+
 ## Supported Languages
 
 **All languages supported:**
