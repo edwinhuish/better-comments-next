@@ -439,6 +439,49 @@
                     "type": "boolean",
                     "description": "Strict mode of tag. default true.",
                     "default": true
+                },
+                "better-comments.plainComment": {
+                    "type": "object",
+                    "description": "Style for plain comments without tags",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enable plain comment styling"
+                        },
+                        "color": {
+                            "type": "string",
+                            "description": "Font color, eg: #6A9955"
+                        },
+                        "strikethrough": {
+                            "type": "boolean",
+                            "description": "Enable text strikethrough."
+                        },
+                        "underline": {
+                            "type": "boolean",
+                            "description": "Enable text underline."
+                        },
+                        "backgroundColor": {
+                            "type": "string",
+                            "description": "Background color, eg: transparent"
+                        },
+                        "bold": {
+                            "type": "boolean",
+                            "description": "Set text font style to bold."
+                        },
+                        "italic": {
+                            "type": "boolean",
+                            "description": "Set text font style to italic."
+                        }
+                    },
+                    "default": {
+                        "enabled": false,
+                        "color": "#6A9955",
+                        "strikethrough": false,
+                        "underline": false,
+                        "backgroundColor": "transparent",
+                        "bold": false,
+                        "italic": false
+                    }
                 }
             }
         }

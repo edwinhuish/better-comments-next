@@ -14,6 +14,7 @@ export interface PickParams {
   text: string;
   offset: number;
   tagRanges: Map<string, vscode.Range[]>;
+  plainRanges: vscode.Range[];
   processed: [number, number][];
 }
 
@@ -64,7 +65,7 @@ export abstract class Handler {
     }, timeout);
   }
 
-  protected setDecorations(editor: vscode.TextEditor, tagRanges: Map<string, vscode.Range[]>) {
+  protected setDecorations(editor: vscode.TextEditor, tagRanges: Map<string, vscode.Range[]>, plainRanges: vscode.Range[]) {
     configuration.getTagDecorationTypes().forEach((td, tag) => {
       const ranges = tagRanges.get(tag) || [];
 
@@ -82,6 +83,24 @@ export abstract class Handler {
         visibleEditor.setDecorations(td, ranges);
       }
     });
+
+    // Set plain comment decorations
+    const plainDecorationType = configuration.getPlainCommentDecorationType();
+    if (plainDecorationType) {
+      editor.setDecorations(plainDecorationType, plainRanges);
+      const documentUri = editor.document.uri.toString();
+      for (const visibleEditor of vscode.window.visibleTextEditors) {
+        if (visibleEditor === editor) {
+          continue;
+        }
+
+        if (visibleEditor.document.uri.toString() !== documentUri) {
+          continue;
+        }
+
+        visibleEditor.setDecorations(plainDecorationType, plainRanges);
+      }
+    }
   }
 
   // verify taskID is current task
@@ -97,6 +116,7 @@ export class CommonHandler extends Handler {
     const taskID = this.taskID = generateUUID();
     const processed: [number, number][] = [];
     const tagRanges = new Map<string, vscode.Range[]>();
+    const plainRanges: vscode.Range[] = [];
 
     const { preloadLines, updateDelay } = configuration.getConfigurationFlatten();
 
@@ -113,25 +133,27 @@ export class CommonHandler extends Handler {
       const text = params.editor.document.getText(range);
       const offset = params.editor.document.offsetAt(range.start);
 
-      const pickParams: PickParams = { editor: params.editor, text, offset, tagRanges, taskID, processed };
+      const pickParams: PickParams = { editor: params.editor, text, offset, tagRanges, plainRanges, taskID, processed };
 
       await this.pickDocCommentDecorationOptions(pickParams);
       await this.pickBlockCommentDecorationOptions(pickParams);
       await this.pickLineCommentDecorationOptions(pickParams);
+      await this.pickPlainCommentDecorationOptions(pickParams);
     }
 
-    this.setDecorations(params.editor, tagRanges);
+    this.setDecorations(params.editor, tagRanges, plainRanges);
 
     setTimeout(async () => {
       // # update for full text
       this.verifyTaskID(taskID);
       const text = params.editor.document.getText();
-      const pickParams: PickParams = { editor: params.editor, text, offset: 0, tagRanges, taskID, processed };
+      const pickParams: PickParams = { editor: params.editor, text, offset: 0, tagRanges, plainRanges, taskID, processed };
       await this.pickDocCommentDecorationOptions(pickParams);
       await this.pickBlockCommentDecorationOptions(pickParams);
       await this.pickLineCommentDecorationOptions(pickParams);
+      await this.pickPlainCommentDecorationOptions(pickParams);
 
-      this.setDecorations(params.editor, tagRanges);
+      this.setDecorations(params.editor, tagRanges, plainRanges);
     }, updateDelay);
   }
 
@@ -589,6 +611,99 @@ export class CommonHandler extends Handler {
           params.tagRanges.set(tagName, opt);
         }
       }
+    }
+  }
+
+  private async pickPlainCommentDecorationOptions(params: PickParams): Promise<void> {
+    const config = configuration.getConfigurationFlatten();
+
+    // Check if plain comment styling is enabled
+    if (!config.plainComment.enabled) {
+      return;
+    }
+
+    const allTags = configuration.getAllTagsEscaped();
+    if (!allTags.length) {
+      return;
+    }
+
+    // Get all comment slices
+    const lineSlices = await this.pickLineCommentSlices(params);
+    const blockSlices = await this.pickBlockCommentSlices(params);
+    const docSlices = await this.pickDocCommentSlices(params);
+
+    this.verifyTaskID(params.taskID);
+
+    const { strict } = config;
+
+    // Process line comments
+    for (const slice of lineSlices) {
+      this.verifyTaskID(params.taskID);
+
+      const mark = escape(slice.mark);
+
+      // Check if this comment has any tags
+      const tagPattern = allTags.join('|');
+      const hasTagExp = strict
+        ? new RegExp(`${SP}*${mark}${SP}(?:${tagPattern})`, 'i')
+        : new RegExp(`${SP}*${mark}${SP}?(?:${tagPattern})`, 'i');
+
+      if (hasTagExp.test(slice.comment)) {
+        // Skip if comment has tags
+        continue;
+      }
+
+      // This is a plain comment, add decoration
+      const startPos = params.editor.document.positionAt(slice.start);
+      const endPos = params.editor.document.positionAt(slice.end);
+      const range = new vscode.Range(startPos, endPos);
+
+      params.plainRanges.push(range);
+    }
+
+    // Process block comments
+    for (const slice of blockSlices) {
+      this.verifyTaskID(params.taskID);
+
+      const tagPattern = allTags.join('|');
+      const hasTagExp = strict
+        ? new RegExp(`(?:^${SP}|${BR}${SP}*)(?:${tagPattern})`, 'i')
+        : new RegExp(`(?:^${SP}?|${BR}${SP}*)(?:${tagPattern})`, 'i');
+
+      if (hasTagExp.test(slice.content)) {
+        // Skip if comment has tags
+        continue;
+      }
+
+      // This is a plain comment, add decoration
+      const startPos = params.editor.document.positionAt(slice.start);
+      const endPos = params.editor.document.positionAt(slice.end);
+      const range = new vscode.Range(startPos, endPos);
+
+      params.plainRanges.push(range);
+    }
+
+    // Process doc comments
+    for (const slice of docSlices) {
+      this.verifyTaskID(params.taskID);
+
+      const pre = escape(slice.prefix);
+      const tagPattern = allTags.join('|');
+      const hasTagExp = strict
+        ? new RegExp(`(?:^${SP}|${SP}*${pre}${SP})(?:${tagPattern})`, 'i')
+        : new RegExp(`(?:^${SP}?|${SP}*${pre}${SP}?)(?:${tagPattern})`, 'i');
+
+      if (hasTagExp.test(slice.content)) {
+        // Skip if comment has tags
+        continue;
+      }
+
+      // This is a plain comment, add decoration
+      const startPos = params.editor.document.positionAt(slice.start);
+      const endPos = params.editor.document.positionAt(slice.end);
+      const range = new vscode.Range(startPos, endPos);
+
+      params.plainRanges.push(range);
     }
   }
 }
