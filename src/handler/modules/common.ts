@@ -205,7 +205,7 @@ export class CommonHandler extends Handler {
           const tagName = m1.groups!.TAG.toLowerCase();
 
           // exec with remember last reg index, reset m2Exp avoid reg cache
-          const m2Exp = new RegExp(`(?<PRE>^|${SP}*)(?<MARK>${mark})(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gim');
+          const m2Exp = new RegExp(`(?<PRE>^|\r?\n|${SP}*)(?<MARK>${mark})(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gim');
 
           // Find decoration range
           let m2: RegExpExecArray | null;
@@ -517,7 +517,7 @@ export class CommonHandler extends Handler {
           const tagName = m1.groups!.TAG.toLowerCase();
 
           // exec with remember last reg index, reset m2Exp avoid reg cache
-          const m2Exp = new RegExp(`(?<PRE>${SP}*${pre}|^)(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gim');
+          const m2Exp = new RegExp(`(?<PRE>${SP}*${pre}|^|\r?\n)(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gim');
 
           // Find decoration range
           let m2: RegExpExecArray | null;
