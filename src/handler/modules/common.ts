@@ -205,7 +205,7 @@ export class CommonHandler extends Handler {
           const tagName = m1.groups!.TAG.toLowerCase();
 
           // exec with remember last reg index, reset m2Exp avoid reg cache
-          const m2Exp = new RegExp(`(?<PRE>^|\r?\n|${SP}*)(?<MARK>${mark})(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gim');
+          const m2Exp = new RegExp(`(?<PRE>^|(?:${BR}?${SP}*))(?<MARK>${mark})(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gi');
 
           // Find decoration range
           let m2: RegExpExecArray | null;
@@ -213,7 +213,7 @@ export class CommonHandler extends Handler {
             this.verifyTaskID(params.taskID);
 
             if (!m2.groups!.CONTENT) {
-              if (m2.index >= m1[0].length) {
+              if ((m2.index + m2[0].length) >= m1[0].length) {
                 break; // index 已经移动到最后的位置，跳出循环
               }
               continue; // 空行
@@ -517,15 +517,16 @@ export class CommonHandler extends Handler {
           const tagName = m1.groups!.TAG.toLowerCase();
 
           // exec with remember last reg index, reset m2Exp avoid reg cache
-          const m2Exp = new RegExp(`(?<PRE>${SP}*${pre}|^|\r?\n)(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gim');
+          const m2Exp = new RegExp(`(?<PRE>${BR}?${SP}*${pre}|^)(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gi');
 
           // Find decoration range
           let m2: RegExpExecArray | null;
-          while ((m2 = m2Exp.exec(m1.groups!.TAG + m1.groups!.CONTENT))) {
+          const m2Str = m1.groups!.TAG + m1.groups!.CONTENT;
+          while ((m2 = m2Exp.exec(m2Str))) {
             this.verifyTaskID(params.taskID);
 
             if (!m2.groups!.CONTENT) {
-              if (m2.index >= m1[0].length) {
+              if ((m2.index + m2[0].length) >= m2Str.length) {
                 break; // index 已经移动到最后的位置，跳出循环
               }
 
