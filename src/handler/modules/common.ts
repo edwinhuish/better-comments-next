@@ -1,6 +1,6 @@
 import * as configuration from '@/configuration';
 import * as definition from '@/definition';
-import { ANY, BR, escape, SP, SP_BR, TAG_SUFFIX } from '@/utils/regex';
+import { ANY, BR, escape, SP, TAG_SUFFIX } from '@/utils/regex';
 import { CancelError, generateUUID } from '@/utils/utils';
 import * as vscode from 'vscode';
 
@@ -463,7 +463,7 @@ export class CommonHandler extends Handler {
     const markStart = escape(marks[0]);
     const markEnd = escape(marks[1]);
 
-    const blockExp = new RegExp(`(?<PRE>(?:^|${BR})${SP}*)(?<START>${markStart})(?<CONTENT>${SP_BR}${ANY}*?)(?<END>${markEnd})`, 'g');
+    const blockExp = new RegExp(`(?<PRE>(?:^|${BR})${SP}*)(?<START>${markStart})(?<CONTENT>(?:${BR}|${SP})${ANY}*?)(?<END>${markEnd})`, 'g');
 
     let block: RegExpExecArray | null;
     while ((block = blockExp.exec(params.text))) {
