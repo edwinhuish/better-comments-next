@@ -1,4 +1,4 @@
-import type { BlockCommentSlice, PickParams } from './common';
+import type { BlockCommentSlice, DocCommentSlice, LineCommentSlice, PickParams } from './common';
 import * as configuration from '@/configuration';
 import { CommonHandler } from './common';
 
@@ -15,5 +15,13 @@ export class PlainTextHandler extends CommonHandler {
       content: `\n${params.text}`,
       marks: ['', ''],
     }];
+  }
+
+  protected async pickLineCommentSlices(params: PickParams): Promise<Array<LineCommentSlice>> {
+    return [];
+  }
+
+  protected async pickDocCommentSlices(params: PickParams): Promise<Array<DocCommentSlice>> {
+    return [];
   }
 }
