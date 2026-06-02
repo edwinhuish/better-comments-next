@@ -12,6 +12,7 @@
         "./src/*"
       ]
     },
+    "types": ["node"],
     "strict": true,
     "strictNullChecks": true, /* enable all strict type-checking options */
     "alwaysStrict": true,
