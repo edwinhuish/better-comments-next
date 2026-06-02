@@ -2,6 +2,7 @@ import type { Handler, UpdateParams } from './modules/common';
 import * as configuration from '../configuration';
 import { CommonHandler } from './modules/common';
 import { PlainTextHandler } from './modules/plaintext';
+import { PythonHandler } from './modules/python';
 import { ReactHandler } from './modules/react';
 import { ShellscriptHandler } from './modules/shellscript';
 
@@ -16,6 +17,8 @@ function newHandler(languageId: string): Handler {
       return new ShellscriptHandler(languageId);
     case 'plaintext':
       return new PlainTextHandler(languageId);
+    case 'python':
+      return new PythonHandler(languageId);
     default:
       return new CommonHandler(languageId);
   }
