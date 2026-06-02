@@ -13,6 +13,16 @@ export interface Tag {
   multiline: boolean;
 }
 
+export interface PlainComment {
+  enabled: boolean;
+  color: string;
+  strikethrough: boolean;
+  underline: boolean;
+  bold: boolean;
+  italic: boolean;
+  backgroundColor: string;
+}
+
 export interface TagFlatten extends Tag {
   tag: string;
   tagEscaped: string;
@@ -50,6 +60,7 @@ interface Configuration {
   preloadLines: number;
   fullHighlight: boolean; // Highlight entire line of line comment
   strict: boolean;
+  plainComment: PlainComment;
 }
 
 export interface ConfigurationFlatten extends Configuration {
@@ -61,6 +72,7 @@ export interface ConfigurationFlatten extends Configuration {
 let config: (Configuration & WorkspaceConfiguration) | undefined;
 let configFlatten: ConfigurationFlatten | undefined;
 let tagDecorationTypes: Map<string, vscode.TextEditorDecorationType> | undefined;
+let plainCommentDecorationType: vscode.TextEditorDecorationType | undefined;
 let multilineTagsEscaped: string[] | undefined;
 let lineTagsEscaped: string[] | undefined;
 let allTagsEscaped: string[] | undefined;
@@ -76,9 +88,17 @@ export function refresh() {
     }
   }
 
+  // clear plain comment decoration
+  if (plainCommentDecorationType) {
+    for (const editor of vscode.window.visibleTextEditors) {
+      editor.setDecorations(plainCommentDecorationType, []);
+    }
+  }
+
   config = undefined;
   configFlatten = undefined;
   tagDecorationTypes = undefined;
+  plainCommentDecorationType = undefined;
   multilineTagsEscaped = undefined;
   lineTagsEscaped = undefined;
   allTagsEscaped = undefined;
@@ -214,4 +234,35 @@ export function getAllTagsEscaped() {
   }
 
   return allTagsEscaped;
+}
+
+export function getPlainCommentDecorationType() {
+  if (!plainCommentDecorationType) {
+    const config = getConfigurationFlatten();
+    const plainComment = config.plainComment;
+
+    if (plainComment.enabled) {
+      const options: vscode.DecorationRenderOptions = {
+        color: plainComment.color,
+        backgroundColor: plainComment.backgroundColor,
+      };
+
+      const textDecorations: string[] = [];
+      plainComment.strikethrough && textDecorations.push('line-through');
+      plainComment.underline && textDecorations.push('underline');
+      options.textDecoration = textDecorations.join(' ');
+
+      if (plainComment.bold) {
+        options.fontWeight = 'bold';
+      }
+
+      if (plainComment.italic) {
+        options.fontStyle = 'italic';
+      }
+
+      plainCommentDecorationType = vscode.window.createTextEditorDecorationType(options);
+    }
+  }
+
+  return plainCommentDecorationType;
 }

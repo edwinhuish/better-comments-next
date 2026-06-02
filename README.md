@@ -23,6 +23,7 @@ With this extension, you will be able to categorize your annotations into:
 * TODOs
 * Highlights
 * Commented out code can also be styled to make it clear the code shouldn't be there
+* Plain comments without tags can also be styled with custom colors and formatting
 * Any other comment styles you'd like can be specified in the settings
 
 ![Annotated code](static/better-comments.png)
@@ -43,6 +44,16 @@ Default setting as below:
   "better-comments.fullHighlight": false,
   // Strict mode of tag matching. Default true
   "better-comments.strict": true,
+  // Style for plain comments without tags
+  "better-comments.plainComment": {
+    "enabled": false,
+    "color": "#6A9955",
+    "strikethrough": false,
+    "underline": false,
+    "backgroundColor": "transparent",
+    "bold": false,
+    "italic": false
+  },
   // Custom languages comments configuration
   "better-comments.languages": [
     // {
