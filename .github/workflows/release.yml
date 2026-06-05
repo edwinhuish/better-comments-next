@@ -59,7 +59,7 @@ jobs:
 
       - name: 🔖 Fetch and identify tags
         id: get_tags
-        run: .github/scripts/get-tags.sh
+        run: .github/scripts/get-tags.sh --minor
 
       - name: 📝 Generate changelog
         run: .github/scripts/generate-changelog.sh "${{ steps.get_tags.outputs.current_tag }}" "${{ steps.get_tags.outputs.previous_tag }}"
