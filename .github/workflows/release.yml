@@ -6,13 +6,10 @@ on:
       - 'v*'
   workflow_dispatch:
     inputs:
-      buildType:
-        type: choice
-        description: Build type to run
-        options:
-          - dev
-          - prod
-          - all
+      version:
+        description: 'Version tag (e.g., v1.0.0)'
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -59,10 +56,16 @@ jobs:
 
       - name: 🔖 Fetch and identify tags
         id: get_tags
-        run: .github/scripts/get-tags.sh --minor
+        run: |
+          chmod +x .github/scripts/get-tags.sh
+          # 传入当前版本号：手动触发时使用输入的版本，否则使用触发标签
+          CURRENT_TAG="${{ github.event.inputs.version || github.ref_name }}"
+          .github/scripts/get-tags.sh --minor "$CURRENT_TAG"
 
       - name: 📝 Generate changelog
-        run: .github/scripts/generate-changelog.sh "${{ steps.get_tags.outputs.current_tag }}" "${{ steps.get_tags.outputs.previous_tag }}"
+        run: |
+          chmod +x .github/scripts/generate-changelog.sh
+          .github/scripts/generate-changelog.sh "${{ steps.get_tags.outputs.current_tag }}" "${{ steps.get_tags.outputs.previous_tag }}"
 
       - name: 🔄 Create and publish GitHub Release
         uses: ncipollo/release-action@v1.21.0
