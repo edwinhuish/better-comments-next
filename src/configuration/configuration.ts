@@ -1,5 +1,5 @@
 import type { WorkspaceConfiguration } from 'vscode';
-import { escape } from '@/utils/regex';
+import { compileGlob, compileRegex, escape } from '@/utils/regex';
 import * as vscode from 'vscode';
 
 export interface Tag {
@@ -11,6 +11,14 @@ export interface Tag {
   italic: boolean;
   backgroundColor: string;
   multiline: boolean;
+  /**
+   * Interpret the tag as a glob pattern (`*` = any run, `?` = any single char).
+   */
+  wildcard?: boolean;
+  /**
+   * Interpret the tag as a raw JavaScript regex. Takes precedence over `wildcard`.
+   */
+  regex?: boolean;
 }
 
 export interface TagFlatten extends Tag {
@@ -64,6 +72,7 @@ let tagDecorationTypes: Map<string, vscode.TextEditorDecorationType> | undefined
 let multilineTagsEscaped: string[] | undefined;
 let lineTagsEscaped: string[] | undefined;
 let allTagsEscaped: string[] | undefined;
+let tagMatchers: { key: string; test: RegExp }[] | undefined;
 
 export function refresh() {
   // if already set tagDecorationTypes, clear decoration for visible editors
@@ -82,6 +91,7 @@ export function refresh() {
   multilineTagsEscaped = undefined;
   lineTagsEscaped = undefined;
   allTagsEscaped = undefined;
+  tagMatchers = undefined;
 }
 
 /**
@@ -115,6 +125,20 @@ export function getConfigurationFlatten() {
 }
 
 /**
+ * Compile a tag name into a regex sub-pattern based on its matching flags.
+ * Precedence: regex > wildcard > literal.
+ */
+function compileTagPattern(tag: Tag, name: string): string {
+  if (tag.regex) {
+    return compileRegex(name);
+  }
+  if (tag.wildcard) {
+    return compileGlob(name);
+  }
+  return escape(name);
+}
+
+/**
  * Flatten config tags
  */
 function flattenTags(tags: Tag[]) {
@@ -123,7 +147,7 @@ function flattenTags(tags: Tag[]) {
     if (!Array.isArray(tag.tag)) {
       // ! add tag only tag name not empty
       if (tag.tag) {
-        flatTags.push({ ...tag, tagEscaped: escape(tag.tag) } as TagFlatten);
+        flatTags.push({ ...tag, tagEscaped: compileTagPattern(tag, tag.tag) } as TagFlatten);
       }
       continue;
     }
@@ -136,7 +160,7 @@ function flattenTags(tags: Tag[]) {
       flatTags.push({
         ...tag,
         tag: tagName,
-        tagEscaped: escape(tagName),
+        tagEscaped: compileTagPattern(tag, tagName),
       });
     }
   }
@@ -214,4 +238,40 @@ export function getAllTagsEscaped() {
   }
 
   return allTagsEscaped;
+}
+
+function getTagMatchers() {
+  if (!tagMatchers) {
+    tagMatchers = getConfigurationFlatten().tags.map(tag => ({
+      key: tag.tag.toLowerCase(),
+      test: new RegExp(`^(?:${tag.tagEscaped})$`, 'i'),
+    }));
+  }
+
+  return tagMatchers;
+}
+
+/**
+ * Resolve a matched tag text back to its configured decoration key.
+ *
+ * Decoration types are keyed by the configured tag string, but a wildcard/regex
+ * match captures arbitrary text (eg: `todo[FOO-123]` for tag `todo[*]`). This
+ * maps the captured text to the owning tag's key so the right decoration is
+ * applied. Matchers are tested in config order to mirror the alternation's
+ * leftmost-match preference.
+ */
+export function resolveTagKey(matched: string): string {
+  const lower = matched.toLowerCase();
+
+  for (const { key, test } of getTagMatchers()) {
+    // fast path: literal tags match their own lowercased key directly
+    if (key === lower) {
+      return key;
+    }
+    if (test.test(matched)) {
+      return key;
+    }
+  }
+
+  return lower;
 }

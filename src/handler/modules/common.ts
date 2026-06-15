@@ -202,7 +202,7 @@ export class CommonHandler extends Handler {
           this.verifyTaskID(params.taskID);
 
           const m1Start = slice.start + m1.index;
-          const tagName = m1.groups!.TAG.toLowerCase();
+          const tagName = configuration.resolveTagKey(m1.groups!.TAG);
 
           // exec with remember last reg index, reset m2Exp avoid reg cache
           const m2Exp = new RegExp(`(?<PRE>^|(?:${BR}?${SP}*))(?<MARK>${mark})(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gi');
@@ -269,7 +269,7 @@ export class CommonHandler extends Handler {
           const endPos = params.editor.document.positionAt(lineEnd);
           const range = new vscode.Range(startPos, endPos);
 
-          const tagName = line.groups!.TAG.toLowerCase();
+          const tagName = configuration.resolveTagKey(line.groups!.TAG);
 
           const opt = params.tagRanges.get(tagName) || [];
           opt.push(range);
@@ -367,7 +367,7 @@ export class CommonHandler extends Handler {
           this.verifyTaskID(params.taskID);
 
           const m1Start = contentStart + m1.index;
-          const tagName = m1.groups!.TAG.toLowerCase();
+          const tagName = configuration.resolveTagKey(m1.groups!.TAG);
           const m1Space = m1.groups!.SPACE1 || m1.groups!.SPACE2 || '';
 
           const m2Exp = /(?<PRE>(?:\r?\n|^)(?<SPACE>[ \t]*))(?<CONTENT>.*)/g;
@@ -432,7 +432,7 @@ export class CommonHandler extends Handler {
           const endPos = params.editor.document.positionAt(lineEnd);
           const range = new vscode.Range(startPos, endPos);
 
-          const tagName = line.groups!.TAG.toLowerCase();
+          const tagName = configuration.resolveTagKey(line.groups!.TAG);
 
           const opt = params.tagRanges.get(tagName) || [];
           opt.push(range);
@@ -514,7 +514,7 @@ export class CommonHandler extends Handler {
           this.verifyTaskID(params.taskID);
 
           const m1Start = slice.start + slice.marks[0].length + m1.index;
-          const tagName = m1.groups!.TAG.toLowerCase();
+          const tagName = configuration.resolveTagKey(m1.groups!.TAG);
 
           // exec with remember last reg index, reset m2Exp avoid reg cache
           const m2Exp = new RegExp(`(?<PRE>${BR}?${SP}*${pre}|^)(?<SPACE>${SP}*)(?<CONTENT>.*)`, 'gi');
@@ -583,7 +583,7 @@ export class CommonHandler extends Handler {
           const endPos = params.editor.document.positionAt(lineEnd);
           const range = new vscode.Range(startPos, endPos);
 
-          const tagName = line.groups!.TAG.toLowerCase();
+          const tagName = configuration.resolveTagKey(line.groups!.TAG);
 
           const opt = params.tagRanges.get(tagName) || [];
           opt.push(range);
