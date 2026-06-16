@@ -160,25 +160,26 @@ Default setting as below:
 
 ### Wildcard / regex tags
 
-By default a `tag` is matched as a literal string. Two optional per-tag flags let a tag match dynamically:
+By default a `tag` is matched as a literal string. The optional per-tag `"tagMode"` field lets a tag match dynamically:
 
-- **`"wildcard": true`** — interpret the tag as a glob pattern: `*` matches any run of characters, `?` matches any single character; every other character is matched literally.
-- **`"regex": true`** — interpret the tag as a raw JavaScript regular expression. Takes precedence over `wildcard`. Named capture groups are not allowed (they collide with internal matching groups), and an invalid pattern falls back to a literal match.
+- **`"text"`** (default) — match the tag as a literal string.
+- **`"wildcard"`** — interpret the tag as a glob pattern: `*` matches any run of characters, `?` matches any single character; every other character is matched literally.
+- **`"regex"`** — interpret the tag as a raw JavaScript regular expression. Named capture groups are not allowed (they collide with internal matching groups), and an invalid pattern falls back to a literal match.
 
-Tags without either flag stay literal, so the default tags (including `*`, `?`, `!`, `//`) keep working exactly as before.
+Tags without `"tagMode"` stay literal, so the default tags (including `*`, `?`, `!`, `//`) keep working exactly as before.
 
 ```jsonc
 "better-comments.tags": [
   {
     // matches "// todo[FOO-123]: ..." — brackets are literal, "*" is the wildcard
     "tag": "todo[*]",
-    "wildcard": true,
+    "tagMode": "wildcard",
     "color": "#FF8C00"
   },
   {
     // matches "// @ticket: ..." via a raw regex
     "tag": "@\\w+",
-    "regex": true,
+    "tagMode": "regex",
     "color": "#3498DB"
   }
 ]

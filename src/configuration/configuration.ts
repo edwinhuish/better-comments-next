@@ -12,13 +12,12 @@ export interface Tag {
   backgroundColor: string;
   multiline: boolean;
   /**
-   * Interpret the tag as a glob pattern (`*` = any run, `?` = any single char).
+   * Tag match mode
+   *   - text: as same as.
+   *   - wildcard: Interpret the tag as a glob pattern (`*` = any run, `?` = any single char).
+   *   - regex: Interpret the tag as a raw JavaScript regex.
    */
-  wildcard?: boolean;
-  /**
-   * Interpret the tag as a raw JavaScript regex. Takes precedence over `wildcard`.
-   */
-  regex?: boolean;
+  tagMode?: 'text' | 'wildcard' | 'regex';
 }
 
 export interface TagFlatten extends Tag {
@@ -125,17 +124,17 @@ export function getConfigurationFlatten() {
 }
 
 /**
- * Compile a tag name into a regex sub-pattern based on its matching flags.
- * Precedence: regex > wildcard > literal.
+ * Compile a tag name into a regex sub-pattern based on its match mode.
  */
 function compileTagPattern(tag: Tag, name: string): string {
-  if (tag.regex) {
-    return compileRegex(name);
+  switch (tag.tagMode) {
+    case 'regex':
+      return compileRegex(name);
+    case 'wildcard':
+      return compileGlob(name);
+    default:
+      return escape(name);
   }
-  if (tag.wildcard) {
-    return compileGlob(name);
-  }
-  return escape(name);
 }
 
 /**

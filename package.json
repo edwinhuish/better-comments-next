@@ -183,13 +183,15 @@
                                 "type": "boolean",
                                 "description": "Enable multiline comments decoration until reach blank line."
                             },
-                            "wildcard": {
-                                "type": "boolean",
-                                "description": "Interpret the tag as a glob pattern: `*` matches any run of characters, `?` matches any single character. eg: `todo[*]` matches `todo[FOO-123]`."
-                            },
-                            "regex": {
-                                "type": "boolean",
-                                "description": "Interpret the tag as a raw JavaScript regular expression. Takes precedence over `wildcard`. Named capture groups are not allowed. eg: `@\\w+`."
+                            "tagMode": {
+                                "type": "string",
+                                "enum": [
+                                    "text",
+                                    "wildcard",
+                                    "regex"
+                                ],
+                                "default": "text",
+                                "description": "Tag match mode: `text` (literal, default), `wildcard` (glob: `*` matches any run of characters, `?` matches any single character), or `regex` (raw JavaScript regular expression; named capture groups are not allowed). eg: `{ \"tag\": \"todo[*]\", \"tagMode\": \"wildcard\" }` matches `todo[FOO-123]`."
                             }
                         }
                     },
