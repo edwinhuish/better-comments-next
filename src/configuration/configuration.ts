@@ -126,8 +126,8 @@ export function getConfigurationFlatten() {
 /**
  * Compile a tag name into a regex sub-pattern based on its match mode.
  */
-function compileTagPattern(tag: Tag, name: string): string {
-  switch (tag.tagMode) {
+function compileTagPattern(mode: 'text' | 'wildcard' | 'regex' | undefined, name: string): string {
+  switch (mode) {
     case 'regex':
       return compileRegex(name);
     case 'wildcard':
@@ -146,7 +146,7 @@ function flattenTags(tags: Tag[]) {
     if (!Array.isArray(tag.tag)) {
       // ! add tag only tag name not empty
       if (tag.tag) {
-        flatTags.push({ ...tag, tagEscaped: compileTagPattern(tag, tag.tag) } as TagFlatten);
+        flatTags.push({ ...tag, tagEscaped: compileTagPattern(tag.tagMode, tag.tag) } as TagFlatten);
       }
       continue;
     }
@@ -159,7 +159,7 @@ function flattenTags(tags: Tag[]) {
       flatTags.push({
         ...tag,
         tag: tagName,
-        tagEscaped: compileTagPattern(tag, tagName),
+        tagEscaped: compileTagPattern(tag.tagMode, tagName),
       });
     }
   }
