@@ -169,20 +169,22 @@ By default a `tag` is matched as a literal string. The optional per-tag `"tagMod
 Tags without `"tagMode"` stay literal, so the default tags (including `*`, `?`, `!`, `//`) keep working exactly as before.
 
 ```jsonc
-"better-comments.tags": [
-  {
+{
+  "better-comments.tags": [
+    {
     // matches "// todo[FOO-123]: ..." — brackets are literal, "*" is the wildcard
-    "tag": "todo[*]",
-    "tagMode": "wildcard",
-    "color": "#FF8C00"
-  },
-  {
+      "tag": "todo[*]",
+      "tagMode": "wildcard",
+      "color": "#FF8C00"
+    },
+    {
     // matches "// @ticket: ..." via a raw regex
-    "tag": "@\\w+",
-    "tagMode": "regex",
-    "color": "#3498DB"
-  }
-]
+      "tag": "@\\w+",
+      "tagMode": "regex",
+      "color": "#3498DB"
+    }
+  ]
+}
 ```
 
 ## Supported Languages
