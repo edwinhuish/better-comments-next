@@ -211,7 +211,7 @@ function getDefaultComments(languageCode: string): vscode.CommentRule | undefine
       return { lineComment: '#' };
     case 'elixir':
     case 'python':
-      return { lineComment: '#', blockComment: ['"""', '"""'] };
+      return { lineComment: '#' };
     case 'nim':
       return { lineComment: '#', blockComment: ['#[', ']#'] };
     case 'powershell':
