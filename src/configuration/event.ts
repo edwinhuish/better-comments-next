@@ -9,11 +9,9 @@ export function onDidChange(callback: OnDidChangeCallback) {
   onDidChangeCallbacks.push(callback);
 }
 
-let disposable: vscode.Disposable | undefined;
-
 export function activate(context: vscode.ExtensionContext) {
   // Refresh configuration after configuration changed
-  disposable = vscode.workspace.onDidChangeConfiguration(
+  vscode.workspace.onDidChangeConfiguration(
     (event) => {
       if (!event.affectsConfiguration('better-comments')) {
         return;
@@ -31,10 +29,23 @@ export function activate(context: vscode.ExtensionContext) {
     null,
     context.subscriptions,
   );
+
+  vscode.window.onDidChangeActiveColorTheme(
+    (event) => {
+      refresh();
+
+      const config = getConfigurationFlatten();
+
+      // Run change callback
+      for (const callback of onDidChangeCallbacks) {
+        callback(config);
+      }
+    },
+    null,
+    context.subscriptions,
+  );
 }
 
 export function deactivate() {
-  if (disposable) {
-    disposable.dispose();
-  }
+
 }

@@ -59,10 +59,8 @@ interface Configuration {
   strict: boolean;
 }
 
-export interface ConfigurationFlatten extends Configuration {
+export interface ConfigurationFlatten extends Omit<Configuration, 'tagsLight' | 'tagsDark'> {
   tags: TagFlatten[];
-  tagsLight: TagFlatten[];
-  tagsDark: TagFlatten[];
 }
 
 let config: (Configuration & WorkspaceConfiguration) | undefined;
@@ -111,13 +109,38 @@ export function getConfigurationFlatten() {
   if (configFlatten) {
     return configFlatten;
   }
-  const orig = getConfiguration();
+  const { tagsLight, tagsDark, ...orig } = getConfiguration();
+
+  const tags = flattenTags(orig.tags);
+
+  if (isDarkTheme()) {
+    const tdarks = flattenTags(tagsDark);
+    if (tdarks.length > 0) {
+      for (const tag of tdarks) {
+        const idx = tags.findIndex(t => t.tag === tag.tag);
+        tags[idx] = {
+          ...tags[idx],
+          ...tag,
+        };
+      }
+    }
+  }
+  else {
+    const tlights = flattenTags(tagsLight);
+    if (tlights.length > 0) {
+      for (const tag of tlights) {
+        const idx = tags.findIndex(t => t.tag === tag.tag);
+        tags[idx] = {
+          ...tags[idx],
+          ...tag,
+        };
+      }
+    }
+  }
 
   configFlatten = {
     ...orig,
-    tags: flattenTags(orig.tags),
-    tagsLight: flattenTags(orig.tagsLight),
-    tagsDark: flattenTags(orig.tagsDark),
+    tags,
   };
 
   return configFlatten;
@@ -174,16 +197,6 @@ export function getTagDecorationTypes() {
 
     for (const tag of configs.tags) {
       const opt = parseDecorationRenderOption(tag);
-
-      const tagLight = configs.tagsLight.find(t => t.tag === tag.tag);
-      if (tagLight) {
-        opt.light = parseDecorationRenderOption(tagLight);
-      }
-
-      const tagDark = configs.tagsDark.find(t => t.tag === tag.tag);
-      if (tagDark) {
-        opt.dark = parseDecorationRenderOption(tagDark);
-      }
 
       const tagName = tag.tag.toLowerCase();
       tagDecorationTypes.set(tagName, vscode.window.createTextEditorDecorationType(opt));
@@ -273,4 +286,23 @@ export function resolveTagKey(matched: string): string {
   }
 
   return lower;
+}
+
+function isDarkTheme(): boolean {
+  const currentKind = vscode.window.activeColorTheme.kind;
+
+  switch (currentKind) {
+    // 浅色谱系
+    case vscode.ColorThemeKind.Light:
+    case (4 as vscode.ColorThemeKind): // 显式归类：高对比度浅色也是浅色
+      return false;
+
+      // 深色谱系
+    case vscode.ColorThemeKind.Dark:
+    case vscode.ColorThemeKind.HighContrast: // 显式归类：高对比度（旧/深）也是深色
+      return true;
+
+    default:
+      return true; // 安全回退方案：如果遇到未定义类型，默认使用深色
+  }
 }
