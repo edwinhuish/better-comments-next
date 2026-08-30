@@ -109,38 +109,35 @@ export function getConfigurationFlatten() {
   if (configFlatten) {
     return configFlatten;
   }
-  const { tagsLight, tagsDark, ...orig } = getConfiguration();
+  const { tags, tagsLight, tagsDark, ...orig } = getConfiguration();
 
-  const tags = flattenTags(orig.tags);
+  const mixTags = (origs: TagFlatten[], sources: TagFlatten[]) => {
+    if (!sources.length) {
+      return origs;
+    }
 
-  if (isDarkTheme()) {
-    const tdarks = flattenTags(tagsDark);
-    if (tdarks.length > 0) {
-      for (const tag of tdarks) {
-        const idx = tags.findIndex(t => t.tag === tag.tag);
-        tags[idx] = {
-          ...tags[idx],
-          ...tag,
+    for (const src of sources) {
+      const idx = origs.findIndex(t => t.tag === src.tag);
+      if (idx === -1) {
+        origs.push(src);
+      }
+      else {
+        origs[idx] = {
+          ...origs[idx],
+          ...src,
         };
       }
     }
-  }
-  else {
-    const tlights = flattenTags(tagsLight);
-    if (tlights.length > 0) {
-      for (const tag of tlights) {
-        const idx = tags.findIndex(t => t.tag === tag.tag);
-        tags[idx] = {
-          ...tags[idx],
-          ...tag,
-        };
-      }
-    }
-  }
+    return origs;
+  };
+
+  const tagsFlatten = isDarkTheme()
+    ? mixTags(flattenTags(tags), flattenTags(tagsDark))
+    : mixTags(flattenTags(tags), flattenTags(tagsLight));
 
   configFlatten = {
     ...orig,
-    tags,
+    tags: tagsFlatten,
   };
 
   return configFlatten;
