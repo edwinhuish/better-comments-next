@@ -94,7 +94,14 @@ export async function getAvailableComments(langId: string): Promise<langs.Availa
     const comments = await lang.getComments();
 
     if (comments?.lineComment) {
-      lineComments.add(comments.lineComment);
+      const { lineComment } = comments;
+      // CommentRule.lineComment is `string | LineCommentRule` since vscode 1.70 types
+      if (typeof lineComment === 'string') {
+        lineComments.add(lineComment);
+      }
+      else if (typeof lineComment?.comment === 'string') {
+        lineComments.add(lineComment.comment);
+      }
     }
 
     if (comments?.blockComment) {

@@ -301,12 +301,12 @@ function isDarkTheme(): boolean {
   switch (currentKind) {
     // 浅色谱系
     case vscode.ColorThemeKind.Light:
-    case (4 as vscode.ColorThemeKind): // 显式归类：高对比度浅色也是浅色
+    case vscode.ColorThemeKind.HighContrastLight:
       return false;
 
-      // 深色谱系
+    // 深色谱系
     case vscode.ColorThemeKind.Dark:
-    case vscode.ColorThemeKind.HighContrast: // 显式归类：高对比度（旧/深）也是深色
+    case vscode.ColorThemeKind.HighContrast:
       return true;
 
     default:
