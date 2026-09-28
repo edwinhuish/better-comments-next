@@ -48,6 +48,9 @@ export abstract class Handler {
    */
   private readonly taskTokens = new Map<string, string>();
 
+  // pending full-text scan timers, keyed by document uri
+  protected readonly fullTextTimers = new Map<string, NodeJS.Timeout>();
+
   constructor(languageId: string) {
     this.languageId = languageId;
   }
@@ -93,6 +96,17 @@ export abstract class Handler {
       throw new CancelError('Task canceled');
     }
   }
+
+  /**
+   * Cancel all pending work of the handler. Called on extension deactivation.
+   */
+  public dispose() {
+    for (const timer of this.fullTextTimers.values()) {
+      clearTimeout(timer);
+    }
+    this.fullTextTimers.clear();
+    this.taskTokens.clear();
+  }
 }
 
 export class CommonHandler extends Handler {
@@ -125,7 +139,16 @@ export class CommonHandler extends Handler {
 
     this.setDecorations(params.editor, tagRanges);
 
-    setTimeout(async () => {
+    // schedule the full-text scan; keep the handle so it can be canceled
+    // by a newer task of the same document or on deactivation
+    const uri = params.editor.document.uri.toString();
+    const previousTimer = this.fullTextTimers.get(uri);
+    if (previousTimer) {
+      clearTimeout(previousTimer);
+    }
+
+    const fullTextTimer = setTimeout(async () => {
+      this.fullTextTimers.delete(uri);
       try {
         // # update for full text
         this.verifyTaskID(params.editor, taskID);
@@ -144,6 +167,7 @@ export class CommonHandler extends Handler {
         log.error(e);
       }
     }, updateDelay);
+    this.fullTextTimers.set(uri, fullTextTimer);
   }
 
   protected async pickLineCommentSlices(params: PickParams): Promise<Array<LineCommentSlice>> {

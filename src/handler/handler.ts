@@ -64,3 +64,17 @@ export function triggerUpdateDecorations(params: UpdateParams) {
     }
   }, updateDelay));
 }
+
+/**
+ * Cancel all pending update timers and handlers. Called on extension deactivation.
+ */
+export function dispose() {
+  for (const timer of updateTimers.values()) {
+    clearTimeout(timer);
+  }
+  updateTimers.clear();
+
+  for (const handler of cached.values()) {
+    handler.dispose();
+  }
+}
