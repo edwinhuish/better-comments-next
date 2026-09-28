@@ -5,7 +5,7 @@ import { CommonHandler } from './common';
 
 export class ReactHandler extends CommonHandler {
   protected async pickBlockCommentSlices(params: PickParams): Promise<Array<BlockCommentSlice>> {
-    this.verifyTaskID(params.taskID);
+    this.verifyTaskID(params.editor, params.taskID);
 
     const { blockComments } = await definition.getAvailableComments(params.editor.document.languageId);
     if (!blockComments || !blockComments.length) {
@@ -15,7 +15,7 @@ export class ReactHandler extends CommonHandler {
     const slices: BlockCommentSlice[] = [];
 
     for (const marks of blockComments) {
-      this.verifyTaskID(params.taskID);
+      this.verifyTaskID(params.editor, params.taskID);
 
       const markStart = escape(marks[0]);
       const markEnd = escape(marks[1]);
@@ -23,7 +23,7 @@ export class ReactHandler extends CommonHandler {
 
       let block: RegExpExecArray | null;
       while ((block = exp.exec(params.text))) {
-        this.verifyTaskID(params.taskID);
+        this.verifyTaskID(params.editor, params.taskID);
 
         const start = params.offset + block.index + block.groups!.PRE.length;
         const end = params.offset + block.index + block[0].length;

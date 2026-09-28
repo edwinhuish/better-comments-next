@@ -1,5 +1,6 @@
 import * as configuration from '@/configuration';
 import * as definition from '@/definition';
+import * as log from '@/log';
 import { ANY, BR, escape, SP, TAG_SUFFIX } from '@/utils/regex';
 import { CancelError, generateUUID } from '@/utils/utils';
 import * as vscode from 'vscode';
@@ -38,30 +39,29 @@ export interface DocCommentSlice extends BlockCommentSlice {
 
 export abstract class Handler {
   public readonly languageId: string;
-  protected triggerUpdateTimeout?: NodeJS.Timeout = undefined;
-  protected taskID = '';
+
+  /**
+   * Latest task token per document uri.
+   * Tokens are scoped to documents instead of the handler instance, so
+   * concurrent updates on different editors sharing the same language
+   * handler never cancel each other.
+   */
+  private readonly taskTokens = new Map<string, string>();
 
   constructor(languageId: string) {
     this.languageId = languageId;
   }
 
-  protected abstract updateDecorations(params: UpdateParams): Promise<void>;
+  public abstract updateDecorations(params: UpdateParams): Promise<void>;
 
-  public async triggerUpdateDecorations({ timeout, ...params }: UpdateParams & { timeout: number }) {
-    if (this.triggerUpdateTimeout) {
-      clearTimeout(this.triggerUpdateTimeout);
-    }
-
-    this.triggerUpdateTimeout = setTimeout(async () => {
-      try {
-        await this.updateDecorations(params);
-      }
-      catch (e: any) {
-        if (!(e instanceof CancelError)) {
-          throw e;
-        }
-      }
-    }, timeout);
+  /**
+   * Start a new task for the document, invalidating any running task on the
+   * same document (stale tasks will be canceled by verifyTaskID).
+   */
+  protected newTask(editor: vscode.TextEditor): string {
+    const taskID = generateUUID();
+    this.taskTokens.set(editor.document.uri.toString(), taskID);
+    return taskID;
   }
 
   protected setDecorations(editor: vscode.TextEditor, tagRanges: Map<string, vscode.Range[]>) {
@@ -84,9 +84,12 @@ export abstract class Handler {
     });
   }
 
-  // verify taskID is current task
-  protected verifyTaskID(taskID: string) {
-    if (taskID !== this.taskID) {
+  /**
+   * Verify the task is still the latest task of the document,
+   * otherwise it is stale and should be canceled.
+   */
+  protected verifyTaskID(editor: vscode.TextEditor, taskID: string) {
+    if (this.taskTokens.get(editor.document.uri.toString()) !== taskID) {
       throw new CancelError('Task canceled');
     }
   }
@@ -94,7 +97,7 @@ export abstract class Handler {
 
 export class CommonHandler extends Handler {
   public async updateDecorations(params: UpdateParams): Promise<void> {
-    const taskID = this.taskID = generateUUID();
+    const taskID = this.newTask(params.editor);
     const processed: [number, number][] = [];
     const tagRanges = new Map<string, vscode.Range[]>();
 
@@ -102,7 +105,7 @@ export class CommonHandler extends Handler {
 
     // # update for visible ranges
     for (const visibleRange of params.editor.visibleRanges) {
-      this.verifyTaskID(taskID);
+      this.verifyTaskID(params.editor, taskID);
 
       const startLineIdx = Math.max(0, visibleRange.start.line - preloadLines);
       const startLine = params.editor.document.lineAt(startLineIdx);
@@ -123,20 +126,28 @@ export class CommonHandler extends Handler {
     this.setDecorations(params.editor, tagRanges);
 
     setTimeout(async () => {
-      // # update for full text
-      this.verifyTaskID(taskID);
-      const text = params.editor.document.getText();
-      const pickParams: PickParams = { editor: params.editor, text, offset: 0, tagRanges, taskID, processed };
-      await this.pickDocCommentDecorationOptions(pickParams);
-      await this.pickBlockCommentDecorationOptions(pickParams);
-      await this.pickLineCommentDecorationOptions(pickParams);
+      try {
+        // # update for full text
+        this.verifyTaskID(params.editor, taskID);
+        const text = params.editor.document.getText();
+        const pickParams: PickParams = { editor: params.editor, text, offset: 0, tagRanges, taskID, processed };
+        await this.pickDocCommentDecorationOptions(pickParams);
+        await this.pickBlockCommentDecorationOptions(pickParams);
+        await this.pickLineCommentDecorationOptions(pickParams);
 
-      this.setDecorations(params.editor, tagRanges);
+        this.setDecorations(params.editor, tagRanges);
+      }
+      catch (e) {
+        if (e instanceof CancelError) {
+          return; // superseded by a newer task of the same document
+        }
+        log.error(e);
+      }
     }, updateDelay);
   }
 
   protected async pickLineCommentSlices(params: PickParams): Promise<Array<LineCommentSlice>> {
-    this.verifyTaskID(params.taskID);
+    this.verifyTaskID(params.editor, params.taskID);
 
     const { lineComments } = await definition.getAvailableComments(params.editor.document.languageId);
     if (!lineComments || !lineComments.length) {
@@ -150,7 +161,7 @@ export class CommonHandler extends Handler {
     const exp = new RegExp(`(?<MARK>${marks}).*?(?:${BR}${SP}*\\1.*?)*(?:${BR}|$)`, 'g');
     let block: RegExpExecArray | null;
     while ((block = exp.exec(params.text))) {
-      this.verifyTaskID(params.taskID);
+      this.verifyTaskID(params.editor, params.taskID);
 
       const start = params.offset + block.index;
       const end = start + block[0].length;
@@ -176,14 +187,14 @@ export class CommonHandler extends Handler {
   private async pickLineCommentDecorationOptions(params: PickParams): Promise<void> {
     const slices = await this.pickLineCommentSlices(params);
 
-    this.verifyTaskID(params.taskID);
+    this.verifyTaskID(params.editor, params.taskID);
 
     const multilineTags = configuration.getMultilineTagsEscaped();
     const lineTags = configuration.getLineTagsEscaped();
     const { fullHighlight, strict } = configuration.getConfigurationFlatten();
 
     for (const slice of slices) {
-      this.verifyTaskID(params.taskID);
+      this.verifyTaskID(params.editor, params.taskID);
 
       const mark = escape(slice.mark);
 
@@ -199,7 +210,7 @@ export class CommonHandler extends Handler {
         // Find the matched multiline
         let m1: RegExpExecArray | null;
         while ((m1 = m1Exp.exec(slice.comment))) {
-          this.verifyTaskID(params.taskID);
+          this.verifyTaskID(params.editor, params.taskID);
 
           const m1Start = slice.start + m1.index;
           const tagName = configuration.resolveTagKey(m1.groups!.TAG);
@@ -210,7 +221,7 @@ export class CommonHandler extends Handler {
           // Find decoration range
           let m2: RegExpExecArray | null;
           while ((m2 = m2Exp.exec(m1[0]))) {
-            this.verifyTaskID(params.taskID);
+            this.verifyTaskID(params.editor, params.taskID);
 
             if (!m2.groups!.CONTENT) {
               if ((m2.index + m2[0].length) >= m1[0].length) {
@@ -250,7 +261,7 @@ export class CommonHandler extends Handler {
 
         let line: RegExpExecArray | null | undefined;
         while ((line = lineExp.exec(slice.comment))) {
-          this.verifyTaskID(params.taskID);
+          this.verifyTaskID(params.editor, params.taskID);
 
           const lineStartSince = slice.start + line.index;
           const lineStart = fullHighlight
@@ -280,7 +291,7 @@ export class CommonHandler extends Handler {
   }
 
   protected async pickBlockCommentSlices(params: PickParams): Promise<Array<BlockCommentSlice>> {
-    this.verifyTaskID(params.taskID);
+    this.verifyTaskID(params.editor, params.taskID);
 
     const { blockComments } = await definition.getAvailableComments(params.editor.document.languageId);
     if (!blockComments || !blockComments.length) {
@@ -290,7 +301,7 @@ export class CommonHandler extends Handler {
     const slices: BlockCommentSlice[] = [];
 
     for (const marks of blockComments) {
-      this.verifyTaskID(params.taskID);
+      this.verifyTaskID(params.editor, params.taskID);
 
       const markStart = escape(marks[0]);
       const markEnd = escape(marks[1]);
@@ -298,7 +309,7 @@ export class CommonHandler extends Handler {
 
       let block: RegExpExecArray | null;
       while ((block = exp.exec(params.text))) {
-        this.verifyTaskID(params.taskID);
+        this.verifyTaskID(params.editor, params.taskID);
 
         const start = params.offset + block.index + block.groups!.PRE.length;
         const end = params.offset + block.index + block[0].length;
@@ -328,7 +339,7 @@ export class CommonHandler extends Handler {
     const multilineTags = configuration.getMultilineTagsEscaped();
     const { strict } = configuration.getConfigurationFlatten();
     for (const slice of slices) {
-      this.verifyTaskID(params.taskID);
+      this.verifyTaskID(params.editor, params.taskID);
 
       let content = slice.content;
       let contentStart = slice.start + slice.marks[0].length;
@@ -364,7 +375,7 @@ export class CommonHandler extends Handler {
         // Find the matched multiline
         let m1: RegExpExecArray | null;
         while ((m1 = m1Exp.exec(content))) {
-          this.verifyTaskID(params.taskID);
+          this.verifyTaskID(params.editor, params.taskID);
 
           const m1Start = contentStart + m1.index;
           const tagName = configuration.resolveTagKey(m1.groups!.TAG);
@@ -375,7 +386,7 @@ export class CommonHandler extends Handler {
           // Find decoration range
           let m2: RegExpExecArray | null;
           while ((m2 = m2Exp.exec(m1[0]))) {
-            this.verifyTaskID(params.taskID);
+            this.verifyTaskID(params.editor, params.taskID);
 
             if (!m2.groups!.CONTENT) {
               if (m2.index >= m1[0].length) {
@@ -416,7 +427,7 @@ export class CommonHandler extends Handler {
         // Find the matched line
         let line: RegExpExecArray | null;
         while ((line = lineExp.exec(content))) {
-          this.verifyTaskID(params.taskID);
+          this.verifyTaskID(params.editor, params.taskID);
 
           const lineStartSince = contentStart + line.index;
           const lineStart = lineStartSince + line.groups!.PRE.length;
@@ -443,7 +454,7 @@ export class CommonHandler extends Handler {
   }
 
   protected async pickDocCommentSlices(params: PickParams): Promise<Array<DocCommentSlice>> {
-    this.verifyTaskID(params.taskID);
+    this.verifyTaskID(params.editor, params.taskID);
     const lang = definition.useLanguage(params.editor.document.languageId);
     if (!lang.isUseDocComment()) {
       return [];
@@ -467,7 +478,7 @@ export class CommonHandler extends Handler {
 
     let block: RegExpExecArray | null;
     while ((block = blockExp.exec(params.text))) {
-      this.verifyTaskID(params.taskID);
+      this.verifyTaskID(params.editor, params.taskID);
 
       const start = params.offset + block.index + block.groups!.PRE.length;
       const end = params.offset + block.index + block[0].length;
@@ -498,7 +509,7 @@ export class CommonHandler extends Handler {
     const lineTags = configuration.getLineTagsEscaped();
     const { strict } = configuration.getConfigurationFlatten();
     for (const slice of slices) {
-      this.verifyTaskID(params.taskID);
+      this.verifyTaskID(params.editor, params.taskID);
       const pre = escape(slice.prefix);
 
       if (multilineTags.length) {
@@ -511,7 +522,7 @@ export class CommonHandler extends Handler {
         // Find the matched multiline
         let m1: RegExpExecArray | null;
         while ((m1 = m1Exp.exec(slice.content))) {
-          this.verifyTaskID(params.taskID);
+          this.verifyTaskID(params.editor, params.taskID);
 
           const m1Start = slice.start + slice.marks[0].length + m1.index;
           const tagName = configuration.resolveTagKey(m1.groups!.TAG);
@@ -523,7 +534,7 @@ export class CommonHandler extends Handler {
           let m2: RegExpExecArray | null;
           const m2Str = m1.groups!.TAG + m1.groups!.CONTENT;
           while ((m2 = m2Exp.exec(m2Str))) {
-            this.verifyTaskID(params.taskID);
+            this.verifyTaskID(params.editor, params.taskID);
 
             if (!m2.groups!.CONTENT) {
               if ((m2.index + m2[0].length) >= m2Str.length) {
@@ -566,7 +577,7 @@ export class CommonHandler extends Handler {
         // Find the matched line
         let line: RegExpExecArray | null;
         while ((line = lineExp.exec(slice.content))) {
-          this.verifyTaskID(params.taskID);
+          this.verifyTaskID(params.editor, params.taskID);
 
           const lineStartSince = slice.start + slice.marks[0].length + line.index;
           const lineStart = lineStartSince + line.groups!.PRE.length;

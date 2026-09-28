@@ -1,4 +1,6 @@
 import type { Handler, UpdateParams } from './modules/common';
+import * as log from '@/log';
+import { CancelError } from '@/utils/utils';
 import * as configuration from '../configuration';
 import { CommonHandler } from './modules/common';
 import { PlainTextHandler } from './modules/plaintext';
@@ -7,6 +9,9 @@ import { ReactHandler } from './modules/react';
 import { ShellscriptHandler } from './modules/shellscript';
 
 const cached = new Map<string, Handler>();
+
+// pending debounce timers, keyed by document uri
+const updateTimers = new Map<string, NodeJS.Timeout>();
 
 function newHandler(languageId: string): Handler {
   switch (languageId) {
@@ -36,6 +41,26 @@ function useHandler(languageId: string): Handler {
 }
 
 export function triggerUpdateDecorations(params: UpdateParams) {
-  const configuratgion = configuration.getConfigurationFlatten();
-  return useHandler(params.editor.document.languageId).triggerUpdateDecorations({ ...params, timeout: configuratgion.updateDelay });
+  const { updateDelay } = configuration.getConfigurationFlatten();
+
+  // Debounce per document (uri), so concurrent editors never cancel each
+  // other's pending updates even when they share the same language handler.
+  const uri = params.editor.document.uri.toString();
+  const timer = updateTimers.get(uri);
+  if (timer) {
+    clearTimeout(timer);
+  }
+
+  updateTimers.set(uri, setTimeout(async () => {
+    updateTimers.delete(uri);
+    try {
+      await useHandler(params.editor.document.languageId).updateDecorations(params);
+    }
+    catch (e) {
+      if (e instanceof CancelError) {
+        return; // superseded by a newer task of the same document
+      }
+      log.error(e);
+    }
+  }, updateDelay));
 }

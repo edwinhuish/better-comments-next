@@ -5,7 +5,7 @@ import { CommonHandler } from './common';
 
 export class ShellscriptHandler extends CommonHandler {
   protected async pickLineCommentSlices(params: PickParams): Promise<Array<LineCommentSlice>> {
-    this.verifyTaskID(params.taskID);
+    this.verifyTaskID(params.editor, params.taskID);
 
     const { lineComments } = await definition.getAvailableComments(params.editor.document.languageId);
     if (!lineComments || !lineComments.length) {
@@ -19,7 +19,7 @@ export class ShellscriptHandler extends CommonHandler {
     const exp = new RegExp(`(?<PRE>.?)(?<MARK>${marks}).*?(?:${BR}${SP}*\\1.*?)*(?:${BR}|$)`, 'g');
     let block: RegExpExecArray | null;
     while ((block = exp.exec(params.text))) {
-      this.verifyTaskID(params.taskID);
+      this.verifyTaskID(params.editor, params.taskID);
 
       const start = params.offset + block.index;
       const end = start + block[0].length;
