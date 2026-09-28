@@ -464,7 +464,9 @@
         "watch-web": "tsup --config=build/tsup.web.js --watch",
         "lint": "pnpm run lint:type && pnpm run lint:eslint",
         "lint:type": "tsc -p . --noEmit",
-        "lint:eslint": "eslint --cache --max-warnings 0 . --fix"
+        "lint:eslint": "eslint --cache --max-warnings 0 . --fix",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "dependencies": {
         "json5": "^2.2.3"
@@ -482,6 +484,7 @@
         "rimraf": "^5.0.5",
         "tsup": "^8.0.2",
         "typescript": "^5.5.4",
-        "typescript-eslint": "^8"
+        "typescript-eslint": "^8",
+        "vitest": "^5.0.2"
     }
 }
