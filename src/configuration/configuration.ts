@@ -103,6 +103,25 @@ function getConfiguration() {
 }
 
 /**
+ * Merge theme-specific tag overrides into the base tags.
+ * Overrides matching an existing tag are merged into it; unmatched overrides
+ * are appended instead of being silently dropped (findIndex may return -1).
+ */
+function mergeTagOverrides(tags: TagFlatten[], overrides: TagFlatten[]) {
+  for (const tag of overrides) {
+    const idx = tags.findIndex(t => t.tag === tag.tag);
+    if (idx === -1) {
+      tags.push(tag);
+      continue;
+    }
+    tags[idx] = {
+      ...tags[idx],
+      ...tag,
+    };
+  }
+}
+
+/**
  * Get better comments configuration in flatten
  */
 export function getConfigurationFlatten() {
@@ -116,25 +135,13 @@ export function getConfigurationFlatten() {
   if (isDarkTheme()) {
     const tdarks = flattenTags(tagsDark);
     if (tdarks.length > 0) {
-      for (const tag of tdarks) {
-        const idx = tags.findIndex(t => t.tag === tag.tag);
-        tags[idx] = {
-          ...tags[idx],
-          ...tag,
-        };
-      }
+      mergeTagOverrides(tags, tdarks);
     }
   }
   else {
     const tlights = flattenTags(tagsLight);
     if (tlights.length > 0) {
-      for (const tag of tlights) {
-        const idx = tags.findIndex(t => t.tag === tag.tag);
-        tags[idx] = {
-          ...tags[idx],
-          ...tag,
-        };
-      }
+      mergeTagOverrides(tags, tlights);
     }
   }
 
