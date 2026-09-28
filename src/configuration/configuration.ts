@@ -1,4 +1,5 @@
 import type { WorkspaceConfiguration } from 'vscode';
+import { resolveTagKey as matchResolveTagKey } from '@/matcher';
 import { compileGlob, compileRegex, escape } from '@/utils/regex';
 import * as vscode from 'vscode';
 
@@ -259,7 +260,7 @@ export function getAllTagsEscaped() {
   return allTagsEscaped;
 }
 
-function getTagMatchers() {
+export function getTagMatchers() {
   if (!tagMatchers) {
     tagMatchers = getConfigurationFlatten().tags.map(tag => ({
       key: tag.tag.toLowerCase(),
@@ -272,27 +273,10 @@ function getTagMatchers() {
 
 /**
  * Resolve a matched tag text back to its configured decoration key.
- *
- * Decoration types are keyed by the configured tag string, but a wildcard/regex
- * match captures arbitrary text (eg: `todo[FOO-123]` for tag `todo[*]`). This
- * maps the captured text to the owning tag's key so the right decoration is
- * applied. Matchers are tested in config order to mirror the alternation's
- * leftmost-match preference.
+ * Delegates to the pure implementation in `@/matcher`.
  */
 export function resolveTagKey(matched: string): string {
-  const lower = matched.toLowerCase();
-
-  for (const { key, test } of getTagMatchers()) {
-    // fast path: literal tags match their own lowercased key directly
-    if (key === lower) {
-      return key;
-    }
-    if (test.test(matched)) {
-      return key;
-    }
-  }
-
-  return lower;
+  return matchResolveTagKey(matched, getTagMatchers());
 }
 
 function isDarkTheme(): boolean {
