@@ -1,5 +1,5 @@
 import type { MatcherOptions } from './matcher';
-import { compileGlob } from '@/utils/regex';
+import { BR, compileGlob } from '@/utils/regex';
 import { describe, expect, it, vi } from 'vitest';
 import {
   matchBlockTagsInSlice,
@@ -8,6 +8,7 @@ import {
   pickBlockSlices,
   pickDocSlices,
   pickLineSlices,
+  ProcessedRanges,
   resolveTagKey,
 } from './matcher';
 
@@ -32,9 +33,9 @@ const BLOCK_COMMENTS: [string, string][] = [['/*', '*/']];
 describe('pickLineSlices', () => {
   it('picks consecutive line comments as one slice', () => {
     const text = '// TODO: a\n// TODO: b\ncode();\n';
-    const processed: [number, number][] = [];
+    const processed = new ProcessedRanges();
 
-    const slices = pickLineSlices(text, 0, LINE_COMMENTS, processed);
+    const slices = pickLineSlices({ text, offset: 0, lineComments: LINE_COMMENTS, processed });
 
     // consecutive comment lines are grouped into a single slice,
     // including the trailing line break
@@ -43,14 +44,14 @@ describe('pickLineSlices', () => {
   });
 
   it('returns nothing for text without line comments', () => {
-    const slices = pickLineSlices('plain code\n', 0, LINE_COMMENTS, []);
+    const slices = pickLineSlices({ text: 'plain code\n', offset: 0, lineComments: LINE_COMMENTS, processed: new ProcessedRanges() });
 
     expect(slices).toHaveLength(0);
   });
 
   it('handles CRLF line endings', () => {
     const text = '// TODO: a\r\n// TODO: b\r\ncode();\r\n';
-    const slices = pickLineSlices(text, 0, LINE_COMMENTS, []);
+    const slices = pickLineSlices({ text, offset: 0, lineComments: LINE_COMMENTS, processed: new ProcessedRanges() });
 
     expect(slices).toHaveLength(1);
     expect(slices[0].comment).toBe('// TODO: a\r\n// TODO: b\r\n');
@@ -58,53 +59,172 @@ describe('pickLineSlices', () => {
 
   it('skips ranges already present in processed', () => {
     const text = '// TODO: a\n';
-    const processed: [number, number][] = [[0, text.length]];
+    const processed = new ProcessedRanges();
+    processed.add(0, text.length);
 
-    expect(pickLineSlices(text, 0, LINE_COMMENTS, processed)).toHaveLength(0);
+    expect(pickLineSlices({ text, offset: 0, lineComments: LINE_COMMENTS, processed })).toHaveLength(0);
   });
 
   it('invokes the cancellation checkpoint', () => {
     const checkpoint = vi.fn();
 
-    pickLineSlices('// TODO: a\n', 0, LINE_COMMENTS, [], checkpoint);
+    pickLineSlices({ text: '// TODO: a\n', offset: 0, lineComments: LINE_COMMENTS, processed: new ProcessedRanges(), checkpoint });
 
     expect(checkpoint).toHaveBeenCalled();
+  });
+});
+
+describe('processedRanges', () => {
+  it('detects containment', () => {
+    const ranges = new ProcessedRanges();
+    ranges.add(10, 20);
+
+    expect(ranges.has(10, 20)).toBe(true);
+    expect(ranges.has(12, 18)).toBe(true);
+    expect(ranges.has(5, 15)).toBe(false);
+    expect(ranges.has(10, 21)).toBe(false);
+    expect(ranges.has(21, 25)).toBe(false);
+  });
+
+  it('handles out-of-order insertion', () => {
+    const ranges = new ProcessedRanges();
+    ranges.add(100, 200);
+    ranges.add(10, 20); // inserted before
+    ranges.add(30, 40);
+
+    expect(ranges.has(10, 20)).toBe(true);
+    expect(ranges.has(30, 40)).toBe(true);
+    expect(ranges.has(100, 200)).toBe(true);
+    expect(ranges.has(10, 40)).toBe(false);
+    expect(ranges.has(25, 35)).toBe(false);
+  });
+
+  it('supports overlapping nested ranges', () => {
+    const ranges = new ProcessedRanges();
+    ranges.add(10, 100);
+    ranges.add(20, 50); // nested inside the first
+
+    expect(ranges.has(30, 40)).toBe(true);
+    expect(ranges.has(60, 90)).toBe(true);
+    expect(ranges.has(5, 15)).toBe(false);
+  });
+
+  it('handles overlapping ranges with unordered ends', () => {
+    const ranges = new ProcessedRanges();
+    ranges.add(10, 50);
+    ranges.add(55, 80);
+    ranges.add(60, 120);
+
+    expect(ranges.has(70, 90)).toBe(true); // contained by [60, 120]
+    expect(ranges.has(70, 130)).toBe(false); // no range reaches 130
+    expect(ranges.has(30, 90)).toBe(false); // [10, 50] too short, others start later
+  });
+
+  it('finds containers off the binary search path', () => {
+    // [10, 90] contains the query but sits below the visited nodes when the
+    // binary search starts at mid=1 — guards the backwards fallback scan
+    const ranges = new ProcessedRanges();
+    ranges.add(10, 90);
+    ranges.add(15, 20);
+    ranges.add(25, 30);
+
+    expect(ranges.has(16, 85)).toBe(true);
+    expect(ranges.has(16, 95)).toBe(false);
   });
 });
 
 describe('pickBlockSlices', () => {
   it('picks a closed block comment', () => {
     const text = '/* ! alert */ code';
-    const slices = pickBlockSlices(text, 0, BLOCK_COMMENTS, []);
+    const slices = pickBlockSlices({ text, offset: 0, blockComments: BLOCK_COMMENTS, processed: new ProcessedRanges() });
 
     expect(slices).toHaveLength(1);
     expect(slices[0].content).toBe(' ! alert ');
   });
 
   it('ignores unclosed block comments without looping', () => {
-    const slices = pickBlockSlices('/* never closed ...', 0, BLOCK_COMMENTS, []);
+    const slices = pickBlockSlices({ text: '/* never closed ...', offset: 0, blockComments: BLOCK_COMMENTS, processed: new ProcessedRanges() });
 
     expect(slices).toHaveLength(0);
   });
 
   it('ignores inline block comments (common handler requires line start)', () => {
-    const slices = pickBlockSlices('code(); /* ! alert */', 0, BLOCK_COMMENTS, []);
+    const slices = pickBlockSlices({ text: 'code(); /* ! alert */', offset: 0, blockComments: BLOCK_COMMENTS, processed: new ProcessedRanges() });
 
     expect(slices).toHaveLength(0);
+  });
+
+  it('matches JSX inline comments with the react prefix pattern', () => {
+    const text = 'code; {/* ! alert */}';
+    const slices = pickBlockSlices({
+      text,
+      offset: 0,
+      blockComments: BLOCK_COMMENTS,
+      processed: new ProcessedRanges(),
+      prefixPattern: `(?:^|${BR})\\s*|\\{\\s*`,
+    });
+
+    expect(slices).toHaveLength(1);
+    expect(slices[0].content).toBe(' ! alert ');
+  });
+
+  it('matches anywhere with an empty prefix pattern (python docstrings)', () => {
+    const text = 'code; """TODO: x"""';
+    const slices = pickBlockSlices({
+      text,
+      offset: 0,
+      blockComments: [['"""', '"""']],
+      processed: new ProcessedRanges(),
+      prefixPattern: '',
+    });
+
+    expect(slices).toHaveLength(1);
+    expect(slices[0].start).toBe(6); // right at the opening quote
+  });
+});
+
+describe('pickLineSlices options', () => {
+  it('exposes the leading char for handler-level filtering (shell $)', () => {
+    // `$` must be adjacent to the mark; consecutive `#` lines merge into one
+    // slice via the \1 backreference, so separate the lines with code
+    const text = '$# TODO: x\necho hi\n# TODO: y\n';
+    const slices = pickLineSlices({
+      text,
+      offset: 0,
+      lineComments: ['#'],
+      processed: new ProcessedRanges(),
+      prefixPattern: '.?',
+    });
+
+    // `.` cannot match the newline itself, so the line-start comment has an
+    // empty leading char
+    expect(slices.map(s => s.prefix)).toEqual(['$', '']);
+
+    // the handler filters command lines itself
+    const kept = slices.filter(s => s.prefix !== '$');
+    expect(kept).toHaveLength(1);
+    expect(kept[0].comment).toContain('# TODO: y');
+  });
+
+  it('keeps all slices without the leading char option', () => {
+    const text = '$# TODO: x\necho hi\n# TODO: y\n';
+    const slices = pickLineSlices({ text, offset: 0, lineComments: ['#'], processed: new ProcessedRanges() });
+
+    expect(slices).toHaveLength(2);
   });
 });
 
 describe('pickDocSlices', () => {
   it('picks a doc comment block', () => {
     const text = '/**\n * TODO: hello\n */\ncode();';
-    const slices = pickDocSlices(text, 0, []);
+    const slices = pickDocSlices({ text, offset: 0, processed: new ProcessedRanges() });
 
     expect(slices).toHaveLength(1);
     expect(slices[0].prefix).toBe('*');
   });
 
   it('requires whitespace after the opening mark', () => {
-    const slices = pickDocSlices('/**not-a-doc*/', 0, []);
+    const slices = pickDocSlices({ text: '/**not-a-doc*/', offset: 0, processed: new ProcessedRanges() });
 
     expect(slices).toHaveLength(0);
   });

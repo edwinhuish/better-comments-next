@@ -47,10 +47,21 @@ export function compileGlob(input: string): string {
 }
 
 const regexCache = new Map<string, string>();
+
+/** patterns longer than this are rejected as a ReDoS precaution */
+const MAX_TAG_REGEX_LENGTH = 200;
+
+/**
+ * Detects quantified groups that themselves contain quantifiers
+ * (eg: `(a+)+`, `(?:\\w+\\s*)+$`) — the classic catastrophic backtracking shape.
+ */
+const NESTED_QUANTIFIER_PATTERN = /\([^()*+]*[*+][^()]*\)[+*{]/;
+
 /**
  * Compiles a raw JavaScript regex tag pattern into a regex sub-pattern.
- * The pattern is validated; if it is invalid or uses a named capture group
- * (which would collide with the PRE/TAG/CONTENT groups), it falls back to a
+ * The pattern is validated; if it is invalid, uses a named capture group
+ * (which would collide with the PRE/TAG/CONTENT groups), is excessively long,
+ * or looks vulnerable to catastrophic backtracking, it falls back to a
  * fully-escaped literal. Valid patterns are wrapped in a non-capturing group.
  * @param input The raw regex pattern (eg: `@\\w+`)
  * @returns {string} The compiled regex sub-pattern
@@ -63,6 +74,12 @@ export function compileRegex(input: string): string {
     try {
       if (input.includes('(?<')) {
         throw new Error('named capture groups are not allowed in tag regex');
+      }
+      if (input.length > MAX_TAG_REGEX_LENGTH) {
+        throw new Error('tag regex exceeds the maximum length');
+      }
+      if (NESTED_QUANTIFIER_PATTERN.test(input)) {
+        throw new Error('potential ReDoS pattern (nested quantifiers) is not allowed in tag regex');
       }
       // eslint-disable-next-line no-new
       new RegExp(input); // validate

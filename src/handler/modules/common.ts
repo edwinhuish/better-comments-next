@@ -9,6 +9,7 @@ import {
   pickBlockSlices,
   pickDocSlices,
   pickLineSlices,
+  ProcessedRanges,
 } from '@/matcher';
 import { CancelError, generateUUID } from '@/utils/utils';
 import * as vscode from 'vscode';
@@ -23,7 +24,7 @@ export interface PickParams {
   text: string;
   offset: number;
   tagRanges: Map<string, vscode.Range[]>;
-  processed: [number, number][];
+  processed: ProcessedRanges;
 }
 
 export type { BlockCommentSlice, DocCommentSlice, LineCommentSlice } from '@/matcher';
@@ -103,7 +104,7 @@ export abstract class Handler {
 export class CommonHandler extends Handler {
   public async updateDecorations(params: UpdateParams): Promise<void> {
     const taskID = this.newTask(params.editor);
-    const processed: [number, number][] = [];
+    const processed = new ProcessedRanges();
     const tagRanges = new Map<string, vscode.Range[]>();
 
     const { preloadLines, updateDelay } = configuration.getConfigurationFlatten();
@@ -191,13 +192,13 @@ export class CommonHandler extends Handler {
 
   protected async pickLineCommentSlices(params: PickParams): Promise<Array<LineCommentSlice>> {
     const { lineComments } = await definition.getAvailableComments(params.editor.document.languageId);
-    return pickLineSlices(
-      params.text,
-      params.offset,
+    return pickLineSlices({
+      text: params.text,
+      offset: params.offset,
       lineComments,
-      params.processed,
-      () => this.verifyTaskID(params.editor, params.taskID),
-    );
+      processed: params.processed,
+      checkpoint: () => this.verifyTaskID(params.editor, params.taskID),
+    });
   }
 
   private async pickLineCommentDecorationOptions(params: PickParams): Promise<void> {
@@ -213,13 +214,13 @@ export class CommonHandler extends Handler {
 
   protected async pickBlockCommentSlices(params: PickParams): Promise<Array<BlockCommentSlice>> {
     const { blockComments } = await definition.getAvailableComments(params.editor.document.languageId);
-    return pickBlockSlices(
-      params.text,
-      params.offset,
+    return pickBlockSlices({
+      text: params.text,
+      offset: params.offset,
       blockComments,
-      params.processed,
-      () => this.verifyTaskID(params.editor, params.taskID),
-    );
+      processed: params.processed,
+      checkpoint: () => this.verifyTaskID(params.editor, params.taskID),
+    });
   }
 
   private async pickBlockCommentDecorationOptions(params: PickParams): Promise<void> {
@@ -239,12 +240,12 @@ export class CommonHandler extends Handler {
       return [];
     }
 
-    return pickDocSlices(
-      params.text,
-      params.offset,
-      params.processed,
-      () => this.verifyTaskID(params.editor, params.taskID),
-    );
+    return pickDocSlices({
+      text: params.text,
+      offset: params.offset,
+      processed: params.processed,
+      checkpoint: () => this.verifyTaskID(params.editor, params.taskID),
+    });
   }
 
   private async pickDocCommentDecorationOptions(params: PickParams): Promise<void> {

@@ -27,12 +27,25 @@ export function activate(context: vscode.ExtensionContext) {
   );
 
   // * Handle file contents changed
+  // Debounce per document so typing bursts trigger a single update instead of
+  // one full rescan per keystroke.
+  const docChangeTimers = new Map<string, NodeJS.Timeout>();
+  const DOC_CHANGE_DEBOUNCE = 100;
+
   vscode.workspace.onDidChangeTextDocument(
     (event) => {
       // Trigger updates if the text was changed in the visible editor
       const editor = vscode.window.visibleTextEditors.find(e => e.document === event.document);
       if (editor) {
-        handler.triggerUpdateDecorations({ editor });
+        const uri = event.document.uri.toString();
+        const previous = docChangeTimers.get(uri);
+        if (previous) {
+          clearTimeout(previous);
+        }
+        docChangeTimers.set(uri, setTimeout(() => {
+          docChangeTimers.delete(uri);
+          handler.triggerUpdateDecorations({ editor });
+        }, DOC_CHANGE_DEBOUNCE));
       }
 
       // Run change callbacks

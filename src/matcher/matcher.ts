@@ -2,14 +2,16 @@ import { ANY, BR, escape, SP, TAG_SUFFIX } from '@/utils/regex';
 
 // # Types
 
-export interface LineSlice {
+export interface LineCommentSlice {
   start: number;
   end: number;
   comment: string;
   mark: string;
+  /** char captured before the mark; only present with a `prefixPattern` group */
+  prefix?: string;
 }
 
-export interface BlockSlice {
+export interface BlockCommentSlice {
   start: number;
   end: number;
   comment: string;
@@ -17,14 +19,9 @@ export interface BlockSlice {
   marks: [string, string];
 }
 
-export interface DocSlice extends BlockSlice {
+export interface DocCommentSlice extends BlockCommentSlice {
   prefix: string;
 }
-
-// legacy aliases kept for handler-side imports
-export type LineCommentSlice = LineSlice;
-export type BlockCommentSlice = BlockSlice;
-export type DocCommentSlice = DocSlice;
 
 export interface TagRange {
   /** resolved decoration key of the matched tag */
@@ -56,6 +53,75 @@ export interface MatcherOptions {
   checkpoint?: () => void;
 }
 
+// # Processed range tracking
+
+/**
+ * Interval set tracking already-processed document ranges, kept sorted by
+ * start. Containment queries (`has`) binary-search the insertion point and
+ * then scan the candidates backwards (their starts are all `<= query start`).
+ * Stored ranges rarely nest, so the scan usually terminates immediately;
+ * correctness does not rely on that.
+ */
+export class ProcessedRanges {
+  private ranges: [number, number][] = [];
+
+  /** Whether any stored range fully contains `[start, end]`. */
+  public has(start: number, end: number): boolean {
+    for (const r of this.ranges) {
+      if (r[0] > start) {
+        return false;
+      }
+      if (r[1] >= end) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /** Store a range, keeping the set sorted by start. */
+  public add(start: number, end: number): void {
+    const last = this.ranges[this.ranges.length - 1];
+
+    // fast path: ranges usually arrive in ascending order
+    if (!last || last[0] <= start) {
+      this.ranges.push([start, end]);
+      return;
+    }
+
+    let lo = 0;
+    let hi = this.ranges.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (this.ranges[mid][0] <= start) {
+        lo = mid + 1;
+      }
+      else {
+        hi = mid;
+      }
+    }
+    this.ranges.splice(lo, 0, [start, end]);
+  }
+}
+
+// # Regex memoization
+
+// Keys are bounded by (config tags, comment marks, doc prefixes); the cache is
+// cleared if it ever grows unexpectedly (eg: frequent configuration switches).
+const expCache = new Map<string, RegExp>();
+
+function cachedExp(key: string, build: () => RegExp): RegExp {
+  let exp = expCache.get(key);
+  if (!exp) {
+    if (expCache.size >= 200) {
+      expCache.clear();
+    }
+    exp = build();
+    expCache.set(key, exp);
+  }
+  return exp;
+}
+
 // # Tag key resolution
 
 /**
@@ -85,22 +151,39 @@ export function resolveTagKey(matched: string, patterns: TagPatternEntry[]): str
 
 // # Slice pickers
 
-export function pickLineSlices(
-  text: string,
-  offset: number,
-  lineComments: string[],
-  processed: [number, number][],
-  checkpoint?: () => void,
-): LineSlice[] {
+export interface PickSlicesParams {
+  text: string;
+  offset: number;
+  processed: ProcessedRanges;
+  checkpoint?: () => void;
+  /**
+   * Pattern for the prefix group captured before the comment mark.
+   * - line slices: the optional leading char (eg: `.?` for shell `$` guards);
+   *   the captured char is exposed as `LineCommentSlice.prefix` for filtering.
+   * - block slices: defaults to line starts only; an empty string matches
+   *   anywhere.
+   */
+  prefixPattern?: string;
+}
+
+export function pickLineSlices(params: PickSlicesParams & {
+  lineComments: string[];
+}): LineCommentSlice[] {
+  const { text, offset, lineComments, processed, checkpoint, prefixPattern } = params;
   checkpoint?.();
 
   if (!lineComments || !lineComments.length) {
     return [];
   }
 
-  const slices: LineSlice[] = [];
+  const slices: LineCommentSlice[] = [];
   const marks = lineComments.map(s => `${escape(s)}+`).join('|');
-  const exp = new RegExp(`(?<MARK>${marks}).*?(?:${BR}${SP}*\\1.*?)*(?:${BR}|$)`, 'g');
+  const leading = prefixPattern ? `(?<PRE>${prefixPattern})` : '';
+  const exp = cachedExp(
+    `line-slices-${marks}-${leading}`,
+    () => new RegExp(`${leading}(?<MARK>${marks}).*?(?:${BR}${SP}*\\1.*?)*(?:${BR}|$)`, 'g'),
+  );
+  exp.lastIndex = 0;
 
   let block: RegExpExecArray | null;
   while ((block = exp.exec(text))) {
@@ -109,45 +192,50 @@ export function pickLineSlices(
     const start = offset + block.index;
     const end = start + block[0].length;
 
-    if (processed.find(([pStart, pEnd]) => pStart <= start && end <= pEnd)) {
+    if (processed.has(start, end)) {
       // skip if already processed
       continue;
     }
     // store processed range
-    processed.push([start, end]);
+    processed.add(start, end);
 
     slices.push({
       start,
       end,
       comment: block[0],
       mark: block.groups!.MARK,
+      prefix: block.groups!.PRE,
     });
   }
 
   return slices;
 }
 
-export function pickBlockSlices(
-  text: string,
-  offset: number,
-  blockComments: [string, string][],
-  processed: [number, number][],
-  checkpoint?: () => void,
-): BlockSlice[] {
+const DEFAULT_BLOCK_PREFIX = `(?:^|${BR})\\s*`;
+
+export function pickBlockSlices(params: PickSlicesParams & {
+  blockComments: [string, string][];
+}): BlockCommentSlice[] {
+  const { text, offset, blockComments, processed, checkpoint, prefixPattern } = params;
   checkpoint?.();
 
   if (!blockComments || !blockComments.length) {
     return [];
   }
 
-  const slices: BlockSlice[] = [];
+  const prefix = prefixPattern ?? DEFAULT_BLOCK_PREFIX;
+  const slices: BlockCommentSlice[] = [];
 
   for (const marks of blockComments) {
     checkpoint?.();
 
     const markStart = escape(marks[0]);
     const markEnd = escape(marks[1]);
-    const exp = new RegExp(`(?<PRE>(?:^|${BR})\\s*)(?<START>${markStart})(?<CONTENT>${ANY}*?)(?<END>${markEnd})`, 'g');
+    const exp = cachedExp(
+      `block-slices-${prefix}-${markStart}-${markEnd}`,
+      () => new RegExp(`(?<PRE>${prefix})(?<START>${markStart})(?<CONTENT>${ANY}*?)(?<END>${markEnd})`, 'g'),
+    );
+    exp.lastIndex = 0;
 
     let block: RegExpExecArray | null;
     while ((block = exp.exec(text))) {
@@ -156,12 +244,12 @@ export function pickBlockSlices(
       const start = offset + block.index + block.groups!.PRE.length;
       const end = offset + block.index + block[0].length;
 
-      if (processed.find(([pStart, pEnd]) => pStart <= start && end <= pEnd)) {
+      if (processed.has(start, end)) {
         // skip if already processed
         continue;
       }
       // store processed range
-      processed.push([start, end]);
+      processed.add(start, end);
 
       slices.push({
         start,
@@ -176,23 +264,23 @@ export function pickBlockSlices(
   return slices;
 }
 
-export function pickDocSlices(
-  text: string,
-  offset: number,
-  processed: [number, number][],
-  checkpoint?: () => void,
-): DocSlice[] {
+export function pickDocSlices(params: PickSlicesParams): DocCommentSlice[] {
+  const { text, offset, processed, checkpoint } = params;
   checkpoint?.();
 
   const marks: [string, string] = ['/**', '*/'];
   const prefix = '*';
 
-  const slices: DocSlice[] = [];
+  const slices: DocCommentSlice[] = [];
 
   const markStart = escape(marks[0]);
   const markEnd = escape(marks[1]);
 
-  const blockExp = new RegExp(`(?<PRE>(?:^|${BR})${SP}*)(?<START>${markStart})(?<CONTENT>(?:${BR}|${SP})${ANY}*?)(?<END>${markEnd})`, 'g');
+  const blockExp = cachedExp(
+    `doc-slices-${markStart}-${markEnd}`,
+    () => new RegExp(`(?<PRE>(?:^|${BR})${SP}*)(?<START>${markStart})(?<CONTENT>(?:${BR}|${SP})${ANY}*?)(?<END>${markEnd})`, 'g'),
+  );
+  blockExp.lastIndex = 0;
 
   let block: RegExpExecArray | null;
   while ((block = blockExp.exec(text))) {
@@ -200,12 +288,12 @@ export function pickDocSlices(
 
     const start = offset + block.index + block.groups!.PRE.length;
     const end = offset + block.index + block[0].length;
-    if (processed.find(([pStart, pEnd]) => pStart <= start && end <= pEnd)) {
+    if (processed.has(start, end)) {
       // skip if already processed
       continue;
     }
     // store processed range
-    processed.push([start, end]);
+    processed.add(start, end);
 
     slices.push({
       start,
@@ -222,17 +310,21 @@ export function pickDocSlices(
 
 // # Tag matching
 
-export function matchLineTagsInSlice(slice: LineSlice, opt: MatcherOptions): TagRange[] {
+export function matchLineTagsInSlice(slice: LineCommentSlice, opt: MatcherOptions): TagRange[] {
   const ranges: TagRange[] = [];
   const { multilineTags, lineTags, strict, fullHighlight } = opt;
   const mark = escape(slice.mark);
 
-  const lineProcessed: [number, number][] = [];
+  const lineProcessed = new ProcessedRanges();
 
   if (multilineTags.length) {
-    const m1Exp = strict
-      ? new RegExp(`(?<PRE>${SP}*${mark}${SP})(?<TAG>${multilineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}${ANY}*)`, 'gi')
-      : new RegExp(`(?<PRE>${SP}*${mark}${SP}?)(?<TAG>${multilineTags.join('|')})(?<CONTENT>${ANY}*)`, 'gi');
+    const m1Exp = cachedExp(
+      `line-m1-${strict}-${multilineTags.join('|')}-${mark}`,
+      () => strict
+        ? new RegExp(`(?<PRE>${SP}*${mark}${SP})(?<TAG>${multilineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}${ANY}*)`, 'gi')
+        : new RegExp(`(?<PRE>${SP}*${mark}${SP}?)(?<TAG>${multilineTags.join('|')})(?<CONTENT>${ANY}*)`, 'gi'),
+    );
+    m1Exp.lastIndex = 0;
 
     // Find the matched multiline
     let m1: RegExpExecArray | null;
@@ -268,7 +360,7 @@ export function matchLineTagsInSlice(slice: LineSlice, opt: MatcherOptions): Tag
           : m2StartSince + m2.groups!.PRE.length + m2.groups!.MARK.length;
         const m2End = m2StartSince + m2[0].length;
         // store processed range
-        lineProcessed.push([m2Start, m2End]);
+        lineProcessed.add(m2Start, m2End);
 
         ranges.push({ key: tagName, start: m2Start, end: m2End });
       }
@@ -276,9 +368,13 @@ export function matchLineTagsInSlice(slice: LineSlice, opt: MatcherOptions): Tag
   }
 
   if (lineTags.length) {
-    const lineExp = strict
-      ? new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP})(?<TAG>${lineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}.*)`, 'gim')
-      : new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP}?)(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim');
+    const lineExp = cachedExp(
+      `line-tags-${strict}-${lineTags.join('|')}-${mark}`,
+      () => strict
+        ? new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP})(?<TAG>${lineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}.*)`, 'gim')
+        : new RegExp(`(?<PRE>(?:^|${SP})${mark}${SP}?)(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim'),
+    );
+    lineExp.lastIndex = 0;
 
     let line: RegExpExecArray | null;
     while ((line = lineExp.exec(slice.comment))) {
@@ -290,12 +386,12 @@ export function matchLineTagsInSlice(slice: LineSlice, opt: MatcherOptions): Tag
         : lineStartSince + line.groups!.PRE.length;
       const lineEnd = lineStartSince + line[0].length;
 
-      if (lineProcessed.find(([pStart, pEnd]) => pStart <= lineStart && lineEnd <= pEnd)) {
+      if (lineProcessed.has(lineStart, lineEnd)) {
         // skip if already processed
         continue;
       }
       // store processed range
-      lineProcessed.push([lineStart, lineEnd]);
+      lineProcessed.add(lineStart, lineEnd);
 
       const tagName = resolveTagKey(line.groups!.TAG, opt.tagPatterns);
 
@@ -306,7 +402,7 @@ export function matchLineTagsInSlice(slice: LineSlice, opt: MatcherOptions): Tag
   return ranges;
 }
 
-export function matchBlockTagsInSlice(slice: BlockSlice, opt: MatcherOptions): TagRange[] {
+export function matchBlockTagsInSlice(slice: BlockCommentSlice, opt: MatcherOptions): TagRange[] {
   const ranges: TagRange[] = [];
 
   let content = slice.content;
@@ -316,26 +412,30 @@ export function matchBlockTagsInSlice(slice: BlockSlice, opt: MatcherOptions): T
   const suf = escape(slice.marks[1].slice(0, 1));
   if (!!pre && !!suf) {
     const trimExp = new RegExp(`^(${pre}*)(${ANY}*)${suf}*$`, 'i');
-    const trimed = trimExp.exec(slice.content);
-    if (!trimed) {
+    const trimmed = trimExp.exec(slice.content);
+    if (!trimmed) {
       return ranges;
     }
 
-    if (!trimed[2].length) {
+    if (!trimmed[2].length) {
       return ranges;
     }
 
-    content = trimed[2];
-    contentStart += trimed[1].length;
+    content = trimmed[2];
+    contentStart += trimmed[1].length;
   }
 
-  const lineProcessed: [number, number][] = [];
+  const lineProcessed = new ProcessedRanges();
 
   if (opt.multilineTags.length) {
     // exec with remember last reg index, reset m2Exp avoid reg cache
-    const m1Exp = opt.strict
-      ? new RegExp(`(?<PRE>^(?<SPACE1>${SP})|${BR}(?<SPACE2>${SP}*))(?<TAG>${opt.multilineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}${ANY}*)`, 'gi')
-      : new RegExp(`(?<PRE>^(?<SPACE1>${SP}?)|${BR}(?<SPACE2>${SP}*))(?<TAG>${opt.multilineTags.join('|')})(?<CONTENT>${ANY}*)`, 'gi');
+    const m1Exp = cachedExp(
+      `block-m1-${opt.strict}-${opt.multilineTags.join('|')}`,
+      () => opt.strict
+        ? new RegExp(`(?<PRE>^(?<SPACE1>${SP})|${BR}(?<SPACE2>${SP}*))(?<TAG>${opt.multilineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}${ANY}*)`, 'gi')
+        : new RegExp(`(?<PRE>^(?<SPACE1>${SP}?)|${BR}(?<SPACE2>${SP}*))(?<TAG>${opt.multilineTags.join('|')})(?<CONTENT>${ANY}*)`, 'gi'),
+    );
+    m1Exp.lastIndex = 0;
 
     // Find the matched multiline
     let m1: RegExpExecArray | null;
@@ -371,7 +471,7 @@ export function matchBlockTagsInSlice(slice: BlockSlice, opt: MatcherOptions): T
         const m2Start = m2StartSince + m2.groups!.PRE.length;
         const m2End = m2StartSince + m2[0].length;
         // store processed range
-        lineProcessed.push([m2Start, m2End]);
+        lineProcessed.add(m2Start, m2End);
 
         ranges.push({ key: tagName, start: m2Start, end: m2End });
       }
@@ -380,9 +480,13 @@ export function matchBlockTagsInSlice(slice: BlockSlice, opt: MatcherOptions): T
 
   const lineTags = opt.lineTags;
   if (lineTags.length) {
-    const lineExp = opt.strict
-      ? new RegExp(`(?<PRE>^${SP}|${BR}${SP}*)(?<TAG>${lineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}.*)`, 'gim')
-      : new RegExp(`(?<PRE>^${SP}?|${BR}${SP}*)(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim');
+    const lineExp = cachedExp(
+      `block-line-${opt.strict}-${lineTags.join('|')}`,
+      () => opt.strict
+        ? new RegExp(`(?<PRE>^${SP}|${BR}${SP}*)(?<TAG>${lineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}.*)`, 'gim')
+        : new RegExp(`(?<PRE>^${SP}?|${BR}${SP}*)(?<TAG>${lineTags.join('|')})(?<CONTENT>.*)`, 'gim'),
+    );
+    lineExp.lastIndex = 0;
     // Find the matched line
     let line: RegExpExecArray | null;
     while ((line = lineExp.exec(content))) {
@@ -392,11 +496,11 @@ export function matchBlockTagsInSlice(slice: BlockSlice, opt: MatcherOptions): T
       const lineStart = lineStartSince + line.groups!.PRE.length;
       const lineEnd = lineStartSince + line[0].length;
 
-      if (lineProcessed.find(([pStart, pEnd]) => pStart <= lineStart && lineEnd <= pEnd)) {
+      if (lineProcessed.has(lineStart, lineEnd)) {
         continue; // skip if already processed
       }
       // store processed range
-      lineProcessed.push([lineStart, lineEnd]);
+      lineProcessed.add(lineStart, lineEnd);
 
       const tagName = resolveTagKey(line.groups!.TAG, opt.tagPatterns);
 
@@ -407,15 +511,19 @@ export function matchBlockTagsInSlice(slice: BlockSlice, opt: MatcherOptions): T
   return ranges;
 }
 
-export function matchDocTagsInSlice(slice: DocSlice, opt: MatcherOptions): TagRange[] {
+export function matchDocTagsInSlice(slice: DocCommentSlice, opt: MatcherOptions): TagRange[] {
   const ranges: TagRange[] = [];
-  const lineProcessed: [number, number][] = [];
+  const lineProcessed = new ProcessedRanges();
   const pre = escape(slice.prefix);
 
   if (opt.multilineTags.length) {
-    const m1Exp = opt.strict
-      ? new RegExp(`(?<PRE>^${SP}|${SP}*${pre}${SP})(?<TAG>${opt.multilineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}${ANY}*)`, 'gi')
-      : new RegExp(`(?<PRE>^${SP}?|${SP}*${pre}${SP}?)(?<TAG>${opt.multilineTags.join('|')})(?<CONTENT>${ANY}*)`, 'gi');
+    const m1Exp = cachedExp(
+      `doc-m1-${opt.strict}-${opt.multilineTags.join('|')}`,
+      () => opt.strict
+        ? new RegExp(`(?<PRE>^${SP}|${SP}*${pre}${SP})(?<TAG>${opt.multilineTags.join('|')})(?<CONTENT>${TAG_SUFFIX}${ANY}*)`, 'gi')
+        : new RegExp(`(?<PRE>^${SP}?|${SP}*${pre}${SP}?)(?<TAG>${opt.multilineTags.join('|')})(?<CONTENT>${ANY}*)`, 'gi'),
+    );
+    m1Exp.lastIndex = 0;
     // Find the matched multiline
     let m1: RegExpExecArray | null;
     while ((m1 = m1Exp.exec(slice.content))) {
@@ -451,7 +559,7 @@ export function matchDocTagsInSlice(slice: DocSlice, opt: MatcherOptions): TagRa
         const m2Start = m2StartSince + m2.groups!.PRE.length;
         const m2End = m2StartSince + m2[0].length;
         // store processed range
-        lineProcessed.push([m2Start, m2End]);
+        lineProcessed.add(m2Start, m2End);
 
         ranges.push({ key: tagName, start: m2Start, end: m2End });
       }
@@ -461,9 +569,13 @@ export function matchDocTagsInSlice(slice: DocSlice, opt: MatcherOptions): TagRa
   if (opt.lineTags.length) {
     const tags = opt.lineTags.join('|');
     const linePreTag = `(?:(?:${SP}*${BR}${SP}*${pre})|(?:${SP}*${pre}))`;
-    const lineExp = opt.strict
-      ? new RegExp(`(?<PRE>${linePreTag}${SP})(?<TAG>${tags})(?<CONTENT>${TAG_SUFFIX}.*)`, 'gim')
-      : new RegExp(`(?<PRE>${linePreTag}${SP}?)(?<TAG>${tags})(?<CONTENT>.*)`, 'gim');
+    const lineExp = cachedExp(
+      `doc-line-${opt.strict}-${tags}-${pre}`,
+      () => opt.strict
+        ? new RegExp(`(?<PRE>${linePreTag}${SP})(?<TAG>${tags})(?<CONTENT>${TAG_SUFFIX}.*)`, 'gim')
+        : new RegExp(`(?<PRE>${linePreTag}${SP}?)(?<TAG>${tags})(?<CONTENT>.*)`, 'gim'),
+    );
+    lineExp.lastIndex = 0;
 
     // Find the matched line
     let line: RegExpExecArray | null;
@@ -474,12 +586,12 @@ export function matchDocTagsInSlice(slice: DocSlice, opt: MatcherOptions): TagRa
       const lineStart = lineStartSince + line.groups!.PRE.length;
       const lineEnd = lineStartSince + line[0].length;
 
-      if (lineProcessed.find(range => range[0] <= lineStart && lineEnd <= range[1])) {
+      if (lineProcessed.has(lineStart, lineEnd)) {
         // skip if already processed
         continue;
       }
       // store processed range
-      lineProcessed.push([lineStart, lineEnd]);
+      lineProcessed.add(lineStart, lineEnd);
 
       const tagName = resolveTagKey(line.groups!.TAG, opt.tagPatterns);
 

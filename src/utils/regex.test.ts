@@ -71,6 +71,23 @@ describe('compileRegex', () => {
   it('is cached', () => {
     expect(compileRegex('@\\w+')).toBe(compileRegex('@\\w+'));
   });
+
+  it('falls back to literal for patterns with nested quantifiers (ReDoS guard)', () => {
+    expect(match('(a+)+', '(a+)+')).toBe(true);
+    expect(match('(a+)+', 'aaa')).toBe(false);
+    expect(match('(?:\\w+\\s*)+$', '(?:\\w+\\s*)+$')).toBe(true);
+    expect(match('(?:\\w+\\s*)+$', 'abc')).toBe(false);
+  });
+
+  it('falls back to literal for overlong patterns', () => {
+    const long = `${'a'.repeat(201)}+`;
+    expect(match(long, long)).toBe(true);
+  });
+
+  it('still compiles safe quantified alternations', () => {
+    expect(match('(?:a|b)+', 'abab')).toBe(true);
+    expect(match('(?:a|b)+', 'abc')).toBe(false);
+  });
 });
 
 describe('regex fragment constants', () => {

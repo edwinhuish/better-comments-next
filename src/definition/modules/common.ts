@@ -124,14 +124,14 @@ export class Language {
   }
 
   /**
-   * Get avaiable comments
+   * Get available comments
    */
   public getAvailableComments() {
     return this.availableComments;
   }
 
   /**
-   * Set avaiable comments
+   * Set available comments
    */
   public setAvailableComments(comments: AvailableComments) {
     this.availableComments = comments;
