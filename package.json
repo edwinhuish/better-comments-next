@@ -466,15 +466,20 @@
         "lint:type": "tsc -p . --noEmit",
         "lint:eslint": "eslint --cache --max-warnings 0 . --fix",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "build:test": "tsup --config build/tsup.test.js",
+        "test:integration": "pnpm run build && pnpm run build:test && vscode-test"
     },
     "dependencies": {
         "json5": "^2.2.3"
     },
     "devDependencies": {
         "@antfu/eslint-config": "^3.11.2",
+        "@types/mocha": "^10.0.10",
         "@types/node": "^17.0.23",
         "@types/vscode": "^1.70.0",
+        "@vscode/test-cli": "^0.0.15",
+        "@vscode/test-electron": "^3.1.0",
         "bumpp": "^11.1.0",
         "eslint": "^9.16.0",
         "husky": "^8.0.3",
