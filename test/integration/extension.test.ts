@@ -81,6 +81,52 @@ describe('better Comments Next integration', () => {
     }
   });
 
+  it('applies tag decorations over the expected text', async () => {
+    await activateExtension();
+
+    const doc = await vscode.workspace.openTextDocument({
+      content: '// TODO: alpha\nconst x = 1;\n',
+      language: 'typescript',
+    });
+    await vscode.window.showTextDocument(doc, { preview: false });
+    const editor = vscode.window.visibleTextEditors.find(e => e.document.uri.toString() === doc.uri.toString());
+    assert.ok(editor, 'editor should be visible');
+
+    // capture the tag ranges our handler computes for this document
+    let appliedTagRanges: Map<string, vscode.Range[]> | undefined;
+    const proto = CommonHandler.prototype as unknown as {
+      setDecorations: (editor: vscode.TextEditor, tagRanges: Map<string, vscode.Range[]>) => void;
+    };
+    const original = proto.setDecorations;
+    proto.setDecorations = function (editor: vscode.TextEditor, tagRanges: Map<string, vscode.Range[]>) {
+      if (editor.document.uri.toString() === doc.uri.toString()) {
+        appliedTagRanges = tagRanges;
+      }
+      return original.call(this, editor, tagRanges);
+    };
+
+    try {
+      triggerUpdateDecorations({ editor });
+      // both passes (visible ranges + full text) complete within this window
+      await waitFor(() => !!appliedTagRanges && appliedTagRanges.size > 0);
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+    finally {
+      proto.setDecorations = original;
+    }
+
+    // the `todo` tag must be decorated…
+    const todoRanges = appliedTagRanges!.get('todo') ?? [];
+    assert.ok(todoRanges.length > 0, 'the todo tag should have decoration ranges');
+
+    // …over exactly the tagged text…
+    const decoratedText = todoRanges.map(range => doc.getText(range)).join('');
+    assert.ok(decoratedText.includes('TODO: alpha'), `decoration should cover the todo text, got: ${JSON.stringify(decoratedText)}`);
+
+    // …and only on the comment line, not on regular code
+    assert.ok(todoRanges.every(range => range.start.line === 0), 'decorations should stay on the comment line');
+  });
+
   it('emits no unhandled rejections during rapid updates', async () => {
     await activateExtension();
 
