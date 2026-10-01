@@ -2,10 +2,6 @@
 
 ## [3.6.0] (2026-10-01)
 
-### Features
-
-* **changelog:** 用GitHub用户名替换git作者名 ([10fa8fe](https://github.com/edwinhuish/better-comments-next/commit/10fa8fece9f46d422e52edb74e26f965e1c45b38))
-
 ### Fix
 
 * **package:** raise minimum vscode engine to 1.70 for color theme kind api ([4be2ebc](https://github.com/edwinhuish/better-comments-next/commit/4be2ebc8ffca50d1d7ec9a721ffd7170aa8a973d))
@@ -20,6 +16,7 @@
 
 ### House Keeping
 
+* **github ci:** Replace the Git author name with the GitHub username. ([10fa8fe](https://github.com/edwinhuish/better-comments-next/commit/10fa8fece9f46d422e52edb74e26f965e1c45b38))
 * **changelog:** add 3.4 and 3.5 release histories ([8bdc30d](https://github.com/edwinhuish/better-comments-next/commit/8bdc30d53e96d7445cb0c4696c96f153570f054e))
 * **release:** generate changelog entries for minor version bumps ([c12b9aa](https://github.com/edwinhuish/better-comments-next/commit/c12b9aac0809aed0487a1da3290d0c11836a7f56))
 * assert decoration coverage at the tag-range level ([5aaeefd](https://github.com/edwinhuish/better-comments-next/commit/5aaeefdca3bd3267ff728f5a72605ccfd4e349e7))
@@ -183,7 +180,7 @@
 
 ### Fix
 
-* Skip decorate line comment like inside the block comment. 
+* Skip decorate line comment like inside the block comment.
 * Fix python decoration. [#4](https://github.com/edwinhuish/better-comments-next/issues/4)
 * Wrong matching for block comments. [#9](https://github.com/edwinhuish/better-comments-next/issues/9)
 
@@ -224,7 +221,7 @@
 * Language support is now driven from configuration files. This means that if you have an extension which informs VSCode about a language, Better Comments will know about it too!
 * Problems are likely to arise with this change, but it allows a lot more users to benefit from Better Comments without needing an explicit update for the extension adding support.
 
-__With version 3.0.0 comes the addition of the support button on the Github page for [Better Comments](https://github.com/sponsors/aaron-bond)__  
+__With version 3.0.0 comes the addition of the support button on the Github page for [Better Comments](https://github.com/sponsors/aaron-bond)__
 __If you feel my work on this extension has earned me a coffee, that's the place to do it!__
 
 _**Thanks!**_
@@ -355,7 +352,7 @@ _**Thanks!**_
 
 * Adding new property for tags: __backgroundColor__ ([3e7a188](https://github.com/aaron-bond/better-comments/commit/3e7a188)), closes [#66](https://github.com/aaron-bond/better-comments/issues/66)
   * default: `transparent`
-* Adding support for: PlainText ([27ff774](https://github.com/aaron-bond/better-comments/commit/27ff774)), closes [#39](https://github.com/aaron-bond/better-comments/issues/39)  
+* Adding support for: PlainText ([27ff774](https://github.com/aaron-bond/better-comments/commit/27ff774)), closes [#39](https://github.com/aaron-bond/better-comments/issues/39)
   * PlainText support must be turned on in the settings: `highlightPlainText`
 * Adding support for: Vue.js ([2b14d2e](https://github.com/aaron-bond/better-comments/commit/2b14d2e)), closes [#71](https://github.com/aaron-bond/better-comments/issues/71)
 * Adding support for: nim ([73a55f6](https://github.com/aaron-bond/better-comments/commit/73a55f6)), merges [#68](https://github.com/aaron-bond/better-comments/issues/68)
@@ -371,7 +368,7 @@ _**Thanks!**_
 ### Bug Fixes
 
 * Fixing support for SCSS ([2b3919f](https://github.com/aaron-bond/better-comments/commit/2b3919f)), closes [#60](https://github.com/aaron-bond/better-comments/issues/60)
-* Fixing Python to prevent first line of the file being detected as a comment,  
+* Fixing Python to prevent first line of the file being detected as a comment,
 ([438e0a6](https://github.com/aaron-bond/better-comments/commit/438e0a6)), closes [#61](https://github.com/aaron-bond/better-comments/issues/61)
 
 ## [1.2.2] (2018-04-15)
