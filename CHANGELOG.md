@@ -1,5 +1,36 @@
 # Change Log
 
+## [3.6.0] (2026-10-01)
+
+### Features
+
+* **changelog:** 用GitHub用户名替换git作者名 ([10fa8fe](https://github.com/edwinhuish/better-comments-next/commit/10fa8fece9f46d422e52edb74e26f965e1c45b38))
+
+### Fix
+
+* **package:** raise minimum vscode engine to 1.70 for color theme kind api ([4be2ebc](https://github.com/edwinhuish/better-comments-next/commit/4be2ebc8ffca50d1d7ec9a721ffd7170aa8a973d))
+* **configuration:** append unmatched theme tag overrides instead of dropping ([d62613c](https://github.com/edwinhuish/better-comments-next/commit/d62613cc4d532676dbf961a842259f8df21e69d3))
+* **handler:** dispose pending timers and handlers on deactivation ([7d34d8b](https://github.com/edwinhuish/better-comments-next/commit/7d34d8b49a04c96bbc8a1db49c0694f3929c291b))
+* **handler:** scope update timers and task tokens per document uri ([c10b0e8](https://github.com/edwinhuish/better-comments-next/commit/c10b0e8b573ff6f43212991a9090a31f9777d087))
+* coverage configuration of color theme #79 ([de5ad26](https://github.com/edwinhuish/better-comments-next/commit/de5ad265ffc1c046ef7f47a792cbe9010debbb88))
+
+### Performance
+
+* optimize decoration rescans and deduplicate handler logic ([2a1be0f](https://github.com/edwinhuish/better-comments-next/commit/2a1be0f58bdcc4dbc07ff1bfded245c4407976a0))
+
+### House Keeping
+
+* **changelog:** add 3.4 and 3.5 release histories ([8bdc30d](https://github.com/edwinhuish/better-comments-next/commit/8bdc30d53e96d7445cb0c4696c96f153570f054e))
+* **release:** generate changelog entries for minor version bumps ([c12b9aa](https://github.com/edwinhuish/better-comments-next/commit/c12b9aac0809aed0487a1da3290d0c11836a7f56))
+* assert decoration coverage at the tag-range level ([5aaeefd](https://github.com/edwinhuish/better-comments-next/commit/5aaeefdca3bd3267ff728f5a72605ccfd4e349e7))
+* add github actions workflow for lint, tests and builds ([97978c8](https://github.com/edwinhuish/better-comments-next/commit/97978c806f9e8ef22d7544db7d94d8d8525f06aa))
+* add vscode integration tests ([b4cc622](https://github.com/edwinhuish/better-comments-next/commit/b4cc6223dbbd68b7506d955637657b3f1e46236f))
+* **matcher:** extract pure tag matching core from handler ([21d0c47](https://github.com/edwinhuish/better-comments-next/commit/21d0c4790f824c27cefac9f10a26570876a9dd39))
+* add vitest unit tests for regex, configuration and language definitions ([aee50f4](https://github.com/edwinhuish/better-comments-next/commit/aee50f4386318af8399083482246a9f5cd5ecd9b))
+* add AGENTS.md and relax lint rules for markdown code blocks ([780e8d6](https://github.com/edwinhuish/better-comments-next/commit/780e8d68a6b0b430accbf1928541972a1af9f4fb))
+* **ci:** upgrade pnpm to v11 and adjust build configuration ([a0f808a](https://github.com/edwinhuish/better-comments-next/commit/a0f808a343ffd6a03e8d37c7af15e6dcbe2bd60c))
+
+
 ## [3.5]
 
 ### Features
