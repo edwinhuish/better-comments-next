@@ -107,8 +107,19 @@ pnpm build              # node build → dist/extension.js
 pnpm build-web          # web build → dist/extension.web.js
 pnpm watch              # node build in watch mode
 pnpm package            # clean + lint + build + build-web (release path)
-pnpm release            # bump version (bumpp)
+pnpm release            # bump version (bumpp) + update CHANGELOG.md on minor/major
 ```
+
+`pnpm release` runs `bumpp --all --execute "node build/changelog.mjs"`: bumpp bumps
+`package.json`, then `build/changelog.mjs` runs **before** the release commit/tag so
+the changelog lands in the very same `chore: release vX.Y.Z` commit. Rules:
+
+- **minor / major bump** → prepend one `## [x.y.z] (date)` section built from the
+  commits since the previous minor release tag (patch releases are not logged, so
+  their commits roll up into the next minor entry).
+- **patch bump / prerelease / duplicate version / no relevant commits** → `CHANGELOG.md`
+  is not written at all.
+- Preview without touching the file: `node build/changelog.mjs --dry-run --from 3.5.1 --to 3.6.0`.
 
 ---
 
@@ -181,8 +192,9 @@ Follow this order for every non-trivial task:
   ` ```12:15:src/handler/modules/common.ts ``` ` (startLine:endLine:filepath).
 - **Config examples**: jsonc with comments allowed, 4-space indent (matches
   `jsonc/indent` rule for `package.json`).
-- **Changelog entries**: append under the current version heading in `CHANGELOG.md`
-  using its sections: `### Features` / `### Fix` / `### House Keeping`.
+- **Changelog entries**: the `release` script generates them under a new
+  `## [x.y.z] (date)` heading using the sections `### Features` / `### Fix` /
+  `### Performance` / `### House Keeping` (mapped from the conventional-commit type).
 
 ---
 
@@ -288,7 +300,8 @@ Follow this order for every non-trivial task:
 - Markdown, English, sentence-style headings; relative links between docs.
 - User-facing settings documented in `README.md` Configuration section (jsonc example)
   *and* `package.json` descriptions — keep both in sync.
-- `CHANGELOG.md`: add entries under `### Features` / `### Fix` / `### House Keeping`.
+- `CHANGELOG.md`: minor/major releases get a generated entry under `### Features` /
+  `### Fix` / `### Performance` / `### House Keeping`; patch releases add nothing.
 - `TODO.md`: tick completed items; add new discovered work under the right priority
   group (P0 correctness → P1 performance → P2 refactoring → P3 tests/CI).
 

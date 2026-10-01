@@ -457,7 +457,7 @@
         "clean:dist": "rimraf dist",
         "vscode:prepublish": "pnpm run package",
         "package": "pnpm run clean:dist && pnpm run lint && pnpm run build && pnpm run build-web",
-        "release": "pnpm bumpp",
+        "release": "bumpp --all --execute \"node build/changelog.mjs\"",
         "build": "tsup --config=build/tsup.node.js",
         "watch": "tsup --config=build/tsup.node.js --watch",
         "build-web": "tsup --config=build/tsup.web.js",
