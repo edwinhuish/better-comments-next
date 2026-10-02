@@ -14,7 +14,7 @@
     "homepage": "https://github.com/edwinhuish/better-comments-next/blob/master/README.md",
     "repository": {
         "type": "git",
-        "url": "https://github.com/edwinhuish/better-comments-next"
+        "url": "git+https://github.com/edwinhuish/better-comments-next.git"
     },
     "bugs": "https://github.com/edwinhuish/better-comments-next/issues",
     "keywords": [
@@ -448,6 +448,70 @@
                 "better-comments.strict": {
                     "type": "boolean",
                     "description": "Strict mode of tag. default true.",
+                    "default": true
+                },
+                "better-comments.panelEnabled": {
+                    "type": "boolean",
+                    "description": "Show the Better Comments panel in the activity bar.",
+                    "default": true
+                },
+                "better-comments.panelGroupBy": {
+                    "type": "string",
+                    "enum": [
+                        "file",
+                        "tag"
+                    ],
+                    "default": "file",
+                    "description": "Initial browsing dimension of the panel: `file` lists comments grouped by file, `tag` lists them grouped by tag. Both can be switched from the panel title bar."
+                },
+                "better-comments.panelAutoRefresh": {
+                    "type": "boolean",
+                    "description": "Refresh the panel when files are created, changed or deleted.",
+                    "default": true
+                },
+                "better-comments.panelScanOnStartup": {
+                    "type": "boolean",
+                    "description": "Scan the workspace once the panel becomes visible.",
+                    "default": true
+                },
+                "better-comments.panelIncludeGlobs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Only scan files matching these globs. Empty means every file of the workspace.",
+                    "default": []
+                },
+                "better-comments.panelExcludeGlobs": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "description": "Globs excluded from scanning. They take precedence over `better-comments.panelIncludeGlobs` and `.gitignore`.",
+                    "default": [
+                        "**/.git/**"
+                    ]
+                },
+                "better-comments.panelUseGitignore": {
+                    "type": "boolean",
+                    "description": "Respect `.gitignore` files, including nested ones, while scanning.",
+                    "default": true
+                },
+                "better-comments.panelMaxFileSize": {
+                    "type": "number",
+                    "minimum": 1,
+                    "description": "Skip files larger than this size, in kilobytes.",
+                    "default": 512
+                },
+                "better-comments.panelMaxFiles": {
+                    "type": "number",
+                    "minimum": 1,
+                    "description": "Stop scanning after this many files.",
+                    "default": 5000
+                },
+                "better-comments.panelShowCounts": {
+                    "type": "boolean",
+                    "description": "Show the comment count on the file and tag nodes of the panel.",
                     "default": true
                 }
             }

@@ -1,7 +1,14 @@
 import type { Tag } from './configuration';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { getConfigurationFlatten, getLineTagsEscaped, getMultilineTagsEscaped, refresh, resolveTagKey } from './configuration';
+import {
+  getConfigurationFlatten,
+  getLineTagsEscaped,
+  getMultilineTagsEscaped,
+  getPanelConfiguration,
+  refresh,
+  resolveTagKey,
+} from './configuration';
 
 const mocks = vi.hoisted(() => ({
   getConfiguration: vi.fn(),
@@ -57,6 +64,16 @@ function makeConfig(overrides: Record<string, unknown> = {}) {
     preloadLines: 100,
     fullHighlight: false,
     strict: true,
+    panelEnabled: true,
+    panelGroupBy: 'file',
+    panelAutoRefresh: true,
+    panelScanOnStartup: true,
+    panelIncludeGlobs: [],
+    panelExcludeGlobs: ['**/.git/**'],
+    panelUseGitignore: true,
+    panelMaxFileSize: 512,
+    panelMaxFiles: 5000,
+    panelShowCounts: true,
     ...overrides,
   };
 }
@@ -165,6 +182,103 @@ describe('getMultilineTagsEscaped / getLineTagsEscaped', () => {
     expect(getMultilineTagsEscaped()).toContain('(?:todo\\[.*?\\])');
     expect(getLineTagsEscaped()).toContain('fix-me');
     expect(getLineTagsEscaped()).not.toContain('todo');
+  });
+});
+
+describe('getPanelConfiguration', () => {
+  beforeEach(() => {
+    mocks.getConfiguration.mockReturnValue(makeConfig());
+  });
+
+  it('returns the defaults when the panel settings are absent', () => {
+    mocks.getConfiguration.mockReturnValue({
+      highlightPlainText: false,
+      tags: [],
+      tagsLight: [],
+      tagsDark: [],
+      languages: [],
+      updateDelay: 0,
+      preloadLines: 100,
+      fullHighlight: false,
+      strict: true,
+    });
+
+    expect(getPanelConfiguration()).toEqual({
+      enabled: true,
+      groupBy: 'file',
+      autoRefresh: true,
+      scanOnStartup: true,
+      includeGlobs: [],
+      excludeGlobs: ['**/.git/**'],
+      useGitignore: true,
+      maxFileSize: 512,
+      maxFiles: 5000,
+      showCounts: true,
+    });
+  });
+
+  it('reads the configured values', () => {
+    mocks.getConfiguration.mockReturnValue(makeConfig({
+      panelEnabled: false,
+      panelGroupBy: 'tag',
+      panelUseGitignore: false,
+      panelExcludeGlobs: ['**/vendor/**'],
+      panelMaxFileSize: 64,
+      panelMaxFiles: 100,
+    }));
+
+    expect(getPanelConfiguration()).toMatchObject({
+      enabled: false,
+      groupBy: 'tag',
+      useGitignore: false,
+      excludeGlobs: ['**/vendor/**'],
+      maxFileSize: 64,
+      maxFiles: 100,
+    });
+  });
+
+  it('falls back to defaults for malformed values', () => {
+    mocks.getConfiguration.mockReturnValue(makeConfig({
+      panelEnabled: 'yes',
+      panelAutoRefresh: 0,
+      panelMaxFiles: Number.NaN,
+      panelGroupBy: 'invalid',
+      panelExcludeGlobs: '**/nope/**',
+    }));
+
+    const panel = getPanelConfiguration();
+
+    expect(panel.enabled).toBe(true);
+    expect(panel.autoRefresh).toBe(true);
+    expect(panel.maxFiles).toBe(5000);
+    expect(panel.groupBy).toBe('file');
+    expect(panel.excludeGlobs).toEqual(['**/.git/**']);
+  });
+
+  it('clamps numeric limits into a sane range', () => {
+    mocks.getConfiguration.mockReturnValue(makeConfig({ panelMaxFiles: 0, panelMaxFileSize: -8 }));
+    expect(getPanelConfiguration().maxFiles).toBe(1);
+    expect(getPanelConfiguration().maxFileSize).toBe(1);
+
+    // the panel options are cached: a new configuration needs a refresh
+    refresh();
+    mocks.getConfiguration.mockReturnValue(makeConfig({ panelMaxFiles: 1e9 }));
+    expect(getPanelConfiguration().maxFiles).toBe(100_000);
+  });
+
+  it('drops invalid glob entries', () => {
+    mocks.getConfiguration.mockReturnValue(makeConfig({
+      panelIncludeGlobs: ['src/**', '', 42, '  '],
+    }));
+
+    expect(getPanelConfiguration().includeGlobs).toEqual(['src/**']);
+  });
+
+  it('caches the result until refresh', () => {
+    expect(getPanelConfiguration()).toBe(getPanelConfiguration());
+
+    refresh();
+    expect(getPanelConfiguration()).toEqual(getPanelConfiguration());
   });
 });
 

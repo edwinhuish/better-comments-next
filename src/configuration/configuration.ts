@@ -1,4 +1,5 @@
 import type { WorkspaceConfiguration } from 'vscode';
+import * as log from '@/log';
 import { resolveTagKey as matchResolveTagKey } from '@/matcher';
 import { compileGlob, compileRegex, escape } from '@/utils/regex';
 import * as vscode from 'vscode';
@@ -48,6 +49,54 @@ export interface Language {
   embeddedLanguages: string[];
 }
 
+/**
+ * Browsing dimension of the panel: group comments by file, or by tag.
+ * The value configured here is the *initial* dimension; switching it in the
+ * panel title bar is kept per workspace outside of the settings.
+ */
+export type PanelGroupBy = 'file' | 'tag';
+
+/** Validated, ready-to-use panel options (see `getPanelConfiguration`) */
+export interface PanelConfiguration {
+  /** Whether the panel view is contributed at all */
+  enabled: boolean;
+  /** Initial browsing dimension */
+  groupBy: PanelGroupBy;
+  /** Refresh the panel when documents change */
+  autoRefresh: boolean;
+  /** Scan the workspace once the panel becomes visible */
+  scanOnStartup: boolean;
+  /** Only scan these globs; empty means every file */
+  includeGlobs: string[];
+  /** Globs always excluded, taking precedence over gitignore */
+  excludeGlobs: string[];
+  /** Respect `.gitignore` files (including nested ones) */
+  useGitignore: boolean;
+  /** Skip files larger than this size, in kilobytes */
+  maxFileSize: number;
+  /** Stop scanning after this many files */
+  maxFiles: number;
+  /** Show the comment count on file and tag nodes */
+  showCounts: boolean;
+}
+
+/**
+ * Falls back to these values whenever a setting is missing or malformed, so a
+ * broken user configuration can never break the panel (or the extension).
+ */
+const DEFAULT_PANEL: PanelConfiguration = {
+  enabled: true,
+  groupBy: 'file',
+  autoRefresh: true,
+  scanOnStartup: true,
+  includeGlobs: [],
+  excludeGlobs: ['**/.git/**'],
+  useGitignore: true,
+  maxFileSize: 512,
+  maxFiles: 5000,
+  showCounts: true,
+};
+
 interface Configuration {
   highlightPlainText: boolean;
   tags: Tag[];
@@ -58,6 +107,17 @@ interface Configuration {
   preloadLines: number;
   fullHighlight: boolean; // Highlight entire line of line comment
   strict: boolean;
+  panelEnabled: boolean;
+  panelGroupBy: PanelGroupBy;
+  panelAutoRefresh: boolean;
+  panelScanOnStartup: boolean;
+  panelIncludeGlobs: string[];
+  panelExcludeGlobs: string[];
+  panelUseGitignore: boolean;
+  /** in kilobytes */
+  panelMaxFileSize: number;
+  panelMaxFiles: number;
+  panelShowCounts: boolean;
 }
 
 export interface ConfigurationFlatten extends Omit<Configuration, 'tagsLight' | 'tagsDark'> {
@@ -71,6 +131,7 @@ let multilineTagsEscaped: string[] | undefined;
 let lineTagsEscaped: string[] | undefined;
 let allTagsEscaped: string[] | undefined;
 let tagMatchers: { key: string; test: RegExp }[] | undefined;
+let panelConfig: PanelConfiguration | undefined;
 
 export function refresh() {
   // if already set tagDecorationTypes, clear decoration for visible editors
@@ -90,6 +151,7 @@ export function refresh() {
   lineTagsEscaped = undefined;
   allTagsEscaped = undefined;
   tagMatchers = undefined;
+  panelConfig = undefined;
 }
 
 /**
@@ -277,6 +339,91 @@ export function getTagMatchers() {
  */
 export function resolveTagKey(matched: string): string {
   return matchResolveTagKey(matched, getTagMatchers());
+}
+
+// # Panel configuration
+
+/**
+ * Read a boolean setting, degrading to `fallback` instead of trusting whatever
+ * the user put in `settings.json`.
+ */
+function readBoolean(value: unknown, fallback: boolean, key: string): boolean {
+  if (typeof value !== 'boolean') {
+    if (value !== undefined) {
+      log.warn(`(better-comments.${key}) expects a boolean, got ${typeof value}, falling back to ${fallback}`);
+    }
+    return fallback;
+  }
+
+  return value;
+}
+
+/** Read a positive number setting, clamped into `[min, max]`. */
+function readCount(value: unknown, fallback: number, key: string, min: number, max: number): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    if (value !== undefined) {
+      log.warn(`(better-comments.${key}) expects a number, got ${typeof value}, falling back to ${fallback}`);
+    }
+    return fallback;
+  }
+
+  const clamped = Math.min(Math.max(Math.trunc(value), min), max);
+  if (clamped !== value) {
+    log.warn(`(better-comments.${key}) clamped ${value} to ${clamped}`);
+  }
+
+  return clamped;
+}
+
+/**
+ * Read a glob list, dropping every entry that is not a non-empty string.
+ * Missing or malformed lists fall back to the default list.
+ */
+function readGlobs(value: unknown, key: string, fallback: string[]): string[] {
+  if (value === undefined) {
+    return [...fallback];
+  }
+
+  if (!Array.isArray(value)) {
+    log.warn(`(better-comments.${key}) expects an array of globs, got ${typeof value}, falling back to the default`);
+    return [...fallback];
+  }
+
+  return value.filter((glob): glob is string => {
+    if (typeof glob === 'string' && glob.trim()) {
+      return true;
+    }
+    log.warn(`(better-comments.${key}) dropped an invalid glob entry`);
+    return false;
+  });
+}
+
+/**
+ * Panel options with every field validated and clamped, so the rest of the
+ * extension can read them without defensive checks of its own.
+ */
+export function getPanelConfiguration(): PanelConfiguration {
+  if (panelConfig) {
+    return panelConfig;
+  }
+
+  const config = getConfigurationFlatten();
+
+  panelConfig = {
+    enabled: readBoolean(config.panelEnabled, DEFAULT_PANEL.enabled, 'panelEnabled'),
+    groupBy: config.panelGroupBy === 'tag' ? 'tag' : DEFAULT_PANEL.groupBy,
+    autoRefresh: readBoolean(config.panelAutoRefresh, DEFAULT_PANEL.autoRefresh, 'panelAutoRefresh'),
+    scanOnStartup: readBoolean(config.panelScanOnStartup, DEFAULT_PANEL.scanOnStartup, 'panelScanOnStartup'),
+    // an empty include list means "every file"
+    includeGlobs: readGlobs(config.panelIncludeGlobs, 'panelIncludeGlobs', DEFAULT_PANEL.includeGlobs),
+    excludeGlobs: readGlobs(config.panelExcludeGlobs, 'panelExcludeGlobs', DEFAULT_PANEL.excludeGlobs),
+    useGitignore: readBoolean(config.panelUseGitignore, DEFAULT_PANEL.useGitignore, 'panelUseGitignore'),
+    maxFileSize: readCount(config.panelMaxFileSize, DEFAULT_PANEL.maxFileSize, 'panelMaxFileSize', 1, 102_400),
+    maxFiles: readCount(config.panelMaxFiles, DEFAULT_PANEL.maxFiles, 'panelMaxFiles', 1, 100_000),
+    showCounts: readBoolean(config.panelShowCounts, DEFAULT_PANEL.showCounts, 'panelShowCounts'),
+  };
+
+  return panelConfig;
 }
 
 function isDarkTheme(): boolean {
