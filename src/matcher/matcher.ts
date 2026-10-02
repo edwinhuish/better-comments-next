@@ -26,6 +26,8 @@ export interface DocCommentSlice extends BlockCommentSlice {
 export interface TagRange {
   /** resolved decoration key of the matched tag */
   key: string;
+  /** tag text as it appears in the source (eg: `TODO`, `todo[FOO-123]`) */
+  matched: string;
   /** absolute start offset in the document */
   start: number;
   /** absolute end offset in the document */
@@ -362,7 +364,7 @@ export function matchLineTagsInSlice(slice: LineCommentSlice, opt: MatcherOption
         // store processed range
         lineProcessed.add(m2Start, m2End);
 
-        ranges.push({ key: tagName, start: m2Start, end: m2End });
+        ranges.push({ key: tagName, matched: m1.groups!.TAG, start: m2Start, end: m2End });
       }
     }
   }
@@ -395,7 +397,7 @@ export function matchLineTagsInSlice(slice: LineCommentSlice, opt: MatcherOption
 
       const tagName = resolveTagKey(line.groups!.TAG, opt.tagPatterns);
 
-      ranges.push({ key: tagName, start: lineStart, end: lineEnd });
+      ranges.push({ key: tagName, matched: line.groups!.TAG, start: lineStart, end: lineEnd });
     }
   }
 
@@ -473,7 +475,7 @@ export function matchBlockTagsInSlice(slice: BlockCommentSlice, opt: MatcherOpti
         // store processed range
         lineProcessed.add(m2Start, m2End);
 
-        ranges.push({ key: tagName, start: m2Start, end: m2End });
+        ranges.push({ key: tagName, matched: m1.groups!.TAG, start: m2Start, end: m2End });
       }
     }
   }
@@ -504,7 +506,7 @@ export function matchBlockTagsInSlice(slice: BlockCommentSlice, opt: MatcherOpti
 
       const tagName = resolveTagKey(line.groups!.TAG, opt.tagPatterns);
 
-      ranges.push({ key: tagName, start: lineStart, end: lineEnd });
+      ranges.push({ key: tagName, matched: line.groups!.TAG, start: lineStart, end: lineEnd });
     }
   }
 
@@ -561,7 +563,7 @@ export function matchDocTagsInSlice(slice: DocCommentSlice, opt: MatcherOptions)
         // store processed range
         lineProcessed.add(m2Start, m2End);
 
-        ranges.push({ key: tagName, start: m2Start, end: m2End });
+        ranges.push({ key: tagName, matched: m1.groups!.TAG, start: m2Start, end: m2End });
       }
     }
   }
@@ -595,7 +597,7 @@ export function matchDocTagsInSlice(slice: DocCommentSlice, opt: MatcherOptions)
 
       const tagName = resolveTagKey(line.groups!.TAG, opt.tagPatterns);
 
-      ranges.push({ key: tagName, start: lineStart, end: lineEnd });
+      ranges.push({ key: tagName, matched: line.groups!.TAG, start: lineStart, end: lineEnd });
     }
   }
 

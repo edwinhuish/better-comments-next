@@ -238,8 +238,16 @@ describe('matchLineTagsInSlice', () => {
 
     // the decoration starts after the comment mark (including the gap space)
     expect(ranges).toEqual([
-      { key: 'todo', start: 2, end: 15 },
+      { key: 'todo', matched: 'TODO', start: 2, end: 15 },
     ]);
+  });
+
+  it('reports the captured text of dynamic tags', () => {
+    const options = makeOptions({ multilineTags: [compileGlob('todo[*]')] });
+    const ranges = matchLineTagsInSlice(makeSlice('// TODO[FOO-123]: ship it'), options);
+
+    // `key` identifies the configured tag, `matched` keeps what the source says
+    expect(ranges[0]).toMatchObject({ key: 'todo[*]', matched: 'TODO[FOO-123]' });
   });
 
   it('does not match a tag without word boundary in strict mode', () => {
