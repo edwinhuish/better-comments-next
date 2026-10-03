@@ -44,6 +44,7 @@ src/
 ├── matcher/              # Tag matching core + per-language matchers
 │   └── modules/          # common / plaintext / python / react / shellscript
 ├── renderer/             # Turns matched tag ranges into editor decorations
+├── panel/                # Panel data model: tag items, file/tag groups, cache
 ├── log/                  # OutputChannel logger
 └── utils/                # regex compilers, string helpers, promise helpers
 samples/                  # Sample files in 60+ languages (also future test fixtures)
