@@ -41,8 +41,9 @@ src/
 ├── extension.ts          # Activation entry point
 ├── configuration/        # Tag/theme config, decoration types, caching
 ├── definition/           # Per-language comment tokens (from all installed extensions)
-├── handler/              # Decoration computation pipeline (per-language subclasses)
+├── matcher/              # Tag matching core + per-language matchers
 │   └── modules/          # common / plaintext / python / react / shellscript
+├── renderer/             # Turns matched tag ranges into editor decorations
 ├── log/                  # OutputChannel logger
 └── utils/                # regex compilers, string helpers, promise helpers
 samples/                  # Sample files in 60+ languages (also future test fixtures)
@@ -50,8 +51,8 @@ samples/                  # Sample files in 60+ languages (also future test fixt
 
 **Core data flow**:
 `configuration.activate` → `definition.activate` (scan all extensions' `contributes.languages`)
-→ `handler.activate` (listen to editor events) → `Handler.triggerUpdateDecorations`
-(regex scan → `vscode.Range` list → `editor.setDecorations`).
+→ `renderer.activate` (listen to editor events) → `renderer.triggerUpdateDecorations`
+(`matcher` scan → `vscode.Range` list → `editor.setDecorations`).
 
 ---
 
@@ -62,7 +63,7 @@ The agent acts as a **senior TypeScript/VS Code extension developer** collaborat
 ### In Scope
 
 - Implementing bug fixes and features listed in [`TODO.md`](./TODO.md).
-- Refactoring (e.g., extracting pure matching functions, deduplicating Handler subclasses).
+- Refactoring (e.g., extracting pure matching functions, deduplicating matchers).
 - Writing/running lint, type checks, and builds; authoring tests (see TODO.md §P3).
 - Updating docs (`README.md`, `CHANGELOG.md`, `TODO.md`) when behavior changes.
 
@@ -278,10 +279,12 @@ Follow this order for every non-trivial task:
   `configuration.ts:74-92` — missing one entry causes stale-config bugs).
 - **Event bus** — cross-module reactivity uses `onDidChange(callback)` registries
   (see `configuration/event.ts`), not direct imports of listeners.
-- **Handler subclassing** — language-specific behavior subclasses
-  `CommonHandler` and overrides only the minimal `pick*Slices` hook. When adding
-  a language, prefer a new `Language` subclass in `definition/modules/` or a new
-  entry in `getDefaultComments` over duplicating handler logic.
+- **Matcher subclassing** — language-specific behavior subclasses
+  `CommonMatcher` and overrides only the prefix/skip hooks (`blockPrefixPattern`,
+  `linePrefixPattern`, `skipLinePrefix`); the renderer stays language agnostic.
+  When adding a language, prefer a new `Language` subclass in
+  `definition/modules/` or a new entry in `getDefaultComments` over duplicating
+  matcher logic.
 - **Regex fragments** — compose patterns from the shared constants in
   `src/utils/regex.ts`; document any `lastIndex` manual-rewind trick with the
   invariant it maintains.
@@ -327,7 +330,7 @@ interface Configuration {
 ```
 
 ```ts
-// src/handler/modules/common.ts — consuming the option
+// src/renderer/renderer.ts — consuming the option
 const { exampleOption } = configuration.getConfigurationFlatten(); // 3. read via flatten
 if (exampleOption) {
   // 4. document README section + CHANGELOG entry

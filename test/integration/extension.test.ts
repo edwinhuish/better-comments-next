@@ -1,8 +1,7 @@
 import * as assert from 'node:assert';
 import * as vscode from 'vscode';
 import * as definition from '../../src/definition';
-import { triggerUpdateDecorations } from '../../src/handler/handler';
-import { CommonHandler } from '../../src/handler/modules/common';
+import { Renderer, triggerUpdateDecorations } from '../../src/renderer/renderer';
 
 const EXTENSION_ID = 'edwinhuish.better-comments-next';
 
@@ -56,10 +55,10 @@ describe('better Comments Next integration', () => {
     const editor2 = vscode.window.visibleTextEditors.find(e => e.document.uri.toString() === uri2);
     assert.ok(editor1 && editor2, 'both editors should be visible');
 
-    // spy on our own setDecorations: with the pre-fix shared-handler state,
+    // spy on our own setDecorations: with the pre-fix shared renderer state,
     // the second trigger canceled the first update entirely
     let editor1Decorations = 0;
-    const proto = CommonHandler.prototype as unknown as {
+    const proto = Renderer.prototype as unknown as {
       setDecorations: (editor: vscode.TextEditor, tagRanges: Map<string, vscode.Range[]>) => void;
     };
     const original = proto.setDecorations;
@@ -92,9 +91,9 @@ describe('better Comments Next integration', () => {
     const editor = vscode.window.visibleTextEditors.find(e => e.document.uri.toString() === doc.uri.toString());
     assert.ok(editor, 'editor should be visible');
 
-    // capture the tag ranges our handler computes for this document
+    // capture the tag ranges our renderer computes for this document
     let appliedTagRanges: Map<string, vscode.Range[]> | undefined;
-    const proto = CommonHandler.prototype as unknown as {
+    const proto = Renderer.prototype as unknown as {
       setDecorations: (editor: vscode.TextEditor, tagRanges: Map<string, vscode.Range[]>) => void;
     };
     const original = proto.setDecorations;

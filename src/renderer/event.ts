@@ -1,17 +1,24 @@
+import * as configuration from '@/configuration';
 import * as vscode from 'vscode';
-import * as handler from './handler';
+import * as renderer from './renderer';
 
 export type OnDidChangeCallback = (event: vscode.TextDocumentChangeEvent, editor?: vscode.TextEditor) => void;
 
-const onDidChangeCallbacks: OnDidChangeCallback[] = [];
+let onDidChangeCallbacks: OnDidChangeCallback[] = [];
 export function onDidChange(callback: OnDidChangeCallback) {
   onDidChangeCallbacks.push(callback);
 }
 
 export function activate(context: vscode.ExtensionContext) {
+  configuration.onDidChange((config) => {
+    for (const editor of vscode.window.visibleTextEditors) {
+      renderer.triggerUpdateDecorations({ editor });
+    }
+  });
+
   // Loop all visible editor for the first time and initialise the regex
   for (const editor of vscode.window.visibleTextEditors) {
-    handler.triggerUpdateDecorations({ editor });
+    renderer.triggerUpdateDecorations({ editor });
   }
 
   // * Handle active file changed
@@ -19,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
     async (editor) => {
       if (editor) {
         // Update decorations for newly active file
-        handler.triggerUpdateDecorations({ editor });
+        renderer.triggerUpdateDecorations({ editor });
       }
     },
     null,
@@ -44,7 +51,7 @@ export function activate(context: vscode.ExtensionContext) {
         }
         docChangeTimers.set(uri, setTimeout(() => {
           docChangeTimers.delete(uri);
-          handler.triggerUpdateDecorations({ editor });
+          renderer.triggerUpdateDecorations({ editor });
         }, DOC_CHANGE_DEBOUNCE));
       }
 
@@ -59,5 +66,6 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-  handler.dispose();
+  onDidChangeCallbacks = [];
+  renderer.dispose();
 }
