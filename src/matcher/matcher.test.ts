@@ -148,7 +148,7 @@ describe('pickBlockSlices', () => {
     expect(slices).toHaveLength(0);
   });
 
-  it('ignores inline block comments (common handler requires line start)', () => {
+  it('ignores inline block comments (the common matcher requires line start)', () => {
     const slices = pickBlockSlices({ text: 'code(); /* ! alert */', offset: 0, blockComments: BLOCK_COMMENTS, processed: new ProcessedRanges() });
 
     expect(slices).toHaveLength(0);
@@ -184,7 +184,7 @@ describe('pickBlockSlices', () => {
 });
 
 describe('pickLineSlices options', () => {
-  it('exposes the leading char for handler-level filtering (shell $)', () => {
+  it('exposes the leading char for matcher-level filtering (shell $)', () => {
     // `$` must be adjacent to the mark; consecutive `#` lines merge into one
     // slice via the \1 backreference, so separate the lines with code
     const text = '$# TODO: x\necho hi\n# TODO: y\n';
@@ -200,7 +200,7 @@ describe('pickLineSlices options', () => {
     // empty leading char
     expect(slices.map(s => s.prefix)).toEqual(['$', '']);
 
-    // the handler filters command lines itself
+    // the shellscript matcher drops command lines itself
     const kept = slices.filter(s => s.prefix !== '$');
     expect(kept).toHaveLength(1);
     expect(kept[0].comment).toContain('# TODO: y');

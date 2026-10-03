@@ -3,7 +3,12 @@ import type { ScanSource } from './scan';
 import { compileGlob } from '@/utils/regex';
 import { describe, expect, it, vi } from 'vitest';
 import { ProcessedRanges } from './matcher';
-import { scanTagRanges, sortTagRanges } from './scan';
+import { CommonMatcher } from './modules/common';
+import { PlainTextMatcher } from './modules/plaintext';
+import { PythonMatcher } from './modules/python';
+import { ReactMatcher } from './modules/react';
+import { ShellscriptMatcher } from './modules/shellscript';
+import { scanTagRanges, sortTagRanges, useMatcher } from './scan';
 
 function makeOptions(overrides: Partial<MatcherOptions> = {}): MatcherOptions {
   return {
@@ -23,6 +28,7 @@ function makeOptions(overrides: Partial<MatcherOptions> = {}): MatcherOptions {
 /** C-like languages, the common case */
 function makeSource(overrides: Partial<ScanSource> = {}): ScanSource {
   return {
+    languageId: 'typescript',
     text: '',
     offset: 0,
     lineComments: ['//'],
@@ -98,25 +104,23 @@ describe('scanTagRanges', () => {
     expect(tagsOf(source)).toEqual([]);
   });
 
-  it('honours an empty block prefix so blocks can start mid-line', () => {
-    // python docstrings
+  it('honours python docstrings starting mid-line', () => {
     const source = makeSource({
+      languageId: 'python',
       text: 'code()\n""" TODO: inline """\n',
       lineComments: ['#'],
       blockComments: [['"""', '"""']],
-      blockPrefixPattern: '',
     });
 
     expect(tagsOf(source)).toEqual(['todo:TODO']);
   });
 
-  it('drops line comments with a skipped prefix char', () => {
-    // `$#` lines are shell command lines, not comments
+  it('drops shell command lines that only look like comments', () => {
     const source = makeSource({
+      languageId: 'shellscript',
       text: '$# TODO: nope\necho hi\n# TODO: yes\n',
       lineComments: ['#'],
-      linePrefixPattern: '.?',
-      skipLinePrefix: '$',
+      blockComments: [],
     });
     const covered = coveredText(source);
 
@@ -124,10 +128,19 @@ describe('scanTagRanges', () => {
     expect(covered.join('|')).not.toContain('TODO: nope');
   });
 
+  it('picks JSX inline comments in react files', () => {
+    const source = makeSource({
+      languageId: 'typescriptreact',
+      text: 'const a = <div>{/* TODO: jsx */}</div>;\n',
+    });
+
+    expect(tagsOf(source)).toEqual(['todo:TODO']);
+  });
+
   it('treats the whole text as one block comment for plaintext', () => {
     const source = makeSource({
+      languageId: 'plaintext',
       text: 'TODO: no comment marks here\nmore text\n',
-      plainText: true,
     });
 
     expect(tagsOf(source)).toEqual(['todo:TODO']);
@@ -169,6 +182,25 @@ describe('scanTagRanges', () => {
     });
 
     expect(() => scanTagRanges(makeSource({ text: '// TODO: a\n' }), options)).toThrow('canceled');
+  });
+});
+
+describe('useMatcher', () => {
+  it('builds one matcher per language', () => {
+    expect(useMatcher('python')).toBeInstanceOf(PythonMatcher);
+    expect(useMatcher('shellscript')).toBeInstanceOf(ShellscriptMatcher);
+    expect(useMatcher('plaintext')).toBeInstanceOf(PlainTextMatcher);
+    expect(useMatcher('typescript')).toBeInstanceOf(CommonMatcher);
+  });
+
+  it('maps the react dialects to their own matcher', () => {
+    expect(useMatcher('javascriptreact')).toBeInstanceOf(ReactMatcher);
+    expect(useMatcher('typescriptreact')).toBeInstanceOf(ReactMatcher);
+  });
+
+  it('shares one stateless instance per language', () => {
+    expect(useMatcher('python')).toBe(useMatcher('python'));
+    expect(useMatcher('python')).not.toBe(useMatcher('typescript'));
   });
 });
 

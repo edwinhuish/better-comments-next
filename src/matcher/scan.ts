@@ -1,13 +1,11 @@
 import type { MatcherOptions, TagRange } from './matcher';
-import {
-  matchBlockTagsInSlice,
-  matchDocTagsInSlice,
-  matchLineTagsInSlice,
-  pickBlockSlices,
-  pickDocSlices,
-  pickLineSlices,
-  ProcessedRanges,
-} from './matcher';
+import type { Matcher } from './modules/common';
+import { ProcessedRanges } from './matcher';
+import { CommonMatcher } from './modules/common';
+import { PlainTextMatcher } from './modules/plaintext';
+import { PythonMatcher } from './modules/python';
+import { ReactMatcher } from './modules/react';
+import { ShellscriptMatcher } from './modules/shellscript';
 
 // # Types
 
@@ -19,117 +17,66 @@ export interface ScanComments {
   useDocComment: boolean;
 }
 
-/**
- * Per-language quirks of where a comment may start and which ones to skip.
- * Kept as data so both the decoration handlers and the panel scanner can share
- * exactly one slice-picking pipeline.
- */
-export interface ScanProfile {
-  /**
-   * Pattern for the prefix group captured before a *line* comment mark; the
-   * captured char is exposed as `LineCommentSlice.prefix` for filtering.
-   * (eg: `.?` for shell `$` guards)
-   */
-  linePrefixPattern?: string;
-  /**
-   * Pattern for the prefix group captured before a *block* comment mark.
-   * Defaults to line starts only; an empty string matches anywhere.
-   * (eg: `''` for python docstrings, `\{\s*` for JSX inline comments)
-   */
-  blockPrefixPattern?: string;
-  /** Drop line slices captured with this prefix char (eg: `$` in shellscripts) */
-  skipLinePrefix?: string;
-  /** Treat the whole text as one block comment (plaintext) */
-  plainText?: boolean;
-}
-
-export interface ScanSource extends ScanComments, ScanProfile {
+export interface ScanSource extends ScanComments {
+  /** language of the scanned text, decides which matcher runs the scan */
+  languageId: string;
   text: string;
   /** Offset of `text` inside the full document; ranges are absolute */
   offset: number;
 }
 
+// # Language dispatch
+
+const cached = new Map<string, Matcher>();
+
+function newMatcher(languageId: string): Matcher {
+  switch (languageId) {
+    case 'javascriptreact':
+    case 'typescriptreact':
+      return new ReactMatcher(languageId);
+    case 'shellscript':
+      return new ShellscriptMatcher(languageId);
+    case 'plaintext':
+      return new PlainTextMatcher(languageId);
+    case 'python':
+      return new PythonMatcher(languageId);
+    default:
+      return new CommonMatcher(languageId);
+  }
+}
+
+/**
+ * Matcher of a language. Matchers are stateless, so one instance serves every
+ * caller (editor decorations, panel scanner).
+ */
+export function useMatcher(languageId: string): Matcher {
+  let matcher = cached.get(languageId);
+
+  if (!matcher) {
+    matcher = newMatcher(languageId);
+    cached.set(languageId, matcher);
+  }
+
+  return matcher;
+}
+
 // # Scanning
 
 /**
- * Run the full comment scan (doc comments, then block comments, then line
- * comments) over a piece of text and return every decorated tag range.
+ * Run the language's comment scan over a piece of text and return every
+ * decorated tag range.
  *
  * This is the single source of truth shared by the editor decorations and the
- * panel scanner: given the same text they cannot drift apart. Pure by design —
- * no `vscode` dependency, callers resolve the comment tokens beforehand.
- *
- * The three passes share one `ProcessedRanges`, so a range already claimed by
- * an earlier pass is never matched twice (this is what the handlers did with
- * their instance-level `processed`).
+ * panel scanner: given the same text they cannot drift apart. Which comments
+ * exist and how they are recognised is decided by the language's matcher;
+ * callers resolve the comment tokens beforehand and stay `vscode`-free.
  */
 export function scanTagRanges(
   source: ScanSource,
   opt: MatcherOptions,
   processed: ProcessedRanges = new ProcessedRanges(),
 ): TagRange[] {
-  const { text, offset } = source;
-  const checkpoint = opt.checkpoint;
-  const ranges: TagRange[] = [];
-
-  if (source.plainText) {
-    // The virtual leading newline lets the block regexes match tags at line
-    // start (eg: `#` at column 0). It maps to the real newline before `text`
-    // (`offset - 1`, since `offset` is a line start); at document start it sits
-    // conceptually at -1, which is safe because matching always consumes it via
-    // the PRE groups before any position is computed.
-    ranges.push(...matchBlockTagsInSlice({
-      start: offset - 1,
-      end: offset + text.length,
-      comment: `\n${text}`,
-      content: `\n${text}`,
-      marks: ['', ''],
-    }, opt));
-
-    return ranges;
-  }
-
-  if (source.useDocComment) {
-    for (const slice of pickDocSlices({ text, offset, processed, checkpoint })) {
-      ranges.push(...matchDocTagsInSlice(slice, opt));
-    }
-  }
-
-  if (source.blockComments.length) {
-    const slices = pickBlockSlices({
-      text,
-      offset,
-      blockComments: source.blockComments,
-      processed,
-      checkpoint,
-      prefixPattern: source.blockPrefixPattern,
-    });
-
-    for (const slice of slices) {
-      ranges.push(...matchBlockTagsInSlice(slice, opt));
-    }
-  }
-
-  if (source.lineComments.length) {
-    let slices = pickLineSlices({
-      text,
-      offset,
-      lineComments: source.lineComments,
-      processed,
-      checkpoint,
-      prefixPattern: source.linePrefixPattern,
-    });
-
-    if (source.skipLinePrefix !== undefined) {
-      slices = slices.filter(slice => slice.prefix !== source.skipLinePrefix);
-    }
-
-    for (const slice of slices) {
-      ranges.push(...matchLineTagsInSlice(slice, opt));
-    }
-  }
-
-  return ranges;
+  return useMatcher(source.languageId).scan(source, opt, processed);
 }
 
 /** Sort ranges by their position in the document. */
