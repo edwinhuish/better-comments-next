@@ -54,6 +54,9 @@ samples/                  # Sample files in 60+ languages (also future test fixt
 `configuration.activate` → `definition.activate` (scan all extensions' `contributes.languages`)
 → `renderer.activate` (listen to editor events) → `renderer.triggerUpdateDecorations`
 (`matcher` scan → `vscode.Range` list → `editor.setDecorations`).
+**Panel data flow**: `panel.activate` (contributed tree view) → `PanelScanner.scan`
+(`definition` file index → `matcher` scan → `TagItem` list → `TagStore`) → `TagsViewProvider`
+(grouped by file or tag → tree nodes; clicking a comment reveals it).
 
 ---
 

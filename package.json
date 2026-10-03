@@ -123,13 +123,65 @@
         "workspace"
     ],
     "activationEvents": [
-        "onLanguage"
+        "onLanguage",
+        "onView:better-comments-next.panel"
     ],
     "galleryBanner": {
         "color": "#e3f4ff",
         "theme": "light"
     },
     "contributes": {
+        "views": {
+            "explorer": [
+                {
+                    "id": "better-comments-next.panel",
+                    "name": "Better Comments",
+                    "contextualTitle": "Better Comments",
+                    "icon": "static/icon.png",
+                    "when": "config.better-comments.panelEnabled"
+                }
+            ]
+        },
+        "commands": [
+            {
+                "command": "better-comments-next.panelRefresh",
+                "title": "Refresh tagged comments",
+                "icon": "$(refresh)"
+            },
+            {
+                "command": "better-comments-next.panelGroupByFile",
+                "title": "Group comments by file",
+                "icon": "$(list-tree)"
+            },
+            {
+                "command": "better-comments-next.panelGroupByTag",
+                "title": "Group comments by tag",
+                "icon": "$(symbol-keyword)"
+            },
+            {
+                "command": "better-comments-next.panelRevealComment",
+                "title": "Go to comment"
+            }
+        ],
+        "menus": {
+            "view/title": [
+                {
+                    "command": "better-comments-next.panelRefresh",
+                    "when": "view == better-comments-next.panel",
+                    "group": "navigation@1"
+                },
+                {
+                    "command": "better-comments-next.panelGroupByTag",
+                    "when": "view == better-comments-next.panel",
+                    "group": "navigation@2"
+                },
+                {
+                    "command": "better-comments-next.panelGroupByFile",
+                    "when": "view == better-comments-next.panel",
+                    "group": "navigation@2"
+                }
+            ]
+        },
         "configuration": {
             "title": "Better Comments Next",
             "properties": {

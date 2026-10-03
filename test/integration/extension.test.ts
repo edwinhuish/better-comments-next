@@ -1,6 +1,7 @@
 import * as assert from 'node:assert';
 import * as vscode from 'vscode';
 import * as definition from '../../src/definition';
+import { PanelScanner, TagStore } from '../../src/panel';
 import { Renderer, triggerUpdateDecorations } from '../../src/renderer/renderer';
 
 const EXTENSION_ID = 'edwinhuish.better-comments-next';
@@ -160,5 +161,37 @@ describe('better comments next integration', () => {
     }
 
     assert.strictEqual(rejections.length, 0);
+  });
+
+  it('contributes the commands of the tags panel', async () => {
+    await activateExtension();
+
+    const commands = await vscode.commands.getCommands(true);
+
+    for (const command of [
+      'better-comments-next.panelRefresh',
+      'better-comments-next.panelGroupByFile',
+      'better-comments-next.panelGroupByTag',
+      'better-comments-next.panelRevealComment',
+    ]) {
+      assert.ok(commands.includes(command), `${command} should be contributed`);
+    }
+  });
+
+  it('scans a real file into panel items (outside the editor)', async () => {
+    await activateExtension();
+
+    const ext = await activateExtension();
+    const file = vscode.Uri.joinPath(ext.extensionUri, 'samples', 'typescript.ts');
+    const store = new TagStore();
+    const result = await new PanelScanner(store).scan({ files: [file] });
+
+    assert.strictEqual(result.files, 1);
+    assert.ok(result.tags > 0, 'the sample file should contain tags');
+
+    // the same tags the decorations show, resolved without opening a document
+    const items = store.get(file.toString()) ?? [];
+    assert.ok(items.some(item => item.key === 'todo'), 'the sample should have a todo tag');
+    assert.ok(items.every(item => item.line >= 0 && item.text.length > 0), 'items should be displayable');
   });
 });
