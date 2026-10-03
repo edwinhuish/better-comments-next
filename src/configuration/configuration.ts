@@ -1,3 +1,4 @@
+import type { MatcherOptions } from '@/matcher';
 import type { WorkspaceConfiguration } from 'vscode';
 import * as log from '@/log';
 import { resolveTagKey as matchResolveTagKey } from '@/matcher';
@@ -339,6 +340,34 @@ export function getTagMatchers() {
  */
 export function resolveTagKey(matched: string): string {
   return matchResolveTagKey(matched, getTagMatchers());
+}
+
+/**
+ * Build the pure matcher options of the current configuration.
+ *
+ * Shared by every caller of `@/matcher`, so decorations and the panel scan
+ * with exactly the same tags. `checkpoint` lets a caller abort a running scan
+ * (the renderer passes its task check, the panel its cancellation token).
+ */
+export function getMatcherOptions(checkpoint?: () => void): MatcherOptions {
+  const { strict, fullHighlight } = getConfigurationFlatten();
+
+  return {
+    strict,
+    fullHighlight,
+    multilineTags: getMultilineTagsEscaped(),
+    lineTags: getLineTagsEscaped(),
+    tagPatterns: getTagMatchers(),
+    checkpoint,
+  };
+}
+
+/**
+ * Whether tags are looked for in a language: plain text has no comment syntax
+ * of its own, so highlighting it is a setting.
+ */
+export function isLanguageEnabled(languageId: string): boolean {
+  return languageId !== 'plaintext' || getConfigurationFlatten().highlightPlainText;
 }
 
 // # Panel configuration

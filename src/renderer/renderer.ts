@@ -152,16 +152,7 @@ export class Renderer {
    * current task so long regex scans can be aborted mid-way.
    */
   protected getMatcherOptions(params: SliceRenderParams): MatcherOptions {
-    const { strict, fullHighlight } = configuration.getConfigurationFlatten();
-
-    return {
-      strict,
-      fullHighlight,
-      multilineTags: configuration.getMultilineTagsEscaped(),
-      lineTags: configuration.getLineTagsEscaped(),
-      tagPatterns: configuration.getTagMatchers(),
-      checkpoint: () => this.verifyTaskID(params.editor, params.taskID),
-    };
+    return configuration.getMatcherOptions(() => this.verifyTaskID(params.editor, params.taskID));
   }
 
   /**
@@ -173,7 +164,7 @@ export class Renderer {
    */
   private async renderSlice(params: SliceRenderParams): Promise<void> {
     const languageId = params.editor.document.languageId;
-    if (!isLanguageEnabled(languageId)) {
+    if (!configuration.isLanguageEnabled(languageId)) {
       return; // nothing to decorate for this language with the current settings
     }
 
@@ -199,15 +190,6 @@ export class Renderer {
       params.tagRanges.set(key, opt);
     }
   }
-}
-
-/**
- * Whether a language is decorated at all: plain text has no comment syntax of
- * its own, so highlighting it is a setting. Every other language is always
- * rendered — recognising its comments is the matcher's job, not the renderer's.
- */
-function isLanguageEnabled(languageId: string): boolean {
-  return languageId !== 'plaintext' || configuration.getConfigurationFlatten().highlightPlainText;
 }
 
 // one renderer serves every language: matching already decided what to render
