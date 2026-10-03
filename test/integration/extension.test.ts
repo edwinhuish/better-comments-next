@@ -24,7 +24,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 1500): Promise<void
   assert.ok(predicate(), 'condition not met within timeout');
 }
 
-describe('better Comments Next integration', () => {
+describe('better comments next integration', () => {
   it('activates without error', async () => {
     await activateExtension();
   });
@@ -39,6 +39,19 @@ describe('better Comments Next integration', () => {
       comments.blockComments.some(([start, end]) => start === '/*' && end === '*/'),
       'typescript should have `/* */` block comments',
     );
+  });
+
+  it('resolves language ids from file names without opening them', async () => {
+    await activateExtension();
+
+    // the panel needs the language of every workspace file, and opening them
+    // all just to read `languageId` is far too expensive; the index is filled
+    // from the languages every installed extension contributes
+    definition.refresh();
+
+    assert.strictEqual(definition.getLanguageIdByFilename('main.ts'), 'typescript');
+    assert.strictEqual(definition.getLanguageIdByFilename('Makefile'), 'makefile');
+    assert.strictEqual(definition.getLanguageIdByFilename('notes.unknownext'), undefined);
   });
 
   it('updates decorations for two same-language editors independently (B1 regression)', async () => {

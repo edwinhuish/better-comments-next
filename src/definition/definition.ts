@@ -1,8 +1,12 @@
 import * as vscode from 'vscode';
 import * as extConfig from '../configuration';
+import { LanguageFileIndex } from './languageFiles';
 import * as langs from './modules';
 
 const cached = new Map<string, langs.Language>();
+
+/** file name → language id, rebuilt on every refresh */
+const fileIndex = new LanguageFileIndex();
 
 export function useLanguage(langId: string): langs.Language {
   let lang = cached.get(langId);
@@ -20,6 +24,7 @@ export function useLanguage(langId: string): langs.Language {
  */
 export function refresh() {
   cached.clear();
+  fileIndex.clear();
 
   for (const extension of vscode.extensions.all) {
     const packageJSON = extension.packageJSON;
@@ -30,6 +35,7 @@ export function refresh() {
       }
 
       const lang = useLanguage(language.id);
+      fileIndex.add(language.id, language);
 
       const configUri = language.configuration
         ? vscode.Uri.joinPath(extension.extensionUri, language.configuration)
@@ -70,6 +76,25 @@ export function refresh() {
 
     lang.setUseDocComment(language.useDocComment);
   }
+}
+
+/**
+ * Language id a file belongs to, resolved from the files languages contribute.
+ *
+ * Returns `undefined` when no language claims the file, so a caller can decide
+ * between skipping it and opening it to ask VS Code (which is much slower).
+ */
+export function getLanguageIdByFilename(fileName: string): string | undefined {
+  return fileIndex.resolve(fileName);
+}
+
+/**
+ * Same as `getLanguageIdByFilename`, for a workspace uri.
+ */
+export function getLanguageIdByUri(uri: vscode.Uri): string | undefined {
+  const fileName = uri.path.split('/').pop();
+
+  return fileName ? getLanguageIdByFilename(fileName) : undefined;
 }
 
 /**
