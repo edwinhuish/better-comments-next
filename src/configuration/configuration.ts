@@ -26,6 +26,12 @@ export interface Tag {
 export interface TagFlatten extends Tag {
   tag: string;
   tagEscaped: string;
+  /**
+   * Group every alias of one configured tag shares: the first name of the
+   * `tag` array (or the tag itself), lowercased. Aliases match separately but
+   * decorate and group together under it.
+   */
+  group: string;
 }
 
 export interface Language {
@@ -181,6 +187,8 @@ function mergeTagOverrides(tags: TagFlatten[], overrides: TagFlatten[]) {
     tags[idx] = {
       ...tags[idx],
       ...tag,
+      // an override restyles a tag, it never re-groups it
+      group: tags[idx].group,
     };
   }
 }
@@ -240,11 +248,18 @@ function flattenTags(tags: Tag[]) {
     if (!Array.isArray(tag.tag)) {
       // ! add tag only tag name not empty
       if (tag.tag) {
-        flatTags.push({ ...tag, tagEscaped: compileTagPattern(tag.tagMode, tag.tag) } as TagFlatten);
+        flatTags.push({
+          ...tag,
+          group: tag.tag.toLowerCase(),
+          tagEscaped: compileTagPattern(tag.tagMode, tag.tag),
+        } as TagFlatten);
       }
       continue;
     }
 
+    // every alias of one configured tag shares the group of the first name,
+    // so they decorate and group together under it
+    const group = tag.tag.find(name => !!name)?.toLowerCase() || '';
     for (const tagName of tag.tag) {
       // ! add tag only tag name not empty
       if (!tagName) {
@@ -253,6 +268,7 @@ function flattenTags(tags: Tag[]) {
       flatTags.push({
         ...tag,
         tag: tagName,
+        group,
         tagEscaped: compileTagPattern(tag.tagMode, tagName),
       });
     }
@@ -267,10 +283,13 @@ export function getTagDecorationTypes() {
     tagDecorationTypes = new Map<string, vscode.TextEditorDecorationType>();
 
     for (const tag of configs.tags) {
-      const opt = parseDecorationRenderOption(tag);
+      // aliases of one configured tag share one decoration type
+      if (tagDecorationTypes.has(tag.group)) {
+        continue;
+      }
 
-      const tagName = tag.tag.toLowerCase();
-      tagDecorationTypes.set(tagName, vscode.window.createTextEditorDecorationType(opt));
+      const opt = parseDecorationRenderOption(tag);
+      tagDecorationTypes.set(tag.group, vscode.window.createTextEditorDecorationType(opt));
     }
   }
 
@@ -326,12 +345,24 @@ export function getAllTagsEscaped() {
 export function getTagMatchers() {
   if (!tagMatchers) {
     tagMatchers = getConfigurationFlatten().tags.map(tag => ({
-      key: tag.tag.toLowerCase(),
+      // aliases resolve to the group of their configured tag, not to themselves
+      key: tag.group,
       test: new RegExp(`^(?:${tag.tagEscaped})$`, 'i'),
     }));
   }
 
   return tagMatchers;
+}
+
+/**
+ * Display name of a tag group: the first name of the configured tag,
+ * uppercased (eg: `TODO` for a `["todo", "to-do"]` tag). Falls back to the
+ * uppercased key for matches the configuration does not know.
+ */
+export function getTagLabel(key: string): string {
+  const name = getConfigurationFlatten().tags.find(tag => tag.group === key)?.tag || key;
+
+  return name.toUpperCase();
 }
 
 /**

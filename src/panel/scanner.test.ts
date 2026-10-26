@@ -40,8 +40,12 @@ vi.mock('@/configuration', () => ({
     strict: false,
     fullHighlight: false,
     multilineTags: [],
-    lineTags: ['todo'],
-    tagPatterns: [{ key: 'todo', test: /^todo\[.*?\]$/i }],
+    // both spellings resolve to the same group, like aliases of one config tag
+    lineTags: ['todo', 'to-do'],
+    tagPatterns: [
+      { key: 'todo', test: /^todo$/i },
+      { key: 'todo', test: /^to-do$/i },
+    ],
   }),
   isLanguageEnabled: (languageId: string) => languageId !== 'plaintext' || mocks.highlightPlainText,
 }));
@@ -89,7 +93,7 @@ describe('panel scanner', () => {
     workspaceFiles([a, b]);
     mocks.readFile.mockImplementation(async (uri: Uri) => encode(uri.path === '/a.ts'
       ? '// TODO: alpha\nconst x = 1;\n'
-      : 'const y = 2; // TODO: beta\n'));
+      : 'const y = 2; // to-do: beta\n'));
 
     const tags = store();
     const result = await new PanelScanner(tags).scan();
@@ -97,6 +101,9 @@ describe('panel scanner', () => {
     expect(result).toEqual({ files: 2, tags: 2, cancelled: false });
     expect(tags.get('file:///a.ts')).toMatchObject([{ key: 'todo', line: 0, text: 'alpha', labeled: 'TODO: alpha' }]);
     expect(tags.get('file:///b.ts')).toMatchObject([{ key: 'todo', line: 0, character: 16 }]);
+
+    // both spellings are the same configured tag: one group, two comments
+    expect(tags.groupByTag().map(group => [group.key, group.items.length])).toEqual([['todo', 2]]);
   });
 
   it('passes the settings of the panel to the file search', async () => {

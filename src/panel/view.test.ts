@@ -45,6 +45,7 @@ vi.mock('vscode', () => {
 
 vi.mock('@/configuration', () => ({
   getPanelConfiguration: () => ({ showCounts: mocks.showCounts }),
+  getTagLabel: (key: string) => key.toUpperCase(),
 }));
 
 function filledStore(): TagStore {
@@ -159,7 +160,7 @@ describe('tags view provider', () => {
     expect(provider.getTreeItem(directory).iconPath).toMatchObject({ id: 'folder' });
   });
 
-  it('labels a tag node with the tag as written in the source', () => {
+  it('labels a tag node with the first configured name of its group, uppercased', () => {
     const provider = new TagsViewProvider(filledStore(), 'tag');
     const [tag] = provider.getChildren();
 

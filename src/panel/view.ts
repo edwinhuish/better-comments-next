@@ -84,7 +84,8 @@ export class TagsViewProvider implements vscode.TreeDataProvider<TreeNode> {
       return this.store.groupByTag().map(group => ({
         kind: 'tag',
         key: group.key,
-        label: groupLabel(group.key, group.items),
+        // the first configured name — aliases of one tag merge under it
+        label: configuration.getTagLabel(group.key),
         items: group.items,
       }));
     }
@@ -158,11 +159,6 @@ export class TagsViewProvider implements vscode.TreeDataProvider<TreeNode> {
 
     return item;
   }
-}
-
-/** A tag group is labelled with the tag itself, as it is written in the source. */
-function groupLabel(key: string, items: TagItem[]): string {
-  return items[0]?.matched || key;
 }
 
 function pathLabel(uri: string): string {

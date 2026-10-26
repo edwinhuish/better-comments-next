@@ -6,6 +6,8 @@ import {
   getLineTagsEscaped,
   getMultilineTagsEscaped,
   getPanelConfiguration,
+  getTagDecorationTypes,
+  getTagLabel,
   refresh,
   resolveTagKey,
 } from './configuration';
@@ -290,6 +292,22 @@ describe('resolveTagKey', () => {
   it('resolves literal tags case-insensitively via the fast path', () => {
     expect(resolveTagKey('TODO')).toBe('todo');
     expect(resolveTagKey('fixme')).toBe('fixme');
+  });
+
+  it('resolves every alias of a tag to the first configured name', () => {
+    // `["fixme", "fix-me"]` is one configured tag; both spellings are it
+    expect(resolveTagKey('fix-me')).toBe('fixme');
+    expect(resolveTagKey('FIX-ME')).toBe('fixme');
+  });
+
+  it('labels a tag group with the first configured name, uppercased', () => {
+    expect(getTagLabel('fixme')).toBe('FIXME');
+    expect(getTagLabel('nosuchtag')).toBe('NOSUCHTAG'); // unknown keys stay themselves
+  });
+
+  it('creates one decoration type per tag group, not per alias', () => {
+    // todo, [fixme, fix-me], todo[*], @\w+ — the empty name is dropped
+    expect(getTagDecorationTypes().size).toBe(4);
   });
 
   it('maps wildcard captures back to the owning tag', () => {
