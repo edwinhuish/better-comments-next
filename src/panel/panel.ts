@@ -1,4 +1,4 @@
-import type { PanelConfiguration, PanelGroupBy } from '@/configuration';
+import type { ConfigurationFlatten, PanelConfiguration, PanelGroupBy } from '@/configuration';
 import type { TagItem } from './model';
 import type { TreeNode } from './view';
 import * as configuration from '@/configuration';
@@ -6,6 +6,7 @@ import * as log from '@/log';
 import * as vscode from 'vscode';
 import { compileExcludes } from './files';
 import { PanelScanner } from './scanner';
+import { scanFingerprint, scanSettingsChanged, watchSettingsChanged } from './settings';
 import { TagStore } from './store';
 import { COMMAND_REVEAL, TagsViewProvider, VIEW_ID } from './view';
 import { PanelWatcher } from './watch';
@@ -22,6 +23,9 @@ let view: vscode.TreeView<TreeNode> | undefined;
 let cancellation: vscode.CancellationTokenSource | undefined;
 /** watches the scanned files when `panelAutoRefresh` is on */
 let watcher: PanelWatcher | undefined;
+/** the panel settings and scan fingerprint they were last applied with */
+let applied: PanelConfiguration | undefined;
+let appliedFingerprint: string | undefined;
 
 /**
  * Register the panel view and its commands.
@@ -31,6 +35,9 @@ let watcher: PanelWatcher | undefined;
  */
 export function activate(context: vscode.ExtensionContext) {
   const panel = configuration.getPanelConfiguration();
+
+  applied = panel;
+  appliedFingerprint = scanFingerprint(configuration.getConfigurationFlatten());
 
   store = new TagStore();
   scanner = new PanelScanner(store);
@@ -46,13 +53,61 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(COMMAND_REVEAL, (item: TagItem) => revealComment(item)),
   );
 
+  configuration.onDidChange(applyConfiguration);
+
   if (panel.enabled && panel.scanOnStartup) {
     void scanWorkspace();
   }
 
-  if (panel.autoRefresh) {
+  if (panel.enabled && panel.autoRefresh) {
     watcher = createWatcher(panel);
   }
+}
+
+/**
+ * Follow a configuration change: rebuild what was built from the settings that
+ * changed, rescan when the result of a scan would differ, repaint the rest.
+ */
+function applyConfiguration(config: ConfigurationFlatten): void {
+  if (!applied || !store || !scanner) {
+    return;
+  }
+
+  const next = configuration.getPanelConfiguration();
+  const previous = applied;
+  applied = next;
+
+  // the watcher is built from the settings it filters with, and only works
+  // for a panel that is there
+  if (watchSettingsChanged(previous, next) || (!next.enabled && watcher)) {
+    watcher?.dispose();
+    watcher = undefined;
+  }
+
+  if (next.enabled && next.autoRefresh && !watcher) {
+    watcher = createWatcher(next);
+  }
+
+  if (!next.enabled) {
+    // the view is hidden by its own `when` clause; stop working for it
+    cancellation?.cancel();
+    cancellation?.dispose();
+    cancellation = undefined;
+    return;
+  }
+
+  if (previous.groupBy !== next.groupBy) {
+    provider?.setGroupBy(next.groupBy);
+  }
+
+  const fingerprint = scanFingerprint(config);
+  if (fingerprint !== appliedFingerprint || scanSettingsChanged(previous, next)) {
+    appliedFingerprint = fingerprint;
+    void scanWorkspace();
+    return;
+  }
+
+  updateView(); // a cosmetic setting (eg: showCounts) may have changed
 }
 
 /**
@@ -174,4 +229,6 @@ export function deactivate() {
   scanner = undefined;
   provider = undefined;
   view = undefined;
+  applied = undefined;
+  appliedFingerprint = undefined;
 }
