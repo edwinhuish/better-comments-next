@@ -53,14 +53,14 @@ function filledStore(): TagStore {
     uri: 'file:///Workspace/a.ts',
     text: '// TODO: alpha\n// BUG: beta\n',
     ranges: [
-      { key: 'todo', matched: 'TODO', start: 3, end: 7 },
-      { key: 'bug', matched: 'BUG', start: 17, end: 20 },
+      { key: 'todo', matched: 'TODO', content: 'alpha', labeled: 'TODO: alpha', start: 3, end: 7 },
+      { key: 'bug', matched: 'BUG', content: 'beta', labeled: 'BUG: beta', start: 17, end: 20 },
     ],
   }));
   store.set('file:///Workspace/dir/b.ts', buildTagItems({
     uri: 'file:///Workspace/dir/b.ts',
     text: '/* TODO: gamma */\n',
-    ranges: [{ key: 'todo', matched: 'TODO', start: 3, end: 7 }],
+    ranges: [{ key: 'todo', matched: 'TODO', content: 'gamma', labeled: 'TODO: gamma', start: 3, end: 7 }],
   }));
 
   return store;
@@ -161,6 +161,21 @@ describe('tags view provider', () => {
     expect(byTag.getTreeItem(second).description).toBe('/a.ts:1');
   });
 
+  it('labels a comment with its tag in the file view, without it in the tag view', () => {
+    const store = filledStore();
+    const byFile = new TagsViewProvider(store, 'file');
+    const [file] = byFile.getChildren() as { items: TagItem[] }[];
+    const first = byFile.getChildren(file as never)[0];
+
+    expect(byFile.getTreeItem(first).label).toBe('TODO: alpha');
+
+    const byTag = new TagsViewProvider(store, 'tag');
+    const [tag] = byTag.getChildren() as { items: TagItem[] }[];
+    const second = byTag.getChildren(tag as never)[0];
+
+    expect(byTag.getTreeItem(second).label).toBe('alpha');
+  });
+
   it('reveals the comment when its node is clicked', () => {
     const provider = new TagsViewProvider(filledStore(), 'file');
     const [file] = provider.getChildren() as { items: TagItem[] }[];
@@ -168,7 +183,7 @@ describe('tags view provider', () => {
 
     expect(provider.getTreeItem(first).command).toMatchObject({
       command: 'better-comments-next.panelRevealComment',
-      arguments: [{ key: 'todo', line: 0, text: '// TODO: alpha' }],
+      arguments: [{ key: 'todo', line: 0, text: 'alpha' }],
     });
   });
 

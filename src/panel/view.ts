@@ -105,8 +105,11 @@ export class TagsViewProvider implements vscode.TreeDataProvider<TreeNode> {
   }
 
   private commentItem(tagItem: TagItem): vscode.TreeItem {
-    const item = new vscode.TreeItem(tagItem.text, vscode.TreeItemCollapsibleState.None);
-    item.tooltip = tagItem.text;
+    // the file view needs the tag in front (it names the comment), the tag
+    // view already groups by it and shows the comment alone
+    const label = this.groupBy === 'file' ? tagItem.labeled : tagItem.text;
+    const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.None);
+    item.tooltip = label;
     item.contextValue = 'comment';
     item.description = this.groupBy === 'file'
       ? String(tagItem.line + 1) // the file is already known from the parent

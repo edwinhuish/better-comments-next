@@ -1,6 +1,6 @@
 import type { TagRange } from '@/matcher';
 import { sortTagRanges } from '@/matcher';
-import { getLineStarts, lineTextAt, positionFromOffset } from '@/utils/text';
+import { getLineStarts, positionFromOffset } from '@/utils/text';
 
 // # Types
 
@@ -17,8 +17,10 @@ export interface TagItem {
   key: string;
   /** tag text as written in the source (eg: `TODO`, `todo[FOO-123]`) */
   matched: string;
-  /** display text: the trimmed source line the tag starts on */
+  /** display text of the tag view: the comment after the tag, marks and tag excluded */
   text: string;
+  /** display text of the file view: the tag's line as written, marks excluded */
+  labeled: string;
   /** zero-based line of the tag */
   line: number;
   /** zero-based character of the tag inside its line */
@@ -54,9 +56,11 @@ export interface BuildTagItemsParams {
 /**
  * Turn the pure tag ranges of a scan into display items.
  *
- * Panels read files as strings (`workspace.fs.readFile`), so offsets are
- * converted with the line index helpers instead of opening a document. Ranges
- * are sorted by position, which makes the panel order match the file order.
+ * The matcher already extracted what to display — the comment after the tag,
+ * without marks and tag — so the item only resolves its position. Offsets are
+ * converted with the line index helpers instead of opening a document, and
+ * ranges are sorted by position, which makes the panel order match the file
+ * order.
  */
 export function buildTagItems(params: BuildTagItemsParams): TagItem[] {
   const { uri, text } = params;
@@ -69,7 +73,9 @@ export function buildTagItems(params: BuildTagItemsParams): TagItem[] {
       uri,
       key: range.key,
       matched: range.matched,
-      text: lineTextAt(text, lineStarts, line).trim(),
+      // a tag standing alone still deserves a label
+      text: range.content || range.matched,
+      labeled: range.labeled || range.matched,
       line,
       character,
       start: range.start,

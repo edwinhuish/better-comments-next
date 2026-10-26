@@ -7,6 +7,8 @@ function rangesOf(...ranges: Partial<TagRange>[]): TagRange[] {
   return ranges.map(range => ({
     key: 'todo',
     matched: 'TODO',
+    content: '',
+    labeled: 'TODO',
     start: 0,
     end: 4,
     ...range,
@@ -19,6 +21,7 @@ function item(overrides: Partial<TagItem> = {}): TagItem {
     key: 'todo',
     matched: 'TODO',
     text: 'TODO: x',
+    labeled: 'TODO: x',
     line: 0,
     character: 0,
     start: 0,
@@ -34,14 +37,35 @@ describe('buildTagItems', () => {
     const items = buildTagItems({
       uri: 'file:///a.ts',
       text,
-      ranges: rangesOf({ start: 16, end: 20 }),
+      ranges: rangesOf({ start: 16, end: 20, content: 'alpha' }),
     });
 
     expect(items).toHaveLength(1);
     expect(items[0].line).toBe(1);
     expect(items[0].character).toBe(3);
-    expect(items[0].text).toBe('// TODO: alpha');
+    expect(items[0].text).toBe('alpha');
     expect(items[0].uri).toBe('file:///a.ts');
+  });
+
+  it('shows the comment after the tag, without marks and tag', () => {
+    const items = buildTagItems({
+      uri: 'file:///a.ts',
+      text: '// TODO: fix it\n',
+      ranges: rangesOf({ start: 3, end: 7, content: 'fix it', labeled: 'TODO: fix it' }),
+    });
+
+    expect(items[0].text).toBe('fix it');
+    expect(items[0].labeled).toBe('TODO: fix it');
+  });
+
+  it('falls back to the tag itself when it stands alone', () => {
+    const items = buildTagItems({
+      uri: 'file:///a.ts',
+      text: '// TODO\n',
+      ranges: rangesOf({ start: 3, end: 7, content: '' }),
+    });
+
+    expect(items[0].text).toBe('TODO');
   });
 
   it('keeps the matched text and the tag key', () => {
@@ -67,14 +91,6 @@ describe('buildTagItems', () => {
     expect(items.map(i => i.line)).toEqual([0, 1]);
   });
 
-  it('strips the line terminator of CRLF files from the display text', () => {
-    const text = '// TODO: alpha\r\n';
-
-    const items = buildTagItems({ uri: 'file:///a.ts', text, ranges: rangesOf({ start: 3, end: 7 }) });
-
-    expect(items[0].text).toBe('// TODO: alpha');
-  });
-
   it('clamps offsets that fall outside the text', () => {
     const items = buildTagItems({
       uri: 'file:///a.ts',
@@ -82,7 +98,7 @@ describe('buildTagItems', () => {
       ranges: rangesOf({ start: 999, end: 1003 }),
     });
 
-    expect(items[0]).toMatchObject({ line: 0, character: 0, text: '' });
+    expect(items[0]).toMatchObject({ line: 0, character: 0, text: 'TODO' });
   });
 
   it('returns nothing for a file without tags', () => {

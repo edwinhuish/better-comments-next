@@ -238,7 +238,7 @@ describe('matchLineTagsInSlice', () => {
 
     // the decoration starts after the comment mark (including the gap space)
     expect(ranges).toEqual([
-      { key: 'todo', matched: 'TODO', start: 2, end: 15 },
+      { key: 'todo', matched: 'TODO', content: 'fix it', labeled: 'TODO: fix it', start: 2, end: 15 },
     ]);
   });
 
@@ -248,6 +248,35 @@ describe('matchLineTagsInSlice', () => {
 
     // `key` identifies the configured tag, `matched` keeps what the source says
     expect(ranges[0]).toMatchObject({ key: 'todo[*]', matched: 'TODO[FOO-123]' });
+  });
+
+  it('extracts the comment text after the tag', () => {
+    const ranges = matchLineTagsInSlice(makeSlice('// TODO: fix it'), makeOptions());
+
+    expect(ranges[0].content).toBe('fix it');
+    expect(ranges[0].labeled).toBe('TODO: fix it');
+  });
+
+  it('keeps the separator of the source in the labeled text', () => {
+    const ranges = matchLineTagsInSlice(makeSlice('// TODO fix it'), makeOptions());
+
+    expect(ranges[0].labeled).toBe('TODO fix it');
+  });
+
+  it('keeps only the first line of a multiline comment as its content', () => {
+    // continuation lines join the multiline range only when indented deeper
+    const ranges = matchLineTagsInSlice(makeSlice('// TODO: fix it\n//   and the rest'), makeOptions());
+
+    expect(ranges.map(range => range.content)).toEqual(['fix it', 'and the rest']);
+    expect(ranges.map(range => range.labeled)).toEqual(['TODO: fix it', 'and the rest']);
+  });
+
+  it('leaves the content empty when nothing follows the tag', () => {
+    const ranges = matchLineTagsInSlice(makeSlice('// TODO:'), makeOptions());
+
+    expect(ranges).toHaveLength(1);
+    expect(ranges[0].content).toBe('');
+    expect(ranges[0].labeled).toBe('TODO');
   });
 
   it('does not match a tag without word boundary in strict mode', () => {
@@ -325,6 +354,8 @@ describe('matchBlockTagsInSlice', () => {
 
     expect(ranges).toHaveLength(1);
     expect(ranges[0].key).toBe('!');
+    expect(ranges[0].content).toBe('alert');
+    expect(ranges[0].labeled).toBe('! alert');
   });
 
   it('matches multi-line tags in subsequent lines of a block comment', () => {
@@ -381,6 +412,8 @@ describe('matchDocTagsInSlice', () => {
     const ranges = matchDocTagsInSlice(makeDocSlice('\n * TODO: hello\n * @see elsewhere\n '), makeOptions());
 
     expect(ranges.filter(r => r.key === 'todo')).toHaveLength(1);
+    expect(ranges.find(r => r.key === 'todo')?.content).toBe('hello');
+    expect(ranges.find(r => r.key === 'todo')?.labeled).toBe('TODO: hello');
   });
 
   it('matches a single-line tag after the doc prefix', () => {

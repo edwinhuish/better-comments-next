@@ -207,8 +207,8 @@ describe('useMatcher', () => {
 describe('sortTagRanges', () => {
   it('orders ranges by position and leaves the input untouched', () => {
     const ranges = [
-      { key: 'a', matched: 'a', start: 10, end: 20 },
-      { key: 'b', matched: 'b', start: 0, end: 5 },
+      { key: 'a', matched: 'a', content: '', labeled: '', start: 10, end: 20 },
+      { key: 'b', matched: 'b', content: '', labeled: '', start: 0, end: 5 },
     ];
 
     expect(sortTagRanges(ranges).map(range => range.key)).toEqual(['b', 'a']);

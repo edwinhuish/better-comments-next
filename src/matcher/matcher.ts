@@ -28,6 +28,18 @@ export interface TagRange {
   key: string;
   /** tag text as it appears in the source (eg: `TODO`, `todo[FOO-123]`) */
   matched: string;
+  /**
+   * The comment text after the tag, without the comment marks and the tag
+   * itself (eg: `fix it` for `// TODO: fix it`). First line only, trimmed;
+   * falls back to `matched` when the tag stands alone.
+   */
+  content: string;
+  /**
+   * The tag's own line as written, comment marks excluded (eg: `TODO: fix it`
+   * for `// TODO: fix it`). First line only, trimmed — the separator between
+   * tag and comment is kept exactly as the source has it.
+   */
+  labeled: string;
   /** absolute start offset in the document */
   start: number;
   /** absolute end offset in the document */
@@ -149,6 +161,44 @@ export function resolveTagKey(matched: string, patterns: TagPatternEntry[]): str
   }
 
   return lower;
+}
+
+// # Tag content
+
+/** First line of a content group, trailing whitespace removed. */
+function firstLineOf(content: string): string {
+  return (content.split(/\r?\n/)[0] || '').replace(/[ \t]+$/, '');
+}
+
+/**
+ * The two display texts of a matched tag:
+ * - `content` — the comment after the tag, marks, tag and tag suffix excluded
+ *   (the panel's tag view, whose group already names the tag);
+ * - `labeled` — the tag's own line as written, comment marks excluded (the
+ *   panel's file view, which needs the tag in front).
+ *
+ * `matched` is passed for the line the tag was found on, `tagInContent` tells
+ * whether the content group starts with the tag itself (multiline matches do,
+ * single-line matches start right after it). Continuation lines of a multiline
+ * match pass no tag: they carry plain comment text.
+ */
+function tagTexts(content: string, matched?: string, tagInContent = false): { content: string; labeled: string } {
+  const line = firstLineOf(content);
+
+  if (!matched) {
+    return { content: line.replace(/^[ \t:：]+/, ''), labeled: line };
+  }
+
+  if (tagInContent) {
+    const rest = line.toLowerCase().startsWith(matched.toLowerCase()) ? line.slice(matched.length) : line;
+    const content = rest.replace(/^[ \t:：]+/, '');
+
+    return { content, labeled: content ? line : matched };
+  }
+
+  const text = line.replace(/^[ \t:：]+/, '');
+
+  return { content: text, labeled: text ? matched + line : matched };
 }
 
 // # Slice pickers
@@ -364,7 +414,11 @@ export function matchLineTagsInSlice(slice: LineCommentSlice, opt: MatcherOption
         // store processed range
         lineProcessed.add(m2Start, m2End);
 
-        ranges.push({ key: tagName, matched: m1.groups!.TAG, start: m2Start, end: m2End });
+        const texts = m2.index === 0
+          ? tagTexts(m2.groups!.CONTENT, m1.groups!.TAG, true)
+          : tagTexts(m2.groups!.CONTENT);
+
+        ranges.push({ key: tagName, matched: m1.groups!.TAG, content: texts.content, labeled: texts.labeled, start: m2Start, end: m2End });
       }
     }
   }
@@ -397,7 +451,9 @@ export function matchLineTagsInSlice(slice: LineCommentSlice, opt: MatcherOption
 
       const tagName = resolveTagKey(line.groups!.TAG, opt.tagPatterns);
 
-      ranges.push({ key: tagName, matched: line.groups!.TAG, start: lineStart, end: lineEnd });
+      const texts = tagTexts(line.groups!.CONTENT, line.groups!.TAG);
+
+      ranges.push({ key: tagName, matched: line.groups!.TAG, content: texts.content, labeled: texts.labeled, start: lineStart, end: lineEnd });
     }
   }
 
@@ -475,7 +531,11 @@ export function matchBlockTagsInSlice(slice: BlockCommentSlice, opt: MatcherOpti
         // store processed range
         lineProcessed.add(m2Start, m2End);
 
-        ranges.push({ key: tagName, matched: m1.groups!.TAG, start: m2Start, end: m2End });
+        const texts = m2.index === 0
+          ? tagTexts(m2.groups!.CONTENT, m1.groups!.TAG, true)
+          : tagTexts(m2.groups!.CONTENT);
+
+        ranges.push({ key: tagName, matched: m1.groups!.TAG, content: texts.content, labeled: texts.labeled, start: m2Start, end: m2End });
       }
     }
   }
@@ -506,7 +566,9 @@ export function matchBlockTagsInSlice(slice: BlockCommentSlice, opt: MatcherOpti
 
       const tagName = resolveTagKey(line.groups!.TAG, opt.tagPatterns);
 
-      ranges.push({ key: tagName, matched: line.groups!.TAG, start: lineStart, end: lineEnd });
+      const texts = tagTexts(line.groups!.CONTENT, line.groups!.TAG);
+
+      ranges.push({ key: tagName, matched: line.groups!.TAG, content: texts.content, labeled: texts.labeled, start: lineStart, end: lineEnd });
     }
   }
 
@@ -563,7 +625,11 @@ export function matchDocTagsInSlice(slice: DocCommentSlice, opt: MatcherOptions)
         // store processed range
         lineProcessed.add(m2Start, m2End);
 
-        ranges.push({ key: tagName, matched: m1.groups!.TAG, start: m2Start, end: m2End });
+        const texts = m2.index === 0
+          ? tagTexts(m2.groups!.CONTENT, m1.groups!.TAG, true)
+          : tagTexts(m2.groups!.CONTENT);
+
+        ranges.push({ key: tagName, matched: m1.groups!.TAG, content: texts.content, labeled: texts.labeled, start: m2Start, end: m2End });
       }
     }
   }
@@ -597,7 +663,9 @@ export function matchDocTagsInSlice(slice: DocCommentSlice, opt: MatcherOptions)
 
       const tagName = resolveTagKey(line.groups!.TAG, opt.tagPatterns);
 
-      ranges.push({ key: tagName, matched: line.groups!.TAG, start: lineStart, end: lineEnd });
+      const texts = tagTexts(line.groups!.CONTENT, line.groups!.TAG);
+
+      ranges.push({ key: tagName, matched: line.groups!.TAG, content: texts.content, labeled: texts.labeled, start: lineStart, end: lineEnd });
     }
   }
 

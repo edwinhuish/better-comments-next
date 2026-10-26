@@ -95,7 +95,7 @@ describe('panel scanner', () => {
     const result = await new PanelScanner(tags).scan();
 
     expect(result).toEqual({ files: 2, tags: 2, cancelled: false });
-    expect(tags.get('file:///a.ts')).toMatchObject([{ key: 'todo', line: 0, text: '// TODO: alpha' }]);
+    expect(tags.get('file:///a.ts')).toMatchObject([{ key: 'todo', line: 0, text: 'alpha', labeled: 'TODO: alpha' }]);
     expect(tags.get('file:///b.ts')).toMatchObject([{ key: 'todo', line: 0, character: 16 }]);
   });
 
