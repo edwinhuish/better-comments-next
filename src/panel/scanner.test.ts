@@ -9,6 +9,8 @@ const mocks = vi.hoisted(() => ({
   readFile: vi.fn(),
   stat: vi.fn(),
   asRelativePath: vi.fn(),
+  multilineTags: [] as string[],
+  lineTags: ['todo', 'to-do'] as string[],
   panel: {
     enabled: true,
     groupBy: 'file' as string,
@@ -39,9 +41,9 @@ vi.mock('@/configuration', () => ({
   getMatcherOptions: () => ({
     strict: false,
     fullHighlight: false,
-    multilineTags: [],
+    multilineTags: mocks.multilineTags,
+    lineTags: mocks.lineTags,
     // both spellings resolve to the same group, like aliases of one config tag
-    lineTags: ['todo', 'to-do'],
     tagPatterns: [
       { key: 'todo', test: /^todo$/i },
       { key: 'todo', test: /^to-do$/i },
@@ -83,6 +85,8 @@ describe('panel scanner', () => {
     mocks.panel.maxFiles = 5000;
     mocks.highlightPlainText = false;
     mocks.languageId = 'typescript';
+    mocks.multilineTags = [];
+    mocks.lineTags = ['todo', 'to-do'];
     mocks.stat.mockResolvedValue({ size: 32 });
     mocks.asRelativePath.mockImplementation((uri: Uri) => uri.path);
   });
@@ -104,6 +108,21 @@ describe('panel scanner', () => {
 
     // both spellings are the same configured tag: one group, two comments
     expect(tags.groupByTag().map(group => [group.key, group.items.length])).toEqual([['todo', 2]]);
+  });
+
+  it('shows one item for a multiline comment, not one per line', async () => {
+    const a = fileUri('/a.ts');
+    workspaceFiles([a]);
+    mocks.multilineTags = ['todo'];
+    mocks.lineTags = [];
+    mocks.readFile.mockImplementation(async () => encode('// TODO: fix it\n//   and the rest\n'));
+
+    const tags = store();
+    const result = await new PanelScanner(tags).scan();
+
+    expect(result.tags).toBe(1);
+    expect(tags.get('file:///a.ts')).toHaveLength(1);
+    expect(tags.get('file:///a.ts')![0]).toMatchObject({ text: 'fix it', labeled: 'TODO: fix it', line: 0 });
   });
 
   it('passes the settings of the panel to the file search', async () => {

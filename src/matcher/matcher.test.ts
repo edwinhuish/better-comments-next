@@ -238,7 +238,7 @@ describe('matchLineTagsInSlice', () => {
 
     // the decoration starts after the comment mark (including the gap space)
     expect(ranges).toEqual([
-      { key: 'todo', matched: 'TODO', content: 'fix it', labeled: 'TODO: fix it', start: 2, end: 15 },
+      { key: 'todo', matched: 'TODO', content: 'fix it', labeled: 'TODO: fix it', continuation: false, start: 2, end: 15 },
     ]);
   });
 
@@ -269,6 +269,9 @@ describe('matchLineTagsInSlice', () => {
 
     expect(ranges.map(range => range.content)).toEqual(['fix it', 'and the rest']);
     expect(ranges.map(range => range.labeled)).toEqual(['TODO: fix it', 'and the rest']);
+
+    // the tag line is the occurrence, the rest only extends its decoration
+    expect(ranges.map(range => range.continuation)).toEqual([false, true]);
   });
 
   it('leaves the content empty when nothing follows the tag', () => {

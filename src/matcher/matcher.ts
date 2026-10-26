@@ -40,6 +40,13 @@ export interface TagRange {
    * tag and comment is kept exactly as the source has it.
    */
   labeled: string;
+  /**
+   * Marks a continuation line of a multiline tag match: it only extends the
+   * decoration of the line that carries the tag. The renderer needs every
+   * line, but one tag occurrence is a single panel item, so `buildTagItems`
+   * drops these.
+   */
+  continuation?: boolean;
   /** absolute start offset in the document */
   start: number;
   /** absolute end offset in the document */
@@ -418,7 +425,7 @@ export function matchLineTagsInSlice(slice: LineCommentSlice, opt: MatcherOption
           ? tagTexts(m2.groups!.CONTENT, m1.groups!.TAG, true)
           : tagTexts(m2.groups!.CONTENT);
 
-        ranges.push({ key: tagName, matched: m1.groups!.TAG, content: texts.content, labeled: texts.labeled, start: m2Start, end: m2End });
+        ranges.push({ key: tagName, matched: m1.groups!.TAG, content: texts.content, labeled: texts.labeled, continuation: m2.index !== 0, start: m2Start, end: m2End });
       }
     }
   }
@@ -535,7 +542,7 @@ export function matchBlockTagsInSlice(slice: BlockCommentSlice, opt: MatcherOpti
           ? tagTexts(m2.groups!.CONTENT, m1.groups!.TAG, true)
           : tagTexts(m2.groups!.CONTENT);
 
-        ranges.push({ key: tagName, matched: m1.groups!.TAG, content: texts.content, labeled: texts.labeled, start: m2Start, end: m2End });
+        ranges.push({ key: tagName, matched: m1.groups!.TAG, content: texts.content, labeled: texts.labeled, continuation: m2.index !== 0, start: m2Start, end: m2End });
       }
     }
   }
@@ -629,7 +636,7 @@ export function matchDocTagsInSlice(slice: DocCommentSlice, opt: MatcherOptions)
           ? tagTexts(m2.groups!.CONTENT, m1.groups!.TAG, true)
           : tagTexts(m2.groups!.CONTENT);
 
-        ranges.push({ key: tagName, matched: m1.groups!.TAG, content: texts.content, labeled: texts.labeled, start: m2Start, end: m2End });
+        ranges.push({ key: tagName, matched: m1.groups!.TAG, content: texts.content, labeled: texts.labeled, continuation: m2.index !== 0, start: m2Start, end: m2End });
       }
     }
   }

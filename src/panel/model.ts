@@ -66,7 +66,11 @@ export function buildTagItems(params: BuildTagItemsParams): TagItem[] {
   const { uri, text } = params;
   const lineStarts = getLineStarts(text);
 
-  return sortTagRanges(params.ranges).map((range) => {
+  // a multiline tag decorates every one of its lines but is a single comment:
+  // keep the line that carries the tag, drop its continuations
+  const occurrences = params.ranges.filter(range => !range.continuation);
+
+  return sortTagRanges(occurrences).map((range) => {
     const { line, character } = positionFromOffset(lineStarts, range.start);
 
     return {

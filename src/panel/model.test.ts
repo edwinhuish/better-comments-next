@@ -68,6 +68,20 @@ describe('buildTagItems', () => {
     expect(items[0].text).toBe('TODO');
   });
 
+  it('shows one item for a multiline comment, not one per line', () => {
+    const items = buildTagItems({
+      uri: 'file:///a.ts',
+      text: '// TODO: fix it\n//   and the rest\n',
+      ranges: rangesOf(
+        { start: 3, end: 7, content: 'fix it', labeled: 'TODO: fix it' },
+        { start: 16, end: 20, content: 'and the rest', labeled: 'and the rest', continuation: true },
+      ),
+    });
+
+    expect(items).toHaveLength(1);
+    expect(items[0]).toMatchObject({ text: 'fix it', labeled: 'TODO: fix it', line: 0 });
+  });
+
   it('keeps the matched text and the tag key', () => {
     const items = buildTagItems({
       uri: 'file:///a.ts',
