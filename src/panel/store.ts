@@ -35,6 +35,28 @@ export class TagStore {
     return deleted;
   }
 
+  /**
+   * Forget every file inside a folder, because the folder left the workspace.
+   * Returns how many files were dropped.
+   */
+  public deleteFolder(folderUri: string): number {
+    const prefix = folderUri.endsWith('/') ? folderUri : `${folderUri}/`;
+    let deleted = 0;
+
+    for (const uri of this.byUri.keys()) {
+      if (uri.startsWith(prefix)) {
+        this.byUri.delete(uri);
+        deleted++;
+      }
+    }
+
+    if (deleted) {
+      this.invalidate();
+    }
+
+    return deleted;
+  }
+
   public clear(): void {
     this.byUri.clear();
     this.invalidate();

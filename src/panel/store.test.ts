@@ -43,6 +43,25 @@ describe('tag store', () => {
     expect(store.size).toBe(0);
   });
 
+  it('forgets every file of a folder that left the workspace', () => {
+    const store = new TagStore();
+    store.set('file:///proj/a.ts', [item('file:///proj/a.ts')]);
+    store.set('file:///proj/src/b.ts', [item('file:///proj/src/b.ts')]);
+    store.set('file:///other/c.ts', [item('file:///other/c.ts')]);
+
+    expect(store.deleteFolder('file:///proj')).toBe(2);
+    expect(store.uris()).toEqual(['file:///other/c.ts']);
+    expect(store.deleteFolder('file:///proj')).toBe(0); // already gone
+  });
+
+  it('keeps files of a folder whose uri only shares a prefix', () => {
+    const store = new TagStore();
+    store.set('file:///project-x/a.ts', [item('file:///project-x/a.ts')]);
+
+    expect(store.deleteFolder('file:///project')).toBe(0);
+    expect(store.size).toBe(1);
+  });
+
   it('drops everything on clear', () => {
     const store = new TagStore();
     store.set('file:///a.ts', [item('file:///a.ts')]);

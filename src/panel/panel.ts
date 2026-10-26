@@ -55,12 +55,32 @@ export function activate(context: vscode.ExtensionContext) {
 
   configuration.onDidChange(applyConfiguration);
 
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeWorkspaceFolders(handleWorkspaceFolders),
+  );
+
   if (panel.enabled && panel.scanOnStartup) {
     void scanWorkspace();
   }
 
   if (panel.enabled && panel.autoRefresh) {
     watcher = createWatcher(panel);
+  }
+}
+
+/**
+ * Follow the workspace itself: a folder that left takes its files with it, a
+ * folder that joined brings files nobody has scanned yet.
+ */
+function handleWorkspaceFolders(event: vscode.WorkspaceFoldersChangeEvent): void {
+  for (const folder of event.removed) {
+    store?.deleteFolder(folder.uri.toString());
+  }
+
+  updateView();
+
+  if (event.added.length && configuration.getPanelConfiguration().enabled) {
+    void scanWorkspace();
   }
 }
 
