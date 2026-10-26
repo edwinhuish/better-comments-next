@@ -34,6 +34,7 @@ The **Better Comments** view in the Explorer lists every tagged comment of the w
 
 - **Two browsing dimensions**: grouped by file (the workspace folder structure is preserved, directories nest) or by tag (every `TODO` of the workspace together). Switch from the view title bar; `better-comments.panelGroupBy` only sets the initial dimension.
 - **Click a comment** to open its file with the cursor on the tag.
+- The view carries its own icon, so dragging it to the activity bar (or the secondary side bar) gives the panel a dedicated entry.
 - The scan resolves each file's language from the languages your extensions contribute, without opening the files in the editor, and reuses the very same matching pipeline as the decorations — panel and highlights can never drift apart.
 - With `better-comments.panelAutoRefresh` (default on), file watcher events — an edit, a build, a git checkout — refresh only the touched files; deleted files leave the panel.
 

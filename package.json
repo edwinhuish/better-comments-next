@@ -137,7 +137,7 @@
                     "id": "better-comments-next.panel",
                     "name": "Better Comments",
                     "contextualTitle": "Better Comments",
-                    "icon": "static/icon.png",
+                    "icon": "static/panel-icon.svg",
                     "when": "config.better-comments.panelEnabled"
                 }
             ]
