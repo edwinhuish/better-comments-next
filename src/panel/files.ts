@@ -80,3 +80,65 @@ function joinDir(baseDir: string): string {
 
   return base ? `${base}/` : '';
 }
+
+// # Path matching
+
+/**
+ * Compile a workspace path glob into a regex over workspace relative paths.
+ *
+ * Semantics follow `findFiles`: a double star crosses path separators and may
+ * match no segment at all, while `*` and `?` stay inside one segment. Used to
+ * filter file watcher events with the same excludes the scan uses.
+ */
+export function compilePathGlob(pattern: string): RegExp | undefined {
+  let source = '';
+
+  for (let i = 0; i < pattern.length; i++) {
+    const char = pattern[i];
+
+    if (char === '*') {
+      if (pattern[i + 1] === '*') {
+        // a double star swallows a following slash, and may match nothing at
+        // all: `a` + `**` + `/b` also matches the plain path `a/b`
+        if (pattern[i + 2] === '/') {
+          source += '(?:.*/)?';
+          i += 2; // swallow the second star and the slash it carries
+        }
+        else {
+          source += '.*';
+          i++;
+        }
+      }
+      else {
+        source += '[^/]*';
+      }
+    }
+    else if (char === '?') {
+      source += '[^/]';
+    }
+    else {
+      source += char.replace(/[.+^${}()|[\]\\]/g, '\\$&');
+    }
+  }
+
+  try {
+    return new RegExp(`^${source}$`);
+  }
+  catch {
+    return undefined;
+  }
+}
+
+/**
+ * Matcher over workspace relative paths for the exclude globs of the panel
+ * settings, so watcher events and the scan ignore the same files.
+ */
+export function compileExcludes(excludeGlobs: string[]): (path: string) => boolean {
+  const patterns = excludeGlobs
+    .map(glob => glob.trim())
+    .filter(Boolean)
+    .map(compilePathGlob)
+    .filter((exp): exp is RegExp => !!exp);
+
+  return path => patterns.some(exp => exp.test(path));
+}

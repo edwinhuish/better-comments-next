@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { buildExcludeGlob, buildIncludeGlob, compileGitignoreGlobs } from './files';
+import {
+  buildExcludeGlob,
+  buildIncludeGlob,
+  compileExcludes,
+  compileGitignoreGlobs,
+  compilePathGlob,
+} from './files';
 
 describe('buildIncludeGlob', () => {
   it('scans everything without an include glob', () => {
@@ -64,5 +70,61 @@ describe('compileGitignoreGlobs', () => {
 
   it('drops a trailing slash of a directory pattern', () => {
     expect(compileGitignoreGlobs('', 'coverage/\n')).toEqual(['**/coverage', '**/coverage/**']);
+  });
+});
+
+describe('compilePathGlob', () => {
+  it('matches a literal path', () => {
+    const exp = compilePathGlob('src/panel/view.ts');
+
+    expect(exp?.test('src/panel/view.ts')).toBe(true);
+    expect(exp?.test('src/panel/view.tsx')).toBe(false);
+  });
+
+  it('keeps a single star inside one segment', () => {
+    const exp = compilePathGlob('*.md');
+
+    expect(exp?.test('readme.md')).toBe(true);
+    expect(exp?.test('docs/readme.md')).toBe(false);
+  });
+
+  it('lets a double star cross separators and match zero segments', () => {
+    const exp = compilePathGlob('a/**/b');
+
+    expect(exp?.test('a/b')).toBe(true);
+    expect(exp?.test('a/x/b')).toBe(true);
+    expect(exp?.test('a/x/y/b')).toBe(true);
+    expect(exp?.test('x/a/b')).toBe(false);
+  });
+
+  it('matches the contents of a starred directory', () => {
+    const exp = compilePathGlob('**/.git/**');
+
+    expect(exp?.test('.git/config')).toBe(true);
+    expect(exp?.test('nested/.git/HEAD')).toBe(true);
+    expect(exp?.test('.gitignore')).toBe(false);
+  });
+
+  it('matches a single character with a question mark', () => {
+    const exp = compilePathGlob('a?.ts');
+
+    expect(exp?.test('ab.ts')).toBe(true);
+    expect(exp?.test('abc.ts')).toBe(false);
+  });
+});
+
+describe('compileExcludes', () => {
+  it('matches any of the globs over workspace relative paths', () => {
+    const isExcluded = compileExcludes(['**/node_modules/**', '*.log']);
+
+    expect(isExcluded('node_modules/x/index.js')).toBe(true);
+    expect(isExcluded('debug.log')).toBe(true);
+    expect(isExcluded('src/panel/view.ts')).toBe(false);
+  });
+
+  it('ignores empty globs', () => {
+    const isExcluded = compileExcludes(['', '   ']);
+
+    expect(isExcluded('anything')).toBe(false);
   });
 });

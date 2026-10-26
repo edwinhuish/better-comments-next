@@ -1,12 +1,14 @@
-import type { PanelGroupBy } from '@/configuration';
+import type { PanelConfiguration, PanelGroupBy } from '@/configuration';
 import type { TagItem } from './model';
 import type { TreeNode } from './view';
 import * as configuration from '@/configuration';
 import * as log from '@/log';
 import * as vscode from 'vscode';
+import { compileExcludes } from './files';
 import { PanelScanner } from './scanner';
 import { TagStore } from './store';
 import { COMMAND_REVEAL, TagsViewProvider, VIEW_ID } from './view';
+import { PanelWatcher } from './watch';
 
 export const COMMAND_REFRESH = 'better-comments-next.panelRefresh';
 export const COMMAND_GROUP_BY_FILE = 'better-comments-next.panelGroupByFile';
@@ -18,6 +20,8 @@ let provider: TagsViewProvider | undefined;
 let view: vscode.TreeView<TreeNode> | undefined;
 /** token of the running scan, so a newer one can cancel it */
 let cancellation: vscode.CancellationTokenSource | undefined;
+/** watches the scanned files when `panelAutoRefresh` is on */
+let watcher: PanelWatcher | undefined;
 
 /**
  * Register the panel view and its commands.
@@ -45,6 +49,34 @@ export function activate(context: vscode.ExtensionContext) {
   if (panel.enabled && panel.scanOnStartup) {
     void scanWorkspace();
   }
+
+  if (panel.autoRefresh) {
+    watcher = createWatcher(panel);
+  }
+}
+
+/**
+ * Watch the scanned files for changes made anywhere — the editor, a build,
+ * another tool — and refresh only what was touched.
+ */
+function createWatcher(panel: PanelConfiguration): PanelWatcher {
+  return new PanelWatcher({
+    includeGlobs: panel.includeGlobs,
+    isExcluded: compileExcludes(panel.excludeGlobs),
+    onFlush: (changed, deleted) => {
+      // a deleted file cannot be scanned, it has to leave the store
+      for (const uri of deleted) {
+        store?.delete(uri.toString());
+      }
+
+      if (changed.length) {
+        void scanFiles(changed);
+      }
+      else {
+        updateView();
+      }
+    },
+  });
 }
 
 /**
@@ -85,6 +117,28 @@ function setGroupBy(groupBy: PanelGroupBy): void {
   provider?.setGroupBy(groupBy);
 }
 
+/**
+ * Scan only these files (they changed on disk) and refresh the tree.
+ * Unlike a full scan this does not cancel anything: it is small by design.
+ */
+async function scanFiles(files: vscode.Uri[]): Promise<void> {
+  if (!store || !scanner) {
+    return;
+  }
+
+  try {
+    const result = await scanner.scan({ files });
+
+    log.info(`panel: rescanned ${result.files} changed files, found ${result.tags} tags`);
+  }
+  catch (e) {
+    log.error(e);
+  }
+  finally {
+    updateView();
+  }
+}
+
 function updateView(): void {
   provider?.refresh();
 
@@ -109,6 +163,9 @@ async function revealComment(item: TagItem): Promise<void> {
 }
 
 export function deactivate() {
+  watcher?.dispose();
+  watcher = undefined;
+
   cancellation?.cancel();
   cancellation?.dispose();
   cancellation = undefined;
