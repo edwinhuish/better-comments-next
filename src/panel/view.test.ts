@@ -1,9 +1,10 @@
-import type { PanelGroupBy } from '@/configuration';
 import type { TagItem } from './model';
+import type { TagStore } from './store';
+import type { TreeNode } from './view';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import * as vscode from 'vscode';
 import { buildTagItems } from './model';
-import { TagStore } from './store';
+import { TagStore as Store } from './store';
 import { TagsViewProvider } from './view';
 
 const mocks = vi.hoisted(() => ({
@@ -47,7 +48,7 @@ vi.mock('@/configuration', () => ({
 }));
 
 function filledStore(): TagStore {
-  const store = new TagStore();
+  const store = new Store();
 
   store.set('file:///Workspace/a.ts', buildTagItems({
     uri: 'file:///Workspace/a.ts',
@@ -66,11 +67,28 @@ function filledStore(): TagStore {
   return store;
 }
 
-function commentNode(store: TagStore, groupBy: PanelGroupBy = 'file') {
-  const provider = new TagsViewProvider(store, groupBy);
-  const file = provider.getChildren()[0] as { items: TagItem[] };
+/** find the node of one file, walking the directories above it */
+function findFile(provider: TagsViewProvider, uri: string): { kind: 'file'; uri: string; items: TagItem[] } {
+  const visit = (nodes: TreeNode[]): { kind: 'file'; uri: string; items: TagItem[] } | undefined => {
+    for (const node of nodes) {
+      if (node.kind === 'file' && node.uri === uri) {
+        return node;
+      }
+      if (node.kind === 'directory') {
+        const found = visit(provider.getChildren(node));
+        if (found) {
+          return found;
+        }
+      }
+    }
 
-  return provider.getChildren(file.items.length ? { kind: 'comment', item: file.items[0] } : file as never);
+    return undefined;
+  };
+
+  const found = visit(provider.getChildren());
+  expect(found, `${uri} should be in the tree`).toBeTruthy();
+
+  return found!;
 }
 
 describe('tags view provider', () => {
@@ -79,11 +97,17 @@ describe('tags view provider', () => {
     mocks.fired = [];
   });
 
-  it('lists one node per file when grouping by file', () => {
+  it('nests files under their directories when grouping by file', () => {
     const provider = new TagsViewProvider(filledStore(), 'file');
+    const roots = provider.getChildren();
 
-    expect(provider.getChildren()).toMatchObject([
+    // directories come first, files of the workspace root after them
+    expect(roots).toMatchObject([
+      { kind: 'directory', dir: { name: 'dir', path: 'dir', count: 1 } },
       { kind: 'file', uri: 'file:///Workspace/a.ts' },
+    ]);
+
+    expect(provider.getChildren(roots[0])).toMatchObject([
       { kind: 'file', uri: 'file:///Workspace/dir/b.ts' },
     ]);
   });
@@ -99,9 +123,9 @@ describe('tags view provider', () => {
 
   it('lists the comments of a file in file order', () => {
     const provider = new TagsViewProvider(filledStore(), 'file');
-    const [file] = provider.getChildren() as { items: TagItem[] }[];
+    const file = findFile(provider, 'file:///Workspace/a.ts');
 
-    expect(provider.getChildren(file as never).map(node => node.kind)).toEqual(['comment', 'comment']);
+    expect(provider.getChildren(file).map(node => node.kind)).toEqual(['comment', 'comment']);
   });
 
   it('lists every file of a tag when grouping by tag', () => {
@@ -116,16 +140,23 @@ describe('tags view provider', () => {
   });
 
   it('makes a comment node a leaf', () => {
-    expect(commentNode(filledStore())).toEqual([]);
+    const provider = new TagsViewProvider(filledStore(), 'file');
+    const file = findFile(provider, 'file:///Workspace/a.ts');
+
+    expect(provider.getChildren({ kind: 'comment', item: file.items[0] })).toEqual([]);
   });
 
-  it('labels a file node with its workspace relative path', () => {
+  it('labels a file node with its name and a directory with its path', () => {
     const provider = new TagsViewProvider(filledStore(), 'file');
-    const [file] = provider.getChildren();
+    const [directory, file] = provider.getChildren();
 
-    expect(provider.getTreeItem(file).label).toBe('/a.ts');
+    expect(provider.getTreeItem(file).label).toBe('a.ts');
     expect(provider.getTreeItem(file).collapsibleState).toBe(vscode.TreeItemCollapsibleState.Collapsed);
     expect(provider.getTreeItem(file).iconPath).toMatchObject({ id: 'file' });
+
+    expect(provider.getTreeItem(directory).label).toBe('dir');
+    expect(provider.getTreeItem(directory).tooltip).toBe('dir');
+    expect(provider.getTreeItem(directory).iconPath).toMatchObject({ id: 'folder' });
   });
 
   it('labels a tag node with the tag as written in the source', () => {
@@ -138,19 +169,20 @@ describe('tags view provider', () => {
 
   it('shows the comment count on group nodes when asked to', () => {
     const provider = new TagsViewProvider(filledStore(), 'file');
-    const nodes = provider.getChildren();
+    const [directory, file] = provider.getChildren();
 
-    expect(provider.getTreeItem(nodes[0]).description).toBe('2');
+    expect(provider.getTreeItem(directory).description).toBe('1'); // the whole subtree
+    expect(provider.getTreeItem(file).description).toBe('2');
 
     mocks.showCounts = false;
-    expect(provider.getTreeItem(nodes[0]).description).toBeUndefined();
+    expect(provider.getTreeItem(directory).description).toBeUndefined();
+    expect(provider.getTreeItem(file).description).toBeUndefined();
   });
 
   it('shows where a comment lives, depending on the browsing dimension', () => {
     const store = filledStore();
     const byFile = new TagsViewProvider(store, 'file');
-    const [file] = byFile.getChildren() as { items: TagItem[] }[];
-    const first = byFile.getChildren(file as never)[0];
+    const first = byFile.getChildren(findFile(byFile, 'file:///Workspace/a.ts'))[0];
 
     expect(byFile.getTreeItem(first).description).toBe('1');
 
@@ -164,8 +196,7 @@ describe('tags view provider', () => {
   it('labels a comment with its tag in the file view, without it in the tag view', () => {
     const store = filledStore();
     const byFile = new TagsViewProvider(store, 'file');
-    const [file] = byFile.getChildren() as { items: TagItem[] }[];
-    const first = byFile.getChildren(file as never)[0];
+    const first = byFile.getChildren(findFile(byFile, 'file:///Workspace/a.ts'))[0];
 
     expect(byFile.getTreeItem(first).label).toBe('TODO: alpha');
 
@@ -178,8 +209,7 @@ describe('tags view provider', () => {
 
   it('reveals the comment when its node is clicked', () => {
     const provider = new TagsViewProvider(filledStore(), 'file');
-    const [file] = provider.getChildren() as { items: TagItem[] }[];
-    const first = provider.getChildren(file as never)[0];
+    const first = provider.getChildren(findFile(provider, 'file:///Workspace/a.ts'))[0];
 
     expect(provider.getTreeItem(first).command).toMatchObject({
       command: 'better-comments-next.panelRevealComment',

@@ -108,6 +108,72 @@ export function groupByFile(items: TagItem[]): FileGroup[] {
     .map(([uri, groupItems]) => ({ uri, items: groupItems }));
 }
 
+/** One directory of the file view, its subdirectories and its files */
+export interface FileTreeDirectory {
+  /** path relative to the workspace root, `''` at the root itself */
+  path: string;
+  /** last segment of `path`, the label of the node */
+  name: string;
+  /** how many comments live in this directory and everything below it */
+  count: number;
+  directories: FileTreeDirectory[];
+  files: FileGroup[];
+}
+
+/**
+ * Nest the flat file groups into a directory tree, preserving the workspace
+ * folder structure: `src/panel/a.ts` becomes `src` → `panel` → `a.ts`.
+ *
+ * `pathOf` resolves a uri to its workspace relative path — the caller owns
+ * what "relative" means, which keeps this pure and therefore testable.
+ * Directories sort by name, files by uri; every level counts its comments.
+ */
+export function buildFileTree(groups: FileGroup[], pathOf: (uri: string) => string): FileTreeDirectory {
+  const root: FileTreeDirectory = { path: '', name: '', count: 0, directories: [], files: [] };
+  const byPath = new Map<string, FileTreeDirectory>([['', root]]);
+
+  for (const group of groups) {
+    const segments = pathOf(group.uri).replace(/^\/+/, '').split('/');
+    const fileName = segments.pop();
+
+    // walk (and create) the chain of directories above the file
+    let dir = root;
+    let path = '';
+    for (const segment of segments) {
+      path = path ? `${path}/${segment}` : segment;
+
+      let next = byPath.get(path);
+      if (!next) {
+        next = { path, name: segment, count: 0, directories: [], files: [] };
+        byPath.set(path, next);
+        dir.directories.push(next);
+      }
+      dir = next;
+    }
+
+    if (fileName) {
+      dir.files.push(group);
+    }
+  }
+
+  sortAndCount(root);
+
+  return root;
+}
+
+/** Sort every level and bubble the comment counts up to the root. */
+function sortAndCount(dir: FileTreeDirectory): number {
+  dir.directories.sort((a, b) => a.name.localeCompare(b.name));
+  dir.files.sort((a, b) => a.uri.localeCompare(b.uri));
+
+  dir.count = dir.files.reduce((sum, file) => sum + file.items.length, 0);
+  for (const child of dir.directories) {
+    dir.count += sortAndCount(child);
+  }
+
+  return dir.count;
+}
+
 /**
  * Group items by tag. Groups keep the order of their first item, so the panel
  * shows the most relevant tags first without depending on the configuration.

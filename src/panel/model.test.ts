@@ -1,7 +1,7 @@
 import type { TagRange } from '@/matcher';
 import type { TagItem } from './model';
 import { describe, expect, it } from 'vitest';
-import { buildTagItems, groupByFile, groupByTag } from './model';
+import { buildFileTree, buildTagItems, groupByFile, groupByTag } from './model';
 
 function rangesOf(...ranges: Partial<TagRange>[]): TagRange[] {
   return ranges.map(range => ({
@@ -144,5 +144,61 @@ describe('groupByTag', () => {
   it('returns nothing for an empty workspace', () => {
     expect(groupByFile([])).toEqual([]);
     expect(groupByTag([])).toEqual([]);
+  });
+});
+
+describe('buildFileTree', () => {
+  /** resolve uris like the view does: workspace relative, leading slash gone */
+  const pathOf = (uri: string) => uri.replace('file:///Workspace/', '');
+
+  it('nests the files under their directories', () => {
+    const groups = groupByFile([
+      item({ uri: 'file:///Workspace/src/panel/view.ts' }),
+      item({ uri: 'file:///Workspace/src/index.ts' }),
+      item({ uri: 'file:///Workspace/root.ts' }),
+    ]);
+
+    const tree = buildFileTree(groups, pathOf);
+
+    expect(tree.path).toBe('');
+    expect(tree.directories.map(dir => dir.path)).toEqual(['src']);
+    expect(tree.files.map(file => file.uri)).toEqual(['file:///Workspace/root.ts']);
+    expect(tree.directories[0].files.map(file => file.uri)).toEqual(['file:///Workspace/src/index.ts']);
+    expect(tree.directories[0].directories.map(dir => dir.path)).toEqual(['src/panel']);
+  });
+
+  it('sorts directories by name and files by uri on every level', () => {
+    const groups = groupByFile([
+      item({ uri: 'file:///Workspace/zeta/a.ts' }),
+      item({ uri: 'file:///Workspace/alpha/b.ts' }),
+      item({ uri: 'file:///Workspace/alpha/a.ts' }),
+    ]);
+
+    const tree = buildFileTree(groups, pathOf);
+
+    expect(tree.directories.map(dir => dir.name)).toEqual(['alpha', 'zeta']);
+    expect(tree.directories[0].files.map(file => file.uri)).toContain('file:///Workspace/alpha/a.ts');
+  });
+
+  it('counts the comments of every subtree', () => {
+    const groups = groupByFile([
+      item({ uri: 'file:///Workspace/src/deep/a.ts' }),
+      item({ uri: 'file:///Workspace/src/deep/a.ts', line: 3 }),
+      item({ uri: 'file:///Workspace/src/b.ts' }),
+    ]);
+
+    const tree = buildFileTree(groups, pathOf);
+
+    expect(tree.count).toBe(3);
+    expect(tree.directories[0].count).toBe(3); // src
+    expect(tree.directories[0].directories[0].count).toBe(2); // src/deep
+  });
+
+  it('leaves an empty tree for a workspace without tags', () => {
+    const tree = buildFileTree([], pathOf);
+
+    expect(tree.directories).toEqual([]);
+    expect(tree.files).toEqual([]);
+    expect(tree.count).toBe(0);
   });
 });

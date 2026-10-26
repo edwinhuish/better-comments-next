@@ -32,7 +32,7 @@ With this extension, you will be able to categorize your annotations into:
 
 The **Better Comments** view in the Explorer lists every tagged comment of the workspace — not just the open file — with the same tags the editor highlights.
 
-- **Two browsing dimensions**: grouped by file (comments of a file together) or by tag (every `TODO` of the workspace together). Switch from the view title bar; `better-comments.panelGroupBy` only sets the initial dimension.
+- **Two browsing dimensions**: grouped by file (the workspace folder structure is preserved, directories nest) or by tag (every `TODO` of the workspace together). Switch from the view title bar; `better-comments.panelGroupBy` only sets the initial dimension.
 - **Click a comment** to open its file with the cursor on the tag.
 - The scan resolves each file's language from the languages your extensions contribute, without opening the files in the editor, and reuses the very same matching pipeline as the decorations — panel and highlights can never drift apart.
 - With `better-comments.panelAutoRefresh` (default on), file watcher events — an edit, a build, a git checkout — refresh only the touched files; deleted files leave the panel.

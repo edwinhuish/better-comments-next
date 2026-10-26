@@ -1,8 +1,9 @@
 import type { PanelGroupBy } from '@/configuration';
-import type { TagItem } from './model';
+import type { FileTreeDirectory, TagItem } from './model';
 import type { TagStore } from './store';
 import * as configuration from '@/configuration';
 import * as vscode from 'vscode';
+import { buildFileTree } from './model';
 
 /** id of the contributed tree view */
 export const VIEW_ID = 'better-comments-next.panel';
@@ -11,6 +12,12 @@ export const VIEW_ID = 'better-comments-next.panel';
 export const COMMAND_REVEAL = 'better-comments-next.panelRevealComment';
 
 // # Nodes
+
+/** A directory of the file view, wrapping the tree the model built */
+export interface DirectoryNode {
+  kind: 'directory';
+  dir: FileTreeDirectory;
+}
 
 /** A file with every tag found in it */
 export interface FileGroupNode {
@@ -33,7 +40,7 @@ export interface CommentNode {
   item: TagItem;
 }
 
-export type TreeNode = FileGroupNode | TagGroupNode | CommentNode;
+export type TreeNode = DirectoryNode | FileGroupNode | TagGroupNode | CommentNode;
 
 /**
  * Tree data provider of the panel.
@@ -69,14 +76,21 @@ export class TagsViewProvider implements vscode.TreeDataProvider<TreeNode> {
 
   public getChildren(node?: TreeNode): TreeNode[] {
     if (!node) {
-      return this.groupBy === 'file'
-        ? this.store.groupByFile().map(group => ({ kind: 'file', uri: group.uri, items: group.items }))
-        : this.store.groupByTag().map(group => ({
-          kind: 'tag',
-          key: group.key,
-          label: groupLabel(group.key, group.items),
-          items: group.items,
-        }));
+      if (this.groupBy === 'file') {
+        // the workspace folder structure is preserved: directories nest
+        return this.childrenOf(buildFileTree(this.store.groupByFile(), pathLabel));
+      }
+
+      return this.store.groupByTag().map(group => ({
+        kind: 'tag',
+        key: group.key,
+        label: groupLabel(group.key, group.items),
+        items: group.items,
+      }));
+    }
+
+    if (node.kind === 'directory') {
+      return this.childrenOf(node.dir);
     }
 
     if (node.kind === 'comment') {
@@ -86,12 +100,34 @@ export class TagsViewProvider implements vscode.TreeDataProvider<TreeNode> {
     return node.items.map(item => ({ kind: 'comment', item }));
   }
 
+  /** Directories first, then the files, the way explorers list them. */
+  private childrenOf(dir: FileTreeDirectory): TreeNode[] {
+    return [
+      ...dir.directories.map(child => ({ kind: 'directory' as const, dir: child })),
+      ...dir.files.map(group => ({ kind: 'file' as const, uri: group.uri, items: group.items })),
+    ];
+  }
+
   public getTreeItem(node: TreeNode): vscode.TreeItem {
     if (node.kind === 'comment') {
       return this.commentItem(node.item);
     }
 
-    const label = node.kind === 'file' ? pathLabel(node.uri) : node.label;
+    if (node.kind === 'directory') {
+      const item = new vscode.TreeItem(node.dir.name, vscode.TreeItemCollapsibleState.Collapsed);
+      item.tooltip = node.dir.path;
+      item.contextValue = 'directory';
+      item.iconPath = new vscode.ThemeIcon('folder');
+
+      if (configuration.getPanelConfiguration().showCounts) {
+        item.description = String(node.dir.count);
+      }
+
+      return item;
+    }
+
+    // the directories above carry the path, the file node shows its name
+    const label = node.kind === 'file' ? fileNameOf(node.uri) : node.label;
     const item = new vscode.TreeItem(label, vscode.TreeItemCollapsibleState.Collapsed);
     item.tooltip = label;
     item.contextValue = node.kind;
@@ -131,4 +167,8 @@ function groupLabel(key: string, items: TagItem[]): string {
 
 function pathLabel(uri: string): string {
   return vscode.workspace.asRelativePath(vscode.Uri.parse(uri), false);
+}
+
+function fileNameOf(uri: string): string {
+  return pathLabel(uri).split('/').pop() || uri;
 }
