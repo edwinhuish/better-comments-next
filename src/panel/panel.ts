@@ -23,6 +23,8 @@ let view: vscode.TreeView<TreeNode> | undefined;
 let cancellation: vscode.CancellationTokenSource | undefined;
 /** watches the scanned files when `panelAutoRefresh` is on */
 let watcher: PanelWatcher | undefined;
+/** whether the once-per-activation startup scan already ran */
+let startupScanned = false;
 /** the panel settings and scan fingerprint they were last applied with */
 let applied: PanelConfiguration | undefined;
 let appliedFingerprint: string | undefined;
@@ -59,13 +61,31 @@ export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.onDidChangeWorkspaceFolders(handleWorkspaceFolders),
   );
 
-  if (panel.enabled && panel.scanOnStartup) {
-    void scanWorkspace();
-  }
+  // the startup scan waits for the view: opening a file must not walk the
+  // whole workspace for a panel nobody looks at
+  context.subscriptions.push(view.onDidChangeVisibility(scanOnVisible));
+  scanOnVisible();
 
   if (panel.enabled && panel.autoRefresh) {
     watcher = createWatcher(panel);
   }
+}
+
+/**
+ * Scan the workspace the first time the view is on screen. When the extension
+ * was activated by opening a file (`onLanguage`), the view may still be hidden
+ * — its visibility then triggers the scan, and a view that is never opened
+ * never pays for one.
+ */
+function scanOnVisible(): void {
+  const panel = configuration.getPanelConfiguration();
+
+  if (startupScanned || !panel.enabled || !panel.scanOnStartup || !view?.visible) {
+    return;
+  }
+
+  startupScanned = true;
+  void scanWorkspace();
 }
 
 /**
@@ -249,6 +269,7 @@ export function deactivate() {
   scanner = undefined;
   provider = undefined;
   view = undefined;
+  startupScanned = false;
   applied = undefined;
   appliedFingerprint = undefined;
 }

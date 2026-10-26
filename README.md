@@ -45,7 +45,7 @@ Settings:
 | `better-comments.panelEnabled` | `true` | Show the panel view. |
 | `better-comments.panelGroupBy` | `'file'` | Initial browsing dimension: `'file'` or `'tag'`. |
 | `better-comments.panelAutoRefresh` | `true` | Refresh the panel when files change on disk. |
-| `better-comments.panelScanOnStartup` | `true` | Scan the workspace once when the extension activates. |
+| `better-comments.panelScanOnStartup` | `true` | Scan the workspace once when the panel view becomes visible. |
 | `better-comments.panelIncludeGlobs` | `[]` | Only scan files matching these globs; empty means every file. |
 | `better-comments.panelExcludeGlobs` | `['**/.git/**']` | Globs always excluded; they take precedence over include globs and `.gitignore`. |
 | `better-comments.panelUseGitignore` | `true` | Respect `.gitignore` files, including nested ones. An approximation: negated patterns (`!keep`) cannot be expressed in an exclude filter and are skipped. |
