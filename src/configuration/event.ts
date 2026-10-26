@@ -4,7 +4,7 @@ import { getConfigurationFlatten, refresh } from './configuration';
 
 export type OnDidChangeCallback = (config: ConfigurationFlatten) => void;
 
-const onDidChangeCallbacks: OnDidChangeCallback[] = [];
+let onDidChangeCallbacks: OnDidChangeCallback[] = [];
 export function onDidChange(callback: OnDidChangeCallback) {
   onDidChangeCallbacks.push(callback);
 }
@@ -47,5 +47,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-
+  onDidChangeCallbacks = [];
 }

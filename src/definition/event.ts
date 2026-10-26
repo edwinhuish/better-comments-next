@@ -4,7 +4,7 @@ import * as definition from './definition';
 
 export type OnDidChangeCallback = () => void;
 
-const onDidChangeCallbacks: OnDidChangeCallback[] = [];
+let onDidChangeCallbacks: OnDidChangeCallback[] = [];
 export function onDidChange(callback: OnDidChangeCallback) {
   onDidChangeCallbacks.push(callback);
 }
@@ -30,6 +30,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
+  onDidChangeCallbacks = [];
   if (disposable) {
     disposable.dispose();
   }

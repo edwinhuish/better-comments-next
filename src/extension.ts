@@ -18,7 +18,7 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-  configuration.deactivate();
-  definition.deactivate();
   renderer.deactivate();
+  definition.deactivate();
+  configuration.deactivate();
 }
