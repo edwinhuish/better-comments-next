@@ -13,6 +13,7 @@ Forked from [aaron-bond/better-comments v3.0.2](https://github.com/aaron-bond/be
 - [x] Theme switchable. Different tag config for light and dark themes. See [#506](https://github.com/aaron-bond/better-comments/issues/506)
 - [x] Allow multiple tags per item. See [#33](https://github.com/aaron-bond/better-comments/issues/33)
 - [x] Multi-line comment supported. See [#7](https://github.com/edwinhuish/better-comments-next/issues/7#issuecomment-2522526938)
+- [x] Tags panel: browse every tagged comment of the workspace, grouped by file or by tag.
 
 ## Description
 The Better Comments Next extension will help you create more human-friendly comments in your code.
@@ -26,6 +27,30 @@ With this extension, you will be able to categorize your annotations into:
 * Any other comment styles you'd like can be specified in the settings
 
 ![Annotated code](static/better-comments.png)
+
+## Tags panel
+
+The **Better Comments** view in the Explorer lists every tagged comment of the workspace — not just the open file — with the same tags the editor highlights.
+
+- **Two browsing dimensions**: grouped by file (comments of a file together) or by tag (every `TODO` of the workspace together). Switch from the view title bar; `better-comments.panelGroupBy` only sets the initial dimension.
+- **Click a comment** to open its file with the cursor on the tag.
+- The scan resolves each file's language from the languages your extensions contribute, without opening the files in the editor, and reuses the very same matching pipeline as the decorations — panel and highlights can never drift apart.
+- With `better-comments.panelAutoRefresh` (default on), file watcher events — an edit, a build, a git checkout — refresh only the touched files; deleted files leave the panel.
+
+Settings:
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `better-comments.panelEnabled` | `true` | Show the panel view. |
+| `better-comments.panelGroupBy` | `'file'` | Initial browsing dimension: `'file'` or `'tag'`. |
+| `better-comments.panelAutoRefresh` | `true` | Refresh the panel when files change on disk. |
+| `better-comments.panelScanOnStartup` | `true` | Scan the workspace once when the extension activates. |
+| `better-comments.panelIncludeGlobs` | `[]` | Only scan files matching these globs; empty means every file. |
+| `better-comments.panelExcludeGlobs` | `['**/.git/**']` | Globs always excluded; they take precedence over include globs and `.gitignore`. |
+| `better-comments.panelUseGitignore` | `true` | Respect `.gitignore` files, including nested ones. An approximation: negated patterns (`!keep`) cannot be expressed in an exclude filter and are skipped. |
+| `better-comments.panelMaxFileSize` | `512` | Skip files larger than this size, in kilobytes. |
+| `better-comments.panelMaxFiles` | `5000` | Stop scanning after this many files. |
+| `better-comments.panelShowCounts` | `true` | Show the comment count on the file and tag nodes. |
 
 ## Configuration
 
